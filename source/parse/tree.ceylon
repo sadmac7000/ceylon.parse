@@ -10,10 +10,6 @@ class Tree(Grammar g) {
 
 	tokens.addTerminals{[for (x in g.terminals) x];};
 
-	class State() {
-		ArrayList<Integer?> positions = ArrayList<Integer?>();
-	}
-
 	shared void addText(String text) {
 		tokens.offerText(text);
 		do_parse();
