@@ -12,7 +12,7 @@ class Grammar(NonterminalClass start, {Nonterminal +}rules) {
 		{TerminalClass *} ret =
 			{for (r in rules) for (x in r.terminals) x};
 
-		assert(is {TerminalClass +} ret);
+		assert(ret.size > 0);
 		return unmodifiableSet(HashSet<TerminalClass>{elements=ret;});
 	}
 
@@ -20,14 +20,14 @@ class Grammar(NonterminalClass start, {Nonterminal +}rules) {
 		{NonterminalClass *} ret =
 			{for (r in rules) for (x in r.nonterminals) x};
 
-		assert(is {NonterminalClass +} ret);
+		assert(ret.size > 0);
 		return unmodifiableSet(HashSet<NonterminalClass>{elements=ret;});
 	}
 
 	Set<NonterminalClass> produced {
 		{NonterminalClass *} ret = {for (r in rules) type(r)};
 
-		assert(is {NonterminalClass +} ret);
+		assert(ret.size > 0);
 		return unmodifiableSet(HashSet<NonterminalClass>{elements=ret;});
 	}
 
