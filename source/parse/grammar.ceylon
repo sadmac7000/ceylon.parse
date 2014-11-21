@@ -7,38 +7,6 @@ import ceylon.collection {
 	unmodifiableMap
 }
 
-void flattenSet(MutableSet<Object> set) {
-	value data = set.clone();
-	set.clear();
-
-	for (item in data) {
-		if (is MutableSet<Object> item) {
-			flattenSet(item);
-			set.addAll(item);
-		} else {
-			set.add(item);
-		}
-	}
-}
-
-Map<NonterminalClass,Set<TerminalClass>>
-refineNTMap(Map<NonterminalClass,Set<Object>> sets) {
-	value ret = HashMap<NonterminalClass,Set<TerminalClass>>();
-
-	for (k->v in sets) {
-		value s = HashSet<TerminalClass>();
-
-		for (item in v) {
-			assert(is TerminalClass item);
-			s.add(item);
-		}
-
-		ret.put(k, unmodifiableSet(s));
-	}
-
-	return unmodifiableMap(ret);
-}
-
 class Grammar(NonterminalClass start, {Nonterminal +}rules) {
 	shared Set<TerminalClass> terminals {
 		{TerminalClass *} ret =
@@ -72,16 +40,18 @@ class Grammar(NonterminalClass start, {Nonterminal +}rules) {
 	}
 
 	shared Map<NonterminalClass,Set<TerminalClass>> firstSets {
-		value sets = HashMap<NonterminalClass,HashSet<Object>>();
+		value sets =
+			HashMap<NonterminalClass,CompoundedSet<SymbolClass>>();
 
 		for (r in rules) {
 			if (! sets.defines(type(r))) {
-				sets.put(type(r), HashSet<Object>());
+				sets.put(type(r), CompoundedSet<SymbolClass>());
 			}
 
 			value s = sets[type(r)];
 			assert(exists s);
-			s.add(r.symbols.first);
+			assert(is MutableSet<SymbolClass> loc=s.local);
+			loc.add(r.symbols.first);
 		}
 
 		for (k->v in sets) {
@@ -90,25 +60,25 @@ class Grammar(NonterminalClass start, {Nonterminal +}rules) {
 					continue;
 				}
 
-				s.remove(k);
-				s.add(v);
+				assert(is MutableSet<SymbolClass> loc=s.local);
+				loc.remove(k);
+				s.compound(v);
 			}
 		}
 
-		for (k->v in sets) {
-			flattenSet(v);
-		}
-
-		return refineNTMap(sets);
+		assert(is Map<NonterminalClass,Set<TerminalClass>> sets);
+		return sets;
 	}
 
 	shared Map<NonterminalClass,Set<TerminalClass>> followSets {
-		value sets = HashMap<NonterminalClass,HashSet<Object>>();
+		value sets =
+			HashMap<NonterminalClass,CompoundedSet<TerminalClass>>();
 
-		sets.put(start, HashSet<Object>{elements={`EOS`};});
+		sets.put(start,
+				CompoundedSet<TerminalClass>{local=HashSet<TerminalClass>{elements={`EOS`};};});
 
 		for (n in nonterminals) {
-			sets.put(n, HashSet<Object>());
+			sets.put(n, CompoundedSet<TerminalClass>());
 		}
 
 		for (r in rules) {
@@ -120,11 +90,16 @@ class Grammar(NonterminalClass start, {Nonterminal +}rules) {
 					assert(exists set);
 
 					if (is TerminalClass s) {
-						set.add(s);
-					} else if (s != last) {
+						assert(is
+								MutableSet<TerminalClass>
+								loc =
+								set.local);
+						loc.add(s);
+					} else {
 						value other = sets[s];
 						assert(exists other);
-						set.add(other);
+
+						set.compound(other);
 					}
 				}
 
@@ -136,11 +111,17 @@ class Grammar(NonterminalClass start, {Nonterminal +}rules) {
 			}
 		}
 
-		for (k->v in sets) {
-			flattenSet(v);
+		for (r in rules) {
+			value set = sets[type(r)];
+			value adder = sets[r.symbols.last];
+			assert(exists set);
+
+			if (exists adder) {
+				adder.compound(set);
+			}
 		}
 
-		return refineNTMap(sets);
+		return sets;
 	}
 }
 
