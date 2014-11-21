@@ -1,127 +1,134 @@
 import ceylon.language.meta { type }
 import ceylon.collection {
-	HashMap,
-	HashSet,
-	MutableSet,
-	unmodifiableSet,
-	unmodifiableMap
+    HashMap,
+    HashSet,
+    MutableSet,
+    ArrayList,
+    unmodifiableSet,
+    unmodifiableMap
 }
 
 class Grammar(NonterminalClass start, {Nonterminal +}rules) {
-	shared Set<TerminalClass> terminals {
-		{TerminalClass *} ret =
-			{for (r in rules) for (x in r.terminals) x};
+    shared Set<TerminalClass> terminals {
+        {TerminalClass *} ret =
+            {for (r in rules) for (x in r.terminals) x};
 
-		assert(ret.size > 0);
-		return unmodifiableSet(HashSet<TerminalClass>{elements=ret;});
-	}
+        assert(ret.size > 0);
+        return unmodifiableSet(HashSet<TerminalClass>{elements=ret;});
+    }
 
-	Set<NonterminalClass> nonterminals {
-		{NonterminalClass *} ret =
-			{for (r in rules) for (x in r.nonterminals) x};
+    class State() {
+        ArrayList<Integer?> positions = ArrayList<Integer?>();
 
-		assert(ret.size > 0);
-		return unmodifiableSet(HashSet<NonterminalClass>{elements=ret;});
-	}
+        void initializeStart() {
+            assert(positions.size == 0);
+        }
+    }
 
-	Set<NonterminalClass> produced {
-		{NonterminalClass *} ret = {for (r in rules) type(r)};
+    Set<NonterminalClass> nonterminals {
+        {NonterminalClass *} ret =
+            {for (r in rules) for (x in r.nonterminals) x};
 
-		assert(ret.size > 0);
-		return unmodifiableSet(HashSet<NonterminalClass>{elements=ret;});
-	}
+        assert(ret.size > 0);
+        return unmodifiableSet(HashSet<NonterminalClass>{elements=ret;});
+    }
 
-	Set<NonterminalClass> missing_produced =
-		nonterminals.complement(produced);
+    Set<NonterminalClass> produced {
+        {NonterminalClass *} ret = {for (r in rules) type(r)};
 
-	if (missing_produced.size > 0) {
-		assert(missing_produced.size == 1);
-		assert(missing_produced.contains(start));
-	}
+        assert(ret.size > 0);
+        return unmodifiableSet(HashSet<NonterminalClass>{elements=ret;});
+    }
 
-	shared Map<NonterminalClass,Set<TerminalClass>> firstSets {
-		value sets =
-			HashMap<NonterminalClass,CompoundedSet<SymbolClass>>();
+    Set<NonterminalClass> missing_produced =
+        nonterminals.complement(produced);
 
-		for (r in rules) {
-			if (! sets.defines(type(r))) {
-				sets.put(type(r), CompoundedSet<SymbolClass>());
-			}
+    if (missing_produced.size > 0) {
+        assert(missing_produced.size == 1);
+        assert(missing_produced.contains(start));
+    }
 
-			value s = sets[type(r)];
-			assert(exists s);
-			assert(is MutableSet<SymbolClass> loc=s.local);
-			loc.add(r.symbols.first);
-		}
+    shared Map<NonterminalClass,Set<TerminalClass>> firstSets {
+        value sets =
+            HashMap<NonterminalClass,CompoundedSet<SymbolClass>>();
 
-		for (k->v in sets) {
-			for (s in sets.items) {
-				if (! s.contains(k)) {
-					continue;
-				}
+        for (r in rules) {
+            if (! sets.defines(type(r))) {
+                sets.put(type(r), CompoundedSet<SymbolClass>());
+            }
 
-				assert(is MutableSet<SymbolClass> loc=s.local);
-				loc.remove(k);
-				s.compound(v);
-			}
-		}
+            value s = sets[type(r)];
+            assert(exists s);
+            assert(is MutableSet<SymbolClass> loc=s.local);
+            loc.add(r.symbols.first);
+        }
 
-		assert(is Map<NonterminalClass,Set<TerminalClass>> sets);
-		return sets;
-	}
+        for (k->v in sets) {
+            for (s in sets.items) {
+                if (! s.contains(k)) {
+                    continue;
+                }
 
-	shared Map<NonterminalClass,Set<TerminalClass>> followSets {
-		value sets =
-			HashMap<NonterminalClass,CompoundedSet<TerminalClass>>();
+                assert(is MutableSet<SymbolClass> loc=s.local);
+                loc.remove(k);
+                s.compound(v);
+            }
+        }
 
-		sets.put(start,
-				CompoundedSet<TerminalClass>{local=HashSet<TerminalClass>{elements={`EOS`};};});
+        assert(is Map<NonterminalClass,Set<TerminalClass>> sets);
+        return sets;
+    }
 
-		for (n in nonterminals) {
-			sets.put(n, CompoundedSet<TerminalClass>());
-		}
+    shared Map<NonterminalClass,Set<TerminalClass>> followSets {
+        value sets =
+            HashMap<NonterminalClass,CompoundedSet<TerminalClass>>();
 
-		for (r in rules) {
-			variable NonterminalClass? prev = null;
+        sets.put(start, CompoundedSet<TerminalClass>{
+            local=HashSet<TerminalClass>{elements={`EOS`};
+        };});
 
-			for (s in r.symbols) {
-				if (exists last=prev) {
-					value set = sets[last];
-					assert(exists set);
+        for (n in nonterminals) {
+            sets.put(n, CompoundedSet<TerminalClass>());
+        }
 
-					if (is TerminalClass s) {
-						assert(is
-								MutableSet<TerminalClass>
-								loc =
-								set.local);
-						loc.add(s);
-					} else {
-						value other = sets[s];
-						assert(exists other);
+        for (r in rules) {
+            variable NonterminalClass? prev = null;
 
-						set.compound(other);
-					}
-				}
+            for (s in r.symbols) {
+                if (exists last=prev) {
+                    value set = sets[last];
+                    assert(exists set);
 
-				if (is NonterminalClass s) {
-					prev = s;
-				} else {
-					prev = null;
-				}
-			}
-		}
+                    if (is TerminalClass s) {
+                        assert(is MutableSet<TerminalClass> loc = set.local);
+                        loc.add(s);
+                    } else {
+                        value other = sets[s];
+                        assert(exists other);
 
-		for (r in rules) {
-			value set = sets[type(r)];
-			value adder = sets[r.symbols.last];
-			assert(exists set);
+                        set.compound(other);
+                    }
+                }
 
-			if (exists adder) {
-				adder.compound(set);
-			}
-		}
+                if (is NonterminalClass s) {
+                    prev = s;
+                } else {
+                    prev = null;
+                }
+            }
+        }
 
-		return sets;
-	}
+        for (r in rules) {
+            value set = sets[type(r)];
+            value adder = sets[r.symbols.last];
+            assert(exists set);
+
+            if (exists adder) {
+                adder.compound(set);
+            }
+        }
+
+        return sets;
+    }
 }
 
