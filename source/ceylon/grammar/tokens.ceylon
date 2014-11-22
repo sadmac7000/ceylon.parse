@@ -59,5 +59,3 @@ class TokenQueue() {
         return ret;
     }
 }
-
-
