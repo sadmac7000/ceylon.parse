@@ -3,20 +3,30 @@ import ceylon.collection {
     IdentitySet
 }
 
+"Any Set which is also Identifiable"
 alias IdentifiableSet<T> given T satisfies Object => Set<T>&Identifiable;
 
+"A compounded set is a set which has a permanent superset relationship with
+ other sets. If you have a compound set `c` and any other set `s`, calling
+ `c.compound(s)` will ensure all elements of `s` appear in `c` *even if `c` is
+ mutated after the operation*. We accomplish this, of course, by keeping a
+ reference to `c`."
 class CompoundedSet<T>(shared Set<T> local = HashSet<T>(), {IdentifiableSet<T>*} sources_in = {})
     satisfies Set<T> 
     given T satisfies Object {
     shared IdentitySet<IdentifiableSet<T>> sources =
         IdentitySet<IdentifiableSet<T>>{elements=sources_in;};
 
+    "Compound another set into this set. That set will be unioned with this
+     one, and the unioning will be updated when that set is mutated."
     shared void compound(IdentifiableSet<T> s) {
         sources.add(s);
     }
 
+    "Get a non-compound version of this set"
     shared Set<T> flat => getFlat(IdentitySet<CompoundedSet<T>>());
 
+    "Get a non-compound version of this set"
     Set<T> getFlat(IdentitySet<CompoundedSet<T>> flatstack) {
         HashSet<T> ret = HashSet<T>();
 
@@ -69,5 +79,3 @@ class CompoundedSet<T>(shared Set<T> local = HashSet<T>(), {IdentifiableSet<T>*}
 
     shared actual Boolean equals(Object that) => flat.equals(that);
 }
-
-
