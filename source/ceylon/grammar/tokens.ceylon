@@ -1,25 +1,22 @@
 import ceylon.collection { ArrayList }
 import ceylon.language.meta.model { Class }
 
-class TokenQueue() {
-    ArrayList<TerminalClass> terminals = ArrayList<TerminalClass>();
+"A token queue is a queue-like object which accepts strings and emits parser
+ text. The strings are effectively concatenated; each string specifies more
+ text for the tokenizer, until we call `finalize` to send `EOS`."
+class TokenQueue([TerminalClass *] terminals) {
+    "Text we have not yet processed"
     variable String buffer = "";
+
+    "A stream of already-processed tokens ready to be accepted."
     ArrayList<Terminal> outStream = ArrayList<Terminal>();
 
-    object populating {}
-    object tokenizing {}
-    object finalized {}
+    "Whether we have finalized this queue."
+    variable value finalized = false;
 
-    variable value state = populating;
-
-    shared void addTerminals(TerminalClass *adding) {
-        assert(state == populating);
-        terminals.addAll(adding);
-    }
-
-    shared void offerText(String text) {
-        assert(state != finalized);
-        state = tokenizing;
+    "Add text to the pool of text waiting to be tokenized."
+    shared void offer(String text) {
+        assert(! finalized);
         buffer += text;
         variable Integer matched = 1;
 
@@ -35,12 +32,14 @@ class TokenQueue() {
         }
     }
 
+    "Declare the end of the stream to have been reached."
     shared void finalize() {
-        assert(state != finalized);
+        assert(! finalized);
         assert(buffer.size == 0);
-        state = finalized;
+        finalized = true;
     }
 
+    "Retrieve a token from the queue."
     shared Terminal? accept() {
         Terminal? ret = outStream.accept();
 
@@ -48,7 +47,7 @@ class TokenQueue() {
             return ret;
         }
 
-        if (state == finalized) {
+        if (finalized) {
             return EOS();
         }
 
