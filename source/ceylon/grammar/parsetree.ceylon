@@ -13,16 +13,16 @@ import ceylon.collection {
 shared final annotation class GrammarRule()
         satisfies OptionalAnnotation<GrammarRule, Annotated> {}
 
-"We annotate methods of a Grammar object to indicate that those methods
-    correspond to production rules"
+"We annotate methods of a `ParseTree` object to indicate that those methods
+ correspond to production rules"
 shared annotation GrammarRule rule() => GrammarRule();
 
-"A `Grammar` houses a series of BNF-style production rules. The rules are
- specifed by defining methods with the `rule` annotation. Each method must take
- values of type `Symbol` and return a value of type `Nonterminal`. The parser
- will create an appropriate production rule and call the annotated method in
- order to reduce the value."
-abstract class Grammar() {
+"A `ParseTree` is defined by a series of BNF-style production rules. The rules
+ are specifed by defining methods with the `rule` annotation. Each method must
+ take values of type `Symbol` and return a value of type `Nonterminal`. The
+ parser will create an appropriate production rule and call the annotated
+ method in order to reduce the value."
+abstract class ParseTree() {
     "Sequence of all rule methods in the class."
     shared Method<Nothing,Anything,Nothing>[] rules {
         return type(this).getMethods<Nothing>(`GrammarRule`);

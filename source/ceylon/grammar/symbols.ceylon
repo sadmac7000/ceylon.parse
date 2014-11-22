@@ -1,6 +1,6 @@
 import ceylon.language.meta.model { Class, ClassModel }
 
-"`Symbol` is the supertype of all parse tree nodes produced by a `Grammar`"
+"`Symbol` is the supertype of all parse tree nodes produced by a `ParseTree`"
 abstract class Symbol() {}
 
 alias TerminalClass => Class<Terminal, []>;
