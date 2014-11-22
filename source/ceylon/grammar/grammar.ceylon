@@ -1,4 +1,5 @@
 import ceylon.language.meta { type }
+import ceylon.language.meta.model { Method, Class }
 import ceylon.collection {
     HashMap,
     HashSet,
@@ -8,10 +9,33 @@ import ceylon.collection {
     unmodifiableMap
 }
 
-class Grammar(NonterminalClass start, {Nonterminal +}rules) {
+"A do-nothing annotation class for the `rule` annotation"
+shared final annotation class GrammarRule()
+        satisfies OptionalAnnotation<GrammarRule, Annotated> {}
+
+"We annotate methods of a Grammar object to indicate that those methods
+    correspond to production rules"
+shared annotation GrammarRule rule() => GrammarRule();
+
+"A `Grammar` houses a series of BNF-style production rules. The rules are
+ specifed by defining methods with the `rule` annotation. Each method must take
+ values of type `Symbol` and return a value of type `Nonterminal`. The parser
+ will create an appropriate production rule and call the annotated method in
+ order to reduce the value."
+abstract class Grammar() {
+    "Sequence of all rule methods in the class."
+    shared Method<Nothing,Anything,Nothing>[] rules {
+        return type(this).getMethods<Nothing>(`GrammarRule`);
+    }
+
+    "The start symbol for this grammar."
+    shared formal NonterminalClass start;
+
+    "A set of all terminal symbols used by this grammar."
     shared Set<TerminalClass> terminals {
         {TerminalClass *} ret =
-            {for (r in rules) for (x in r.terminals) x};
+            {for (r in rules) for (x in r.parameterTypes) if (is
+                    TerminalClass x) x};
 
         assert(ret.size > 0);
         return unmodifiableSet(HashSet<TerminalClass>{elements=ret;});
@@ -25,42 +49,51 @@ class Grammar(NonterminalClass start, {Nonterminal +}rules) {
         }
     }
 
-    Set<NonterminalClass> nonterminals {
+    "A set of all nonterminal symbols used by this grammar"
+    shared Set<NonterminalClass> nonterminals {
         {NonterminalClass *} ret =
-            {for (r in rules) for (x in r.nonterminals) x};
+            {for (r in rules) for (x in r.parameterTypes) if (is
+                    NonterminalClass x) x}.chain({for (r in rules) if (is
+                    NonterminalClass x = r.type) x});
 
         assert(ret.size > 0);
         return unmodifiableSet(HashSet<NonterminalClass>{elements=ret;});
     }
 
+    "A set of all nonterminal symbols that are results of production rules"
     Set<NonterminalClass> produced {
-        {NonterminalClass *} ret = {for (r in rules) type(r)};
+        {NonterminalClass *} ret = {for (r in rules) if (is NonterminalClass
+                x=r.type) x};
 
         assert(ret.size > 0);
         return unmodifiableSet(HashSet<NonterminalClass>{elements=ret;});
     }
 
-    Set<NonterminalClass> missing_produced =
-        nonterminals.complement(produced);
+    "List of all nonterminals that are not produced by any rule"
+    Set<NonterminalClass> missing_produced => nonterminals.complement(produced);
+    //assert(missing_produced.size == 0);
 
-    if (missing_produced.size > 0) {
-        assert(missing_produced.size == 1);
-        assert(missing_produced.contains(start));
-    }
-
+    "A map from all the nonterminals to their FIRST sets of terminals"
     shared Map<NonterminalClass,Set<TerminalClass>> firstSets {
         value sets =
             HashMap<NonterminalClass,CompoundedSet<SymbolClass>>();
 
         for (r in rules) {
-            if (! sets.defines(type(r))) {
-                sets.put(type(r), CompoundedSet<SymbolClass>());
+            value key = r.type;
+            assert(is NonterminalClass key);
+
+            if (! sets.defines(key)) {
+                sets.put(key, CompoundedSet<SymbolClass>());
             }
 
-            value s = sets[type(r)];
+            value s = sets[r.type];
             assert(exists s);
             assert(is MutableSet<SymbolClass> loc=s.local);
-            loc.add(r.symbols.first);
+
+            Anything? res = r.parameterTypes[0];
+            assert(exists res);
+            assert(is SymbolClass res);
+            loc.add(res);
         }
 
         for (k->v in sets) {
@@ -75,10 +108,21 @@ class Grammar(NonterminalClass start, {Nonterminal +}rules) {
             }
         }
 
-        assert(is Map<NonterminalClass,Set<TerminalClass>> sets);
-        return sets;
+        value ret = HashMap<NonterminalClass,Set<TerminalClass>>();
+
+        for (k->v in sets) {
+            value f = HashSet<TerminalClass>();
+            for (s in v) {
+                assert(is TerminalClass s);
+                f.add(s);
+            }
+            ret.put(k, unmodifiableSet(f));
+        }
+
+        return unmodifiableMap(ret);
     }
 
+    "A map from all the nonterminals to their FOLLOW sets of terminals"
     shared Map<NonterminalClass,Set<TerminalClass>> followSets {
         value sets =
             HashMap<NonterminalClass,CompoundedSet<TerminalClass>>();
@@ -88,13 +132,15 @@ class Grammar(NonterminalClass start, {Nonterminal +}rules) {
         };});
 
         for (n in nonterminals) {
-            sets.put(n, CompoundedSet<TerminalClass>());
+            if (! sets.defines(n)) {
+                sets.put(n, CompoundedSet<TerminalClass>());
+            }
         }
 
         for (r in rules) {
             variable NonterminalClass? prev = null;
 
-            for (s in r.symbols) {
+            for (s in r.parameterTypes) {
                 if (exists last=prev) {
                     value set = sets[last];
                     assert(exists set);
@@ -119,8 +165,11 @@ class Grammar(NonterminalClass start, {Nonterminal +}rules) {
         }
 
         for (r in rules) {
-            value set = sets[type(r)];
-            value adder = sets[r.symbols.last];
+            value last = r.parameterTypes.last;
+            assert(exists last);
+            assert(is SymbolClass last);
+            value set = sets[r.type];
+            value adder = sets[last];
             assert(exists set);
 
             if (exists adder) {

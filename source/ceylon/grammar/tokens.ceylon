@@ -1,9 +1,10 @@
 import ceylon.collection { ArrayList }
+import ceylon.language.meta.model { Class }
 
 class TokenQueue() {
     ArrayList<TerminalClass> terminals = ArrayList<TerminalClass>();
     variable String buffer = "";
-    ArrayList<TerminalNode> outStream = ArrayList<TerminalNode>();
+    ArrayList<Terminal> outStream = ArrayList<Terminal>();
 
     object populating {}
     object tokenizing {}
@@ -25,16 +26,11 @@ class TokenQueue() {
         while (matched > 0) {
             matched = 0;
             for (term in terminals) {
-                Terminal t = term();
-                String match = buffer[0:t.size];
-
-                if (! t.matches(buffer)) {
-                    continue;
-                }
-
+                assert(is Class<Terminal, [String]> term);
+                Terminal t = term(buffer);
                 matched++;
-                outStream.add(TerminalNode(term, match));
-                buffer = buffer[t.size:-1];
+                outStream.add(t);
+                buffer = buffer[t.s.size:-1];
             }
         }
     }
@@ -45,15 +41,15 @@ class TokenQueue() {
         state = finalized;
     }
 
-    shared TerminalNode? accept() {
-        TerminalNode? ret = outStream.accept();
+    shared Terminal? accept() {
+        Terminal? ret = outStream.accept();
 
         if (exists ret) {
             return ret;
         }
 
         if (state == finalized) {
-            return EOSNode();
+            return EOS();
         }
 
         return ret;
