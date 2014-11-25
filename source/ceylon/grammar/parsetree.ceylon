@@ -46,14 +46,6 @@ abstract class ParseTree<RootTerminal>() {
         return unmodifiableSet(HashSet<TerminalClass>{elements=ret;});
     }
 
-    class State() {
-        ArrayList<Integer?> positions = ArrayList<Integer?>();
-
-        void initializeStart() {
-            assert(positions.size == 0);
-        }
-    }
-
     "A set of all nonterminal symbols used by this grammar"
     shared Set<NonterminalClass> nonterminals {
         {NonterminalClass *} ret =
