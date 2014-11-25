@@ -27,12 +27,14 @@ shared annotation GrammarRule rule() => GrammarRule();
  method in order to reduce the value."
 abstract class ParseTree<RootTerminal>() {
     "Sequence of all rule methods in the class."
-    shared Method<Nothing,Anything,Nothing>[] rules {
-        return type(this).getMethods<Nothing>(`GrammarRule`);
-    }
+    shared Rule[] rules => type(this).getMethods<Nothing>(`GrammarRule`);
 
-    "The start symbol for this grammar."
-    shared formal NonterminalClass start;
+    "An additional nonterminal used as the target production for the grammar."
+    shared class Start(shared RootTerminal child) extends Nonterminal() {}
+
+    "The final production, used to evaluate the grammar completely."
+    rule
+    shared Start start_rule(RootTerminal r) => Start(r);
 
     "A set of all terminal symbols used by this grammar."
     shared Set<TerminalClass> terminals {
@@ -130,7 +132,7 @@ abstract class ParseTree<RootTerminal>() {
         value sets =
             HashMap<NonterminalClass,CompoundedSet<TerminalClass>>();
 
-        sets.put(start, CompoundedSet<TerminalClass>{
+        sets.put(`Start`, CompoundedSet<TerminalClass>{
             local=HashSet<TerminalClass>{elements={`EOS`};
         };});
 
