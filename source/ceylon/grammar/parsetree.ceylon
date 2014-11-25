@@ -25,7 +25,7 @@ shared annotation GrammarRule rule() => GrammarRule();
  take values of type `Symbol` and return a value of type `Nonterminal`. The
  parser will create an appropriate production rule and call the annotated
  method in order to reduce the value."
-abstract class ParseTree() {
+abstract class ParseTree<RootTerminal>() {
     "Sequence of all rule methods in the class."
     shared Method<Nothing,Anything,Nothing>[] rules {
         return type(this).getMethods<Nothing>(`GrammarRule`);
