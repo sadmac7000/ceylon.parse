@@ -9,6 +9,9 @@ import ceylon.collection {
     unmodifiableMap
 }
 
+"Quick alias for a general method"
+alias Rule => Method<Nothing,Anything,Nothing>;
+
 "A do-nothing annotation class for the `rule` annotation"
 shared final annotation class GrammarRule()
         satisfies OptionalAnnotation<GrammarRule, Annotated> {}
