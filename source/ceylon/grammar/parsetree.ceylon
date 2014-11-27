@@ -35,6 +35,10 @@ shared interface NATArray {
     shared formal Set<NATResult> at(Integer i);
 }
 
+"A result to represent the end of a stream."
+shared NATResult eos = NATResult(type(eos_object), eos_object, 0);
+object eos_object {}
+
 "Recursive NAT Array. Recieves a stream of abstract tokens and produces a
  stream of more refined abstract tokens."
 class RNATArray(NATArray child, ParseTree<Object> tree) satisfies NATArray {
@@ -184,7 +188,7 @@ shared abstract class ParseTree<out RootTerminal>(NATArray tokens)
             for (sym in k) {
                 if (sym.type != result) { continue; }
 
-                if (top.at(sym.length).size > 0) { break; }
+                if (! top.at(sym.length).contains(eos)) { break; }
 
                 assert(is RootTerminal ret=sym.sym);
                 parse_time += system.nanoseconds - start_time;
