@@ -1,9 +1,26 @@
 import ceylon.language.meta { type }
-import ceylon.language.meta.model { Method }
+import ceylon.language.meta.model { Method, Type }
 import ceylon.collection {
     HashSet,
+    HashMap,
     ArrayList,
     unlinked
+}
+
+"A single token result returned by a NAT"
+shared class NATResult(typeIn, sym, length) {
+    shared Object sym;
+    shared Integer length;
+    Integer|Type typeIn;
+
+    shared Integer type;
+
+    if (is Integer typeIn) {
+        type = typeIn;
+    } else {
+        assert(is Type typeIn);
+        type = typeAtomCache.getAlias(typeIn);
+    }
 }
 
 "Non-deterministic Abstract Token array. Presents a view of a string or other
@@ -15,31 +32,38 @@ shared interface NATArray {
      position. The index is meant to be in 'characters' regardless of what the
      NATArray consumes (so we assume that at some bottom recursion layer you
      are consuming a string)"
-    shared formal Set<[Object, Integer]> at(Integer i);
+    shared formal Set<NATResult> at(Integer i);
 }
 
 "Recursive NAT Array. Recieves a stream of abstract tokens and produces a
  stream of more refined abstract tokens."
 class RNATArray(NATArray child, ParseTree<Object> tree) satisfies NATArray {
-    value rules = type(tree).getMethods<Nothing,Object>(`GrammarRule`);
-    shared actual Set<[Object, Integer]> at(Integer i) {
-        value ret = HashSet<[Object, Integer]>{stability=unlinked; elements=child.at(i);};
-        for (rule in rules) {
-            value params = rule.parameterTypes;
-            variable Set<[Object, Integer]> set = ret;
+    value cache = HashMap<Integer,Set<NATResult>>();
+    shared actual Set<NATResult> at(Integer i) {
+        if (cache.defines(i)) {
+            value ret = cache[i];
+            assert(exists ret);
+            return ret;
+        }
+
+        value ret = HashSet<NATResult>{stability=unlinked; elements=child.at(i);};
+        cache.put(i, ret);
+
+        for (rule in tree.rules) {
+            variable Set<NATResult> set = ret;
             variable Boolean failed = false;
 
             variable Integer position = i;
             variable [Object*] args = [];
-            for (param in params) {
+            for (cons in rule.consumes) {
                 variable Boolean matched = false;
                 for (token in set) {
-                    if (type(token[0]) != param) { continue; }
+                    if (token.type != cons) { continue; }
 
                     matched = true;
-                    position += token[1];
+                    position += token.length;
                     set = child.at(position);
-                    args = args.withTrailing(token[0]);
+                    args = args.withTrailing(token.sym);
                     break;
                 }
 
@@ -50,15 +74,81 @@ class RNATArray(NATArray child, ParseTree<Object> tree) satisfies NATArray {
             }
 
             if (! failed) {
-                value decl = rule.declaration;
-                value result = decl.memberInvoke{container=tree;
-                    typeArguments=[]; arguments=args;};
-                assert(is Object result);
-                ret.add([result, position - i]); 
+                ret.add(NATResult(rule.produces, rule.consume(args),
+                            position - i));
             }
         }
 
         return ret;
+    }
+}
+
+shared variable Integer atom_time = 0;
+shared variable Integer rule_time = 0;
+shared variable Integer parse_time = 0;
+
+"We have to convert type objects to integers to pass them around, otherwise we
+ encounter weird performance issues."
+object typeAtomCache {
+    value from = HashMap<Type, Integer>();
+    value to = HashMap<Integer, Type>();
+    variable value next = 0;
+
+    "Get an alias for a type"
+    shared Integer getAlias(Type t) {
+        value start_time = system.nanoseconds;
+        if (from.defines(t)) {
+            value ret = from[t];
+            assert(exists ret);
+            atom_time += system.nanoseconds - start_time;
+            return ret;
+        }
+
+        from.put(t, next);
+        to.put(next, t);
+        atom_time += system.nanoseconds - start_time;
+        return next++;
+    }
+
+    "Resolve a type"
+    shared Type resolve(Integer i) {
+        value start_time = system.nanoseconds;
+        value ret = to[i];
+        assert(exists ret);
+        atom_time += system.nanoseconds - start_time;
+        return ret;
+    }
+}
+
+"A rule. Specifies produced and consumed symbols and a method to execute them"
+shared class Rule(Method<Nothing,Object> meth, ParseTree<Object> tree) {
+    "Sequence of symbols consumed by this production"
+    shared Integer[] consumes = [ for (x in meth.parameterTypes)
+        typeAtomCache.getAlias(x) ];
+
+    "Symbol produced by this production"
+    shared Integer produces = typeAtomCache.getAlias(meth.type);
+
+    value declaration = meth.declaration;
+
+    "Run the production-handling code for this method."
+    shared Object consume(Object[] syms) {
+        value start_time = system.nanoseconds;
+        value result = declaration.memberInvoke{container=tree;
+            typeArguments=[]; arguments=syms;};
+        assert(is Object result);
+        rule_time += system.nanoseconds - start_time;
+        return result;
+    }
+
+    shared actual Integer hash = consumes.hash ^ 2 + produces.hash;
+
+    shared actual Boolean equals(Object other) {
+        if (is Rule other) {
+            return other.consumes == consumes && other.produces == produces;
+        } else {
+            return false;
+        }
     }
 }
 
@@ -76,24 +166,41 @@ shared annotation GrammarRule rule() => GrammarRule();
  to reduce the value."
 shared abstract class ParseTree<out RootTerminal>(NATArray tokens)
         given RootTerminal satisfies Object {
+    "A list of rules for this object"
+    shared variable Rule[] rules = [];
+    shared Integer result = typeAtomCache.getAlias(`RootTerminal`);
 
     "The root node of the parse tree"
     shared RootTerminal root {
         variable NATArray top = tokens;
 
-        while (true) {
+        if (rules.size == 0) {
+            populate_rules();
+        }
 
+        value start_time = system.nanoseconds;
+        while (true) {
             value k = top.at(0);
             for (sym in k) {
-                if (type(sym[0]) != `RootTerminal`) { continue; }
+                if (sym.type != result) { continue; }
 
-                if (top.at(sym[1]).size > 0) { break; }
+                if (top.at(sym.length).size > 0) { break; }
 
-                assert(is RootTerminal ret=sym.first);
+                assert(is RootTerminal ret=sym.sym);
+                parse_time += system.nanoseconds - start_time;
                 return ret;
             }
 
             top = RNATArray(top, this);
+        }
+    }
+
+    "Set up the list of rules"
+    void populate_rules() {
+        value meths = type(this).getMethods<Nothing,Object>(`GrammarRule`);
+
+        for (r in meths) {
+            rules = rules.withTrailing(Rule(r, this));
         }
     }
 }
