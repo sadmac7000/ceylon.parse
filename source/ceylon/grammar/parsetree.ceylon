@@ -54,33 +54,8 @@ class RNATArray(NATArray child, ParseTree<Object> tree) satisfies NATArray {
         cache.put(i, ret);
 
         for (rule in tree.rules) {
-            variable Set<NATResult> set = ret;
-            variable Boolean failed = false;
-
-            variable Integer position = i;
-            variable [Object*] args = [];
-            for (cons in rule.consumes) {
-                variable Boolean matched = false;
-                for (token in set) {
-                    if (token.type != cons) { continue; }
-
-                    matched = true;
-                    position += token.length;
-                    set = child.at(position);
-                    args = args.withTrailing(token.sym);
-                    break;
-                }
-
-                if (! matched) {
-                    failed = true;
-                    break;
-                }
-            }
-
-            if (! failed) {
-                ret.add(NATResult(rule.produces, rule.consume(args),
-                            position - i));
-            }
+            if (ret.contains(rule.produces)) { continue; }
+            ret.addAll(rule.matchAt(child, i));
         }
 
         return ret;
@@ -136,13 +111,45 @@ shared class Rule(Method<Nothing,Object> meth, ParseTree<Object> tree) {
     value declaration = meth.declaration;
 
     "Run the production-handling code for this method."
-    shared Object consume(Object[] syms) {
+    Object consume(Object[] syms) {
         value start_time = system.nanoseconds;
         value result = declaration.memberInvoke{container=tree;
             typeArguments=[]; arguments=syms;};
         assert(is Object result);
         rule_time += system.nanoseconds - start_time;
         return result;
+    }
+
+    "Try to match this rule in the given NATArray at the given position."
+    shared {NATResult *} matchAt(NATArray tokens, Integer pos) {
+        value queue = ArrayList<[Integer, NATResult*]>();
+        value results = ArrayList<NATResult>();
+        queue.offer([pos]);
+
+        while (queue.size > 0) {
+            value next = queue.accept();
+            assert(exists next);
+            value search = consumes[next.size - 1];
+            assert(exists search);
+
+            for (token in tokens.at(next[0])) {
+                if (token.type != search) { continue; }
+
+                value got = [next[0] + token.length,
+                      *next[1...].withTrailing(token)];
+
+                if ((got.size - 1) < consumes.size) {
+                    queue.offer(got);
+                    continue;
+                }
+
+                value args = [ for (x in got[1...]) x.sym ];
+
+                results.add(NATResult(produces, consume(args), got[0] - pos));
+            }
+        }
+
+        return results;
     }
 
     shared actual Integer hash = consumes.hash ^ 2 + produces.hash;
