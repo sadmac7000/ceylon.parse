@@ -219,6 +219,7 @@ shared class TokenException() extends Exception("TokenArray must be contiguously
 shared class AmbiguityException() extends Exception("Parser generated ambiguous
                                                      results") {}
 
+"Bulk-add types to the atom cache and return Symbol objects for them"
 {Symbol *} tokensToSymbols({Token *} tokens) {
     return {for (t in tokens) Symbol(typeAtomCache.getAlias(t.type), t.sym,
             t.length)};
