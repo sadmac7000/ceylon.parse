@@ -278,6 +278,14 @@ shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
         value endsPair = states.last;
         assert(exists endsPair);
 
+        value eosTokens = tokens[endsPair.key];
+        assert(exists eosTokens);
+        if (eosTokens.size == 0) { throw TokenException(); }
+        /* TODO: Error handling (trailing tokens) */
+        assert(eosTokens.size == 1);
+        assert(exists eosToken = eosTokens.first);
+        assert(eosToken.sym == eosObject);
+
         value ends = endsPair.item;
 
         value resultNodes = ArrayList<RootTerminal>();
