@@ -236,59 +236,76 @@ shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
     "The result symbol we expect from this tree"
     shared Integer result = typeAtomCache.getAlias(`RootTerminal`);
 
-    "The root node of the parse tree"
-    shared RootTerminal root {
-        value states = HashMap<Integer,HashSet<EPState>>();
-        value stateQueue = ArrayList<EPState>();
+    "States per position in stream"
+    value states = HashMap<Integer,HashSet<EPState>>();
 
-        if (rules.size == 0) { populateRules(); }
+    "Queue of states to process"
+    value stateQueue = ArrayList<EPState>();
 
-        for (rule in rules) {
-            if (rule.produces != result) { continue; }
-
-            value newState = EPState(0, rule, 0, 0);
-            stateQueue.offer(newState);
-
-            assert(insertEPState(newState, states));
-        }
-
-        while(stateQueue.size > 0) {
-            value next = stateQueue.accept();
-            assert(exists next);
-
+    "Process queued states"
+    void pumpStateQueue() {
+        while(exists next = stateQueue.accept()) {
             if (next.complete) {
-                value prev = states[next.start];
-                assert(exists prev);
-                for (s in prev) {
-                    value n = s.feed(next);
-
-                    if (exists n) {
-                        if (insertEPState(n, states)) { stateQueue.offer(n); }
-                    }
-                }
+                completeState(next);
             } else {
-                value newTokens = tokens[next.pos];
-                if (exists newTokens) {
-                    value symbols = tokensToSymbols(newTokens);
-                    for (s in next.propagate(rules, symbols)) {
-                        if (insertEPState(s, states)) { stateQueue.offer(s); }
-                    }
-                } else {
-                    throw TokenException();
-                }
+                propagateState(next);
             }
         }
+    }
 
-        value endsPair = states.last;
-        assert(exists endsPair);
+    "Process a complete state"
+    void completeState(EPState state) {
+        value prev = states[state.start];
+        assert(exists prev);
+        for (s in prev) {
+            value n = s.feed(state);
+
+            if (exists n) {
+                if (insertEPState(n, states)) { stateQueue.offer(n); }
+            }
+        }
+    }
+
+    "Propagate a state"
+    void propagateState(EPState state) {
+        value newTokens = tokens[state.pos];
+        if (exists newTokens) {
+            value symbols = tokensToSymbols(newTokens);
+            for (s in state.propagate(rules, symbols)) {
+                if (insertEPState(s, states)) { stateQueue.offer(s); }
+            }
+        } else {
+            throw TokenException();
+        }
+    }
+
+    "Recover an error"
+    void recoverError() {
+        /* TODO: Error recovery */
+        assert(false);
+    }
+
+    "Confirm that we have successfully parsed."
+    RootTerminal? validate() {
+        assert(exists endsPair = states.last);
 
         value eosTokens = tokens[endsPair.key];
+
+        if (! eosTokens exists) { throw TokenException(); }
         assert(exists eosTokens);
-        if (eosTokens.size == 0) { throw TokenException(); }
+
+        if (eosTokens.size != 1) {
+            recoverError();
+            return null;
+        }
+
         /* TODO: Error handling (trailing tokens) */
-        assert(eosTokens.size == 1);
         assert(exists eosToken = eosTokens.first);
-        assert(eosToken.sym == eosObject);
+
+        if (eosToken.sym != eosObject) {
+            recoverError();
+            return null;
+        }
 
         value ends = endsPair.item;
 
@@ -311,8 +328,22 @@ shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
             return resolveAmbiguity(resultNodes);
         }
 
-        /* TODO: Error recovery */
-        assert(false);
+        recoverError();
+        return null;
+    }
+
+    "The root node of the parse tree"
+    shared RootTerminal root {
+        if (rules.size == 0) { populateRules(); }
+        variable RootTerminal? ret = null;
+
+        while (! ret exists) {
+            pumpStateQueue();
+            ret = validate();
+        }
+
+        assert(exists v=ret);
+        return v;
     }
 
     "Method to resolve parse ambiguities. The default implementation simply
@@ -328,7 +359,15 @@ shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
         value meths = type(this).getMethods<Nothing,Object>(`GrammarRule`);
 
         for (r in meths) {
-            rules = rules.withTrailing(Rule(r, this));
+            value rule = Rule(r, this);
+            rules = rules.withTrailing(rule);
+
+            if (rule.produces != result) { continue; }
+
+            value newState = EPState(0, rule, 0, 0);
+            stateQueue.offer(newState);
+
+            assert(insertEPState(newState, states));
         }
     }
 }
