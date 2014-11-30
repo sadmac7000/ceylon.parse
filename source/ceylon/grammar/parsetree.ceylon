@@ -109,6 +109,7 @@ shared class Rule(Method<Nothing,Object> meth, ParseTree<Object> tree) {
     shared Integer produces = typeAtomCache.getAlias(meth.type);
 
     value declaration = meth.declaration;
+    shared actual Integer hash = consumes.hash ^ 2 + produces.hash;
 
     "Run the production-handling code for this method."
     Object consume(Object[] syms) {
@@ -151,8 +152,6 @@ shared class Rule(Method<Nothing,Object> meth, ParseTree<Object> tree) {
 
         return results;
     }
-
-    shared actual Integer hash = consumes.hash ^ 2 + produces.hash;
 
     shared actual Boolean equals(Object other) {
         if (is Rule other) {
