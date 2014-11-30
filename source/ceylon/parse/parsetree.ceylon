@@ -8,19 +8,17 @@ import ceylon.collection {
 }
 
 "A single token result returned by a TokenArray"
-shared class Token(typeIn, sym, length) {
+shared class Token(type, sym, length) {
     shared Object sym;
     shared Integer length;
-    Integer|Type typeIn;
+    shared Type type;
+}
 
+"A parsed symbol."
+class Symbol(type, sym, length) {
+    shared Object sym;
+    shared Integer length;
     shared Integer type;
-
-    if (is Integer typeIn) {
-        type = typeIn;
-    } else {
-        assert(is Type typeIn);
-        type = typeAtomCache.getAlias(typeIn);
-    }
 }
 
 "The type we need for a token input"
@@ -95,7 +93,7 @@ class EPState(pos, rule, matchPos, start, children = []) {
     shared Integer start;
 
     "Tokens"
-    shared [Token|EPState*] children;
+    shared [Symbol|EPState*] children;
 
     "Position this state belongs to"
     shared Integer pos;
@@ -115,28 +113,28 @@ class EPState(pos, rule, matchPos, start, children = []) {
     "Whether this state has propagated from its position"
     variable Boolean propagated = complete;
 
-    shared Token result {
+    shared Symbol result {
         assert(complete);
 
         variable Object[] sym = [];
 
         for (c in children) {
-            if (is Token c) {
+            if (is Symbol c) {
                 sym = sym.withTrailing(c.sym);
             } else if (is EPState c) {
                 sym = sym.withTrailing(c.result.sym);
             }
         }
 
-        return Token(rule.produces, rule.consume(sym), pos - start);
+        return Symbol(rule.produces, rule.consume(sym), pos - start);
     }
 
     "Offer a symbol to this state for scanning or completion"
-    shared EPState? feed(Token|EPState other) {
+    shared EPState? feed(Symbol|EPState other) {
         value want = rule.consumes[matchPos];
         assert(exists want);
 
-        if (is Token other) {
+        if (is Symbol other) {
             if (want != other.type) { return null; }
 
             return EPState(pos + other.length, rule, matchPos + 1, start,
@@ -153,7 +151,7 @@ class EPState(pos, rule, matchPos, start, children = []) {
     }
 
     "Generate a prediction set for this state"
-    shared {EPState *} propagate({Rule *} rules, {Token *} newtoks) {
+    shared {EPState *} propagate({Rule *} rules, {Symbol *} newTokens) {
         if (propagated) {
             return {};
         }
@@ -167,7 +165,7 @@ class EPState(pos, rule, matchPos, start, children = []) {
         };
 
         {EPState *} scan = {
-            for (token in newtoks) if (exists x = feed(token)) x
+            for (token in newTokens) if (exists x = feed(token)) x
         };
 
         return predict.chain(scan);
@@ -221,6 +219,11 @@ shared class TokenException() extends Exception("TokenArray must be contiguously
 shared class AmbiguityException() extends Exception("Parser generated ambiguous
                                                      results") {}
 
+{Symbol *} tokensToSymbols({Token *} tokens) {
+    return {for (t in tokens) Symbol(typeAtomCache.getAlias(t.type), t.sym,
+            t.length)};
+}
+
 "A `ParseTree` is defined by a series of BNF-style production rules. The rules
  are specifed by defining methods with the `rule` annotation.  The parser will
  create an appropriate production rule and call the annotated method in order
@@ -264,9 +267,10 @@ shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
                     }
                 }
             } else {
-                value token = tokens[next.pos];
-                if (exists token) {
-                    for (s in next.propagate(rules, token)) {
+                value newTokens = tokens[next.pos];
+                if (exists newTokens) {
+                    value symbols = tokensToSymbols(newTokens);
+                    for (s in next.propagate(rules, symbols)) {
                         if (insertEPState(s, states)) { stateQueue.offer(s); }
                     }
                 } else {
