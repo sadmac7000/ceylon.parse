@@ -120,38 +120,6 @@ class EPState(pos, rule, matchPos, start, children = []) {
     shared actual Integer hash = start ^ 4 + pos ^ 3 +
         matchPos ^ 2 + rule.hash;
 
-    String shortName(String start) {
-        value properIdx = start.lastOccurrence(':');
-        assert(exists properIdx);
-        return start[(properIdx+1)...];
-    }
-
-    shared actual String string {
-        variable String ret = "{" +
-            shortName(typeAtomCache.resolve(rule.produces).string);
-        variable value count = 0;
-
-        ret += " ->";
-
-        for (c in rule.consumes) {
-            ret += " ";
-
-            if (count == matchPos) {
-                ret += "* ";
-            }
-            count++;
-            ret += shortName(typeAtomCache.resolve(c).string);
-        }
-
-        if (rule.consumes.size == matchPos) {
-            ret += " *";
-        }
-
-        ret += ", ``start``";
-
-        return ret + "}";
-    }
-
     "Whether this state is complete"
     shared Boolean complete = rule.consumes.size == matchPos;
 
