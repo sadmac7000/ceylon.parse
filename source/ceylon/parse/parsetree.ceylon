@@ -147,6 +147,7 @@ class EPState(pos, rule, matchPos, start, children = []) {
             return EPState(other.pos, rule, matchPos + 1, start,
                     children.withTrailing(other));
         } else {
+            /* Unreachable */
             assert(false);
         }
     }
@@ -208,6 +209,13 @@ Boolean insertEPState(EPState state, HashMap<Integer,HashSet<EPState>> map)
     return true;
 }
 
+"Exception thrown when we get a null value from a [[TokenArray]]. This should
+ never happen for properly-implemented [[TokenArrays|TokenArray]], as we only
+ consume from values right after tokens we've gotten back, and the zero length
+ [[end of stream token|eos]] should always be the last token we get."
+shared class TokenException() extends Exception("TokenArray must be contiguously
+                                                 defined") {}
+
 "A `ParseTree` is defined by a series of BNF-style production rules. The rules
  are specifed by defining methods with the `rule` annotation.  The parser will
  create an appropriate production rule and call the annotated method in order
@@ -250,9 +258,12 @@ shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
                 }
             } else {
                 value token = tokens[next.pos];
-                assert(exists token);
-                for (s in next.propagate(rules, token)) {
-                    if (insertEPState(s, states)) { stateQueue.offer(s); }
+                if (exists token) {
+                    for (s in next.propagate(rules, token)) {
+                        if (insertEPState(s, states)) { stateQueue.offer(s); }
+                    }
+                } else {
+                    throw TokenException();
                 }
             }
         }
