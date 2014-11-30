@@ -7,8 +7,8 @@ import ceylon.collection {
     unlinked
 }
 
-"A single token result returned by a NAT"
-shared class NATResult(typeIn, sym, length) {
+"A single token result returned by a TokenArray"
+shared class Token(typeIn, sym, length) {
     shared Object sym;
     shared Integer length;
     Integer|Type typeIn;
@@ -23,20 +23,11 @@ shared class NATResult(typeIn, sym, length) {
     }
 }
 
-"Non-deterministic Abstract Token array. Presents a view of a string or other
- NAT as a non-deterministic list of tokenized values. The tokens are 'abstract'
- because they can be non-terminal; we repeatedly tokenize a stream of tokens
- into a stream of higher-order tokens."
-shared interface NATArray {
-    "Return a set of tokens that match starting within the given stream
-     position. The index is meant to be in 'characters' regardless of what the
-     NATArray consumes (so we assume that at some bottom recursion layer you
-     are consuming a string)"
-    shared formal Set<NATResult> at(Integer i);
-}
+"The type we need for a token input"
+shared alias TokenArray => Correspondence<Integer, Set<Token>>;
 
 "A result to represent the end of a stream."
-shared NATResult eos = NATResult(type(eos_object), eos_object, 0);
+shared Token eos = Token(type(eos_object), eos_object, 0);
 object eos_object {}
 
 shared variable Integer atom_time = 0;
@@ -115,7 +106,7 @@ class EPState(pos, rule, matchPos, start, children = []) {
     shared Integer start;
 
     "Tokens"
-    shared [NATResult|EPState*] children;
+    shared [Token|EPState*] children;
 
     "Position this state belongs to"
     shared Integer pos;
@@ -167,28 +158,28 @@ class EPState(pos, rule, matchPos, start, children = []) {
     "Whether this state has propagated from its position"
     variable Boolean propagated = complete;
 
-    shared NATResult result {
+    shared Token result {
         assert(complete);
 
         variable Object[] sym = [];
 
         for (c in children) {
-            if (is NATResult c) {
+            if (is Token c) {
                 sym = sym.withTrailing(c.sym);
             } else if (is EPState c) {
                 sym = sym.withTrailing(c.result.sym);
             }
         }
 
-        return NATResult(rule.produces, rule.consume(sym), pos - start);
+        return Token(rule.produces, rule.consume(sym), pos - start);
     }
 
     "Offer a symbol to this state for scanning or completion"
-    shared EPState? feed(NATResult|EPState other) {
+    shared EPState? feed(Token|EPState other) {
         value want = rule.consumes[matchPos];
         assert(exists want);
 
-        if (is NATResult other) {
+        if (is Token other) {
             if (want != other.type) { return null; }
 
             return EPState(pos + other.length, rule, matchPos + 1, start,
@@ -204,7 +195,7 @@ class EPState(pos, rule, matchPos, start, children = []) {
     }
 
     "Generate a prediction set for this state"
-    shared {EPState *} propagate({Rule *} rules, {NATResult *} newtoks) {
+    shared {EPState *} propagate({Rule *} rules, {Token *} newtoks) {
         if (propagated) {
             return {};
         }
@@ -264,7 +255,7 @@ Boolean insertEPState(EPState state, HashMap<Integer,HashSet<EPState>> map)
  are specifed by defining methods with the `rule` annotation.  The parser will
  create an appropriate production rule and call the annotated method in order
  to reduce the value."
-shared abstract class ParseTree<out RootTerminal>(NATArray tokens)
+shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
         given RootTerminal satisfies Object {
     "A list of rules for this object"
     shared variable Rule[] rules = [];
@@ -272,8 +263,6 @@ shared abstract class ParseTree<out RootTerminal>(NATArray tokens)
 
     "The root node of the parse tree"
     shared RootTerminal root {
-        variable NATArray top = tokens;
-
         value states = HashMap<Integer,HashSet<EPState>>();
         value stateQueue = ArrayList<EPState>();
 
@@ -304,7 +293,9 @@ shared abstract class ParseTree<out RootTerminal>(NATArray tokens)
                     }
                 }
             } else {
-                for (s in next.propagate(rules, tokens.at(next.pos))) {
+                value token = tokens[next.pos];
+                assert(exists token);
+                for (s in next.propagate(rules, token)) {
                     if (insertEPState(s, states)) { stateQueue.offer(s); }
                 }
             }
