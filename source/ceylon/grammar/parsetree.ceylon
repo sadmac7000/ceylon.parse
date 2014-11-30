@@ -39,29 +39,6 @@ shared interface NATArray {
 shared NATResult eos = NATResult(type(eos_object), eos_object, 0);
 object eos_object {}
 
-"Recursive NAT Array. Recieves a stream of abstract tokens and produces a
- stream of more refined abstract tokens."
-class RNATArray(NATArray child, ParseTree<Object> tree) satisfies NATArray {
-    value cache = HashMap<Integer,Set<NATResult>>();
-    shared actual Set<NATResult> at(Integer i) {
-        if (cache.defines(i)) {
-            value ret = cache[i];
-            assert(exists ret);
-            return ret;
-        }
-
-        value ret = HashSet<NATResult>{stability=unlinked; elements=child.at(i);};
-        cache.put(i, ret);
-
-        for (rule in tree.rules) {
-            if (ret.contains(rule.produces)) { continue; }
-            ret.addAll(rule.matchAt(child, i));
-        }
-
-        return ret;
-    }
-}
-
 shared variable Integer atom_time = 0;
 shared variable Integer rule_time = 0;
 shared variable Integer parse_time = 0;
@@ -108,11 +85,13 @@ shared class Rule(Method<Nothing,Object> meth, ParseTree<Object> tree) {
     "Symbol produced by this production"
     shared Integer produces = typeAtomCache.getAlias(meth.type);
 
+    "Declaration object for the method we call"
     value declaration = meth.declaration;
+
     shared actual Integer hash = consumes.hash ^ 2 + produces.hash;
 
     "Run the production-handling code for this method."
-    Object consume(Object[] syms) {
+    shared Object consume(Object[] syms) {
         value start_time = system.nanoseconds;
         value result = declaration.memberInvoke{container=tree;
             typeArguments=[]; arguments=syms;};
@@ -121,41 +100,136 @@ shared class Rule(Method<Nothing,Object> meth, ParseTree<Object> tree) {
         return result;
     }
 
-    "Try to match this rule in the given NATArray at the given position."
-    shared {NATResult *} matchAt(NATArray tokens, Integer pos) {
-        value queue = ArrayList<[Integer, NATResult*]>();
-        value results = ArrayList<NATResult>();
-        queue.offer([pos]);
-
-        while (queue.size > 0) {
-            value next = queue.accept();
-            assert(exists next);
-            value search = consumes[next.size - 1];
-            assert(exists search);
-
-            for (token in tokens.at(next[0])) {
-                if (token.type != search) { continue; }
-
-                value got = [next[0] + token.length,
-                      *next[1...].withTrailing(token)];
-
-                if ((got.size - 1) < consumes.size) {
-                    queue.offer(got);
-                    continue;
-                }
-
-                value args = [ for (x in got[1...]) x.sym ];
-
-                results.add(NATResult(produces, consume(args), got[0] - pos));
-            }
-        }
-
-        return results;
-    }
-
     shared actual Boolean equals(Object other) {
         if (is Rule other) {
             return other.consumes == consumes && other.produces == produces;
+        } else {
+            return false;
+        }
+    }
+}
+
+"An Earley parser state"
+class EPState(pos, rule, matchPos, start, children = []) {
+    "Starting position for the rule match"
+    shared Integer start;
+
+    "Tokens"
+    shared [NATResult|EPState*] children;
+
+    "Position this state belongs to"
+    shared Integer pos;
+
+    "Position within the rule we are matching"
+    Integer matchPos;
+
+    "The rule we are matching"
+    shared Rule rule;
+
+    shared actual Integer hash = start ^ 4 + pos ^ 3 +
+        matchPos ^ 2 + rule.hash;
+
+    String shortName(String start) {
+        value properIdx = start.lastOccurrence(':');
+        assert(exists properIdx);
+        return start[(properIdx+1)...];
+    }
+
+    shared actual String string {
+        variable String ret = "{" +
+            shortName(typeAtomCache.resolve(rule.produces).string);
+        variable value count = 0;
+
+        ret += " ->";
+
+        for (c in rule.consumes) {
+            ret += " ";
+
+            if (count == matchPos) {
+                ret += "* ";
+            }
+            count++;
+            ret += shortName(typeAtomCache.resolve(c).string);
+        }
+
+        if (rule.consumes.size == matchPos) {
+            ret += " *";
+        }
+
+        ret += ", ``start``";
+
+        return ret + "}";
+    }
+
+    "Whether this state is complete"
+    shared Boolean complete = rule.consumes.size == matchPos;
+
+    "Whether this state has propagated from its position"
+    variable Boolean propagated = complete;
+
+    shared NATResult result {
+        assert(complete);
+
+        variable Object[] sym = [];
+
+        for (c in children) {
+            if (is NATResult c) {
+                sym = sym.withTrailing(c.sym);
+            } else if (is EPState c) {
+                sym = sym.withTrailing(c.result.sym);
+            }
+        }
+
+        return NATResult(rule.produces, rule.consume(sym), pos - start);
+    }
+
+    "Offer a symbol to this state for scanning or completion"
+    shared EPState? feed(NATResult|EPState other) {
+        value want = rule.consumes[matchPos];
+        assert(exists want);
+
+        if (is NATResult other) {
+            if (want != other.type) { return null; }
+
+            return EPState(pos + other.length, rule, matchPos + 1, start,
+                    children.withTrailing(other));
+        } else if (is EPState other) {
+            if (want != other.rule.produces) { return null; }
+
+            return EPState(other.pos, rule, matchPos + 1, start,
+                    children.withTrailing(other));
+        } else {
+            assert(false);
+        }
+    }
+
+    "Generate a prediction set for this state"
+    shared {EPState *} propagate({Rule *} rules, {NATResult *} newtoks) {
+        if (propagated) {
+            return {};
+        }
+
+        propagated = true;
+
+        {EPState *} predict = {
+            for (other in rules)
+                if (exists c=rule.consumes[matchPos], other.produces == c)
+                    EPState(pos, other, 0, pos)
+        };
+
+        {EPState *} scan = {
+            for (token in newtoks) if (exists x = feed(token)) x
+        };
+
+        return predict.chain(scan);
+    }
+
+    shared actual Boolean equals(Object other) {
+        if (is EPState other) {
+            return other.start == start &&
+                other.pos == pos &&
+                other.rule == rule &&
+                other.matchPos == matchPos;
         } else {
             return false;
         }
@@ -169,6 +243,22 @@ shared final annotation class GrammarRule()
 "We annotate methods of a `ParseTree` object to indicate that those methods
  correspond to production rules"
 shared annotation GrammarRule rule() => GrammarRule();
+
+"Insert a new EPState into a hash of sets of states."
+Boolean insertEPState(EPState state, HashMap<Integer,HashSet<EPState>> map)
+{
+    if (! map.defines(state.pos)) {
+        map.put(state.pos, HashSet<EPState>());
+    }
+
+    value target = map[state.pos];
+    assert(exists target);
+
+    if (target.contains(state)) { return false; }
+
+    target.add(state);
+    return true;
+}
 
 "A `ParseTree` is defined by a series of BNF-style production rules. The rules
  are specifed by defining methods with the `rule` annotation.  The parser will
@@ -184,25 +274,57 @@ shared abstract class ParseTree<out RootTerminal>(NATArray tokens)
     shared RootTerminal root {
         variable NATArray top = tokens;
 
-        if (rules.size == 0) {
-            populateRules();
+        value states = HashMap<Integer,HashSet<EPState>>();
+        value stateQueue = ArrayList<EPState>();
+
+        if (rules.size == 0) { populateRules(); }
+
+        value startTime = system.nanoseconds;
+        for (rule in rules) {
+            if (rule.produces != result) { continue; }
+
+            value newState = EPState(0, rule, 0, 0);
+            stateQueue.offer(newState);
+
+            assert(insertEPState(newState, states));
         }
 
-        value start_time = system.nanoseconds;
-        while (true) {
-            value k = top.at(0);
-            for (sym in k) {
-                if (sym.type != result) { continue; }
+        while(stateQueue.size > 0) {
+            value next = stateQueue.accept();
+            assert(exists next);
 
-                if (! top.at(sym.length).contains(eos)) { break; }
+            if (next.complete) {
+                value prev = states[next.start];
+                assert(exists prev);
+                for (s in prev) {
+                    value n = s.feed(next);
 
-                assert(is RootTerminal ret=sym.sym);
-                parse_time += system.nanoseconds - start_time;
-                return ret;
+                    if (exists n) {
+                        if (insertEPState(n, states)) { stateQueue.offer(n); }
+                    }
+                }
+            } else {
+                for (s in next.propagate(rules, tokens.at(next.pos))) {
+                    if (insertEPState(s, states)) { stateQueue.offer(s); }
+                }
             }
-
-            top = RNATArray(top, this);
         }
+
+        value ends_pair = states.last;
+        assert(exists ends_pair);
+
+        value ends = ends_pair.item;
+
+        for (i in ends_pair.item) {
+            if (! i.complete) { continue; }
+            if (i.rule.produces != result) { continue; }
+
+            assert(is RootTerminal t = i.result.sym);
+            parse_time = system.nanoseconds - startTime;
+            return t;
+        }
+
+        assert(false);
     }
 
     "Set up the list of rules"
