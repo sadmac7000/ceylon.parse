@@ -216,6 +216,11 @@ Boolean insertEPState(EPState state, HashMap<Integer,HashSet<EPState>> map)
 shared class TokenException() extends Exception("TokenArray must be contiguously
                                                  defined") {}
 
+"Exception thrown when a [[ParseTree]] is ambiguous. [[ParseTree]] subtypes
+ which override [[resolveAmbiguity]] may choose not to throw this exception."
+shared class AmbiguityException() extends Exception("Parser generated ambiguous
+                                                     results") {}
+
 "A `ParseTree` is defined by a series of BNF-style production rules. The rules
  are specifed by defining methods with the `rule` annotation.  The parser will
  create an appropriate production rule and call the annotated method in order
@@ -224,6 +229,8 @@ shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
         given RootTerminal satisfies Object {
     "A list of rules for this object"
     shared variable Rule[] rules = [];
+
+    "The result symbol we expect from this tree"
     shared Integer result = typeAtomCache.getAlias(`RootTerminal`);
 
     "The root node of the parse tree"
@@ -273,15 +280,35 @@ shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
 
         value ends = endsPair.item;
 
+        value resultNodes = ArrayList<RootTerminal>();
+
         for (i in endsPair.item) {
             if (! i.complete) { continue; }
             if (i.rule.produces != result) { continue; }
 
             assert(is RootTerminal t = i.result.sym);
-            return t;
+            resultNodes.add(t);
         }
 
+        if (resultNodes.size == 1) {
+            assert(exists ret = resultNodes[0]);
+            return ret;
+        }
+
+        if (resultNodes.size > 1) {
+            return resolveAmbiguity(resultNodes);
+        }
+
+        /* TODO: Error recovery */
         assert(false);
+    }
+
+    "Method to resolve parse ambiguities. The default implementation simply
+     throws [[AmbiguityException]]. Child classes may override this behavior.
+     If the child class would like to recover the error, it should return
+     a single root node which will be used as the resolved root."
+    shared default RootTerminal resolveAmbiguity({Object *} roots) {
+        throw AmbiguityException();
     }
 
     "Set up the list of rules"
