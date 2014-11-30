@@ -185,7 +185,7 @@ shared abstract class ParseTree<out RootTerminal>(NATArray tokens)
         variable NATArray top = tokens;
 
         if (rules.size == 0) {
-            populate_rules();
+            populateRules();
         }
 
         value start_time = system.nanoseconds;
@@ -206,7 +206,7 @@ shared abstract class ParseTree<out RootTerminal>(NATArray tokens)
     }
 
     "Set up the list of rules"
-    void populate_rules() {
+    void populateRules() {
         value meths = type(this).getMethods<Nothing,Object>(`GrammarRule`);
 
         for (r in meths) {
