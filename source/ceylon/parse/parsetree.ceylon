@@ -27,12 +27,8 @@ shared class Token(typeIn, sym, length) {
 shared alias TokenArray => Correspondence<Integer, Set<Token>>;
 
 "A result to represent the end of a stream."
-shared Token eos = Token(type(eos_object), eos_object, 0);
-object eos_object {}
-
-shared variable Integer atom_time = 0;
-shared variable Integer rule_time = 0;
-shared variable Integer parse_time = 0;
+shared Token eos = Token(type(eosObject), eosObject, 0);
+object eosObject {}
 
 "We have to convert type objects to integers to pass them around, otherwise we
  encounter weird performance issues."
@@ -43,26 +39,21 @@ object typeAtomCache {
 
     "Get an alias for a type"
     shared Integer getAlias(Type t) {
-        value start_time = system.nanoseconds;
         if (from.defines(t)) {
             value ret = from[t];
             assert(exists ret);
-            atom_time += system.nanoseconds - start_time;
             return ret;
         }
 
         from.put(t, next);
         to.put(next, t);
-        atom_time += system.nanoseconds - start_time;
         return next++;
     }
 
     "Resolve a type"
     shared Type resolve(Integer i) {
-        value start_time = system.nanoseconds;
         value ret = to[i];
         assert(exists ret);
-        atom_time += system.nanoseconds - start_time;
         return ret;
     }
 }
@@ -83,11 +74,9 @@ shared class Rule(Method<Nothing,Object> meth, ParseTree<Object> tree) {
 
     "Run the production-handling code for this method."
     shared Object consume(Object[] syms) {
-        value start_time = system.nanoseconds;
         value result = declaration.memberInvoke{container=tree;
             typeArguments=[]; arguments=syms;};
         assert(is Object result);
-        rule_time += system.nanoseconds - start_time;
         return result;
     }
 
@@ -236,7 +225,6 @@ shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
 
         if (rules.size == 0) { populateRules(); }
 
-        value startTime = system.nanoseconds;
         for (rule in rules) {
             if (rule.produces != result) { continue; }
 
@@ -269,17 +257,16 @@ shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
             }
         }
 
-        value ends_pair = states.last;
-        assert(exists ends_pair);
+        value endsPair = states.last;
+        assert(exists endsPair);
 
-        value ends = ends_pair.item;
+        value ends = endsPair.item;
 
-        for (i in ends_pair.item) {
+        for (i in endsPair.item) {
             if (! i.complete) { continue; }
             if (i.rule.produces != result) { continue; }
 
             assert(is RootTerminal t = i.result.sym);
-            parse_time = system.nanoseconds - startTime;
             return t;
         }
 
