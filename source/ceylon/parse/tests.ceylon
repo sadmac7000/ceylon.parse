@@ -174,3 +174,31 @@ shared void simple_word4_bad() {
 
     assertEquals(root, expect);
 }
+
+test
+shared void simple_word2_bad() {
+    value root = SimpleTree(SimpleTokenizer("bqb")).ast;
+    value expect = S (
+        BTerm(),
+        A (
+            ATerm()
+        ),
+        BTerm()
+    );
+
+    assertEquals(root, expect);
+}
+
+test
+shared void simple_word2_bad2() {
+    value root = SimpleTree(SimpleTokenizer("bb")).ast;
+    value expect = S (
+        BTerm(),
+        A (
+            ATerm()
+        ),
+        BTerm()
+    );
+
+    assertEquals(root, expect);
+}
