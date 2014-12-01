@@ -144,7 +144,8 @@ class EPState(pos, rule, matchPos, start, children = [], baseLsd = 0) {
     "Whether this state has propagated from its position"
     variable Boolean propagated = complete;
 
-    shared Symbol result {
+    "The AST node for this state"
+    shared Symbol astNode {
         assert(complete);
 
         variable Object[] sym = [];
@@ -153,7 +154,7 @@ class EPState(pos, rule, matchPos, start, children = [], baseLsd = 0) {
             if (is Symbol c) {
                 sym = sym.withTrailing(c.sym);
             } else if (is EPState c) {
-                sym = sym.withTrailing(c.result.sym);
+                sym = sym.withTrailing(c.astNode.sym);
             }
         }
 
@@ -377,13 +378,13 @@ class StateQueue() {
  are specifed by defining methods with the `rule` annotation.  The parser will
  create an appropriate production rule and call the annotated method in order
  to reduce the value."
-shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
-        given RootTerminal satisfies Object {
+shared abstract class ParseTree<out Root>(TokenArray tokens)
+        given Root satisfies Object {
     "A list of rules for this object"
     shared variable Rule[] rules = [];
 
     "The result symbol we expect from this tree"
-    shared Integer result = typeAtomCache.getAlias(`RootTerminal`);
+    shared Integer result = typeAtomCache.getAlias(`Root`);
 
     "Queue of states to process"
     value stateQueue = StateQueue();
@@ -456,7 +457,7 @@ shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
     }
 
     "Confirm that we have successfully parsed."
-    RootTerminal? validate() {
+    Root? validate() {
         assert(exists endsPair = stateQueue.latest);
 
         value eosTokens = getTokens(endsPair.key);
@@ -476,13 +477,13 @@ shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
 
         value ends = endsPair.item;
 
-        value resultNodes = ArrayList<RootTerminal>();
+        value resultNodes = ArrayList<Root>();
 
         for (i in endsPair.item) {
             if (! i.complete) { continue; }
             if (i.rule.produces != result) { continue; }
 
-            assert(is RootTerminal t = i.result.sym);
+            assert(is Root t = i.astNode.sym);
             resultNodes.add(t);
         }
 
@@ -500,9 +501,9 @@ shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
     }
 
     "The root node of the parse tree"
-    shared RootTerminal root {
+    shared Root ast {
         if (rules.size == 0) { populateRules(); }
-        variable RootTerminal? ret = null;
+        variable Root? ret = null;
 
         while (! ret exists) {
             pumpStateQueue();
@@ -517,7 +518,7 @@ shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
      throws [[AmbiguityException]]. Child classes may override this behavior.
      If the child class would like to recover the error, it should return
      a single root node which will be used as the resolved root."
-    shared default RootTerminal resolveAmbiguity({Object *} roots) {
+    shared default Root resolveAmbiguity({Object *} roots) {
         throw AmbiguityException();
     }
 

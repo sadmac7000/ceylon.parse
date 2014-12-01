@@ -104,7 +104,7 @@ class SimpleTree(TokenArray tokens) extends ParseTree<S>(tokens) {
 
 test
 shared void simple_word1() {
-    value root = SimpleTree(SimpleTokenizer("baab")).root;
+    value root = SimpleTree(SimpleTokenizer("baab")).ast;
     value expect = S (
         BTerm(),
         A (
@@ -119,7 +119,7 @@ shared void simple_word1() {
 
 test
 shared void simple_word2() {
-    value root = SimpleTree(SimpleTokenizer("bab")).root;
+    value root = SimpleTree(SimpleTokenizer("bab")).ast;
     value expect = S (
         BTerm(),
         A (
@@ -133,7 +133,7 @@ shared void simple_word2() {
 
 test
 shared void simple_word3() {
-    value root = SimpleTree(SimpleTokenizer("aaa")).root;
+    value root = SimpleTree(SimpleTokenizer("aaa")).ast;
     value expect = S (
         ATerm(),
         A (
@@ -147,7 +147,7 @@ shared void simple_word3() {
 
 test
 shared void simple_word4() {
-    value root = SimpleTree(SimpleTokenizer("aaaa")).root;
+    value root = SimpleTree(SimpleTokenizer("aaaa")).ast;
     value expect = S (
         ATerm(),
         A (
@@ -162,7 +162,7 @@ shared void simple_word4() {
 
 test
 shared void simple_word4_bad() {
-    value root = SimpleTree(SimpleTokenizer("aaqaa")).root;
+    value root = SimpleTree(SimpleTokenizer("aaqaa")).ast;
     value expect = S (
         ATerm(),
         A (
