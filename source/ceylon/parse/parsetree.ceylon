@@ -1,5 +1,6 @@
 import ceylon.language.meta { type }
 import ceylon.language.meta.model { Method, Type }
+import ceylon.language.meta.declaration { FunctionDeclaration }
 import ceylon.collection {
     HashSet,
     HashMap,
@@ -280,6 +281,16 @@ class EPState(pos, rule, matchPos, start, children = [], baseLsd = 0) {
     }
 }
 
+"A do-nothing annotation class for the `error` annotation"
+shared final annotation class GrammarErrorConstructor()
+        satisfies OptionalAnnotation<GrammarErrorConstructor, Annotated> {}
+
+"We annotate some methods of a `ParseTree` object to indicate that those
+ methods can construct an error version of symbols so we can build error
+ reporting into the parse tree."
+shared annotation GrammarErrorConstructor errorConstructor() =>
+        GrammarErrorConstructor();
+
 "A do-nothing annotation class for the `rule` annotation"
 shared final annotation class GrammarRule()
         satisfies OptionalAnnotation<GrammarRule, Annotated> {}
@@ -397,6 +408,9 @@ shared abstract class ParseTree<out Root>(TokenArray tokens)
 
     "The result symbol we expect from this tree"
     shared Integer result = typeAtomCache.getAlias(`Root`);
+
+    "Error constructors"
+    value errorConstructors = HashMap<Integer, FunctionDeclaration>();
 
     "Queue of states to process"
     value stateQueue = StateQueue();
@@ -537,6 +551,8 @@ shared abstract class ParseTree<out Root>(TokenArray tokens)
     "Set up the list of rules"
     void populateRules() {
         value meths = type(this).getMethods<Nothing,Object>(`GrammarRule`);
+        value errConMeths =
+            type(this).getMethods<Nothing,Object>(`GrammarErrorConstructor`);
 
         for (r in meths) {
             value rule = Rule(r, this);
@@ -546,6 +562,11 @@ shared abstract class ParseTree<out Root>(TokenArray tokens)
 
             value newState = EPState(0, rule, 0, 0);
             stateQueue.offer(newState);
+        }
+
+        for (c in errConMeths) {
+            value type = typeAtomCache.getAlias(c.type);
+            errorConstructors.put(type, c.declaration);
         }
     }
 }

@@ -100,6 +100,9 @@ class SimpleTree(TokenArray tokens) extends ParseTree<S>(tokens) {
 
     rule
     shared A rule4(ATerm at, ATerm at2) => A(at, at2);
+
+    errorConstructor
+    shared ATerm error(Object? replaces) => ATerm();
 }
 
 test
