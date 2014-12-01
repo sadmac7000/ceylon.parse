@@ -159,3 +159,18 @@ shared void simple_word4() {
 
     assertEquals(root, expect);
 }
+
+test
+shared void simple_word4_bad() {
+    value root = SimpleTree(SimpleTokenizer("aaqaa")).root;
+    value expect = S (
+        ATerm(),
+        A (
+            ATerm(),
+            ATerm()
+        ),
+        ATerm()
+    );
+
+    assertEquals(root, expect);
+}

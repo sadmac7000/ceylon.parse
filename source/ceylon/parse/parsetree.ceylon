@@ -4,6 +4,7 @@ import ceylon.collection {
     HashSet,
     HashMap,
     ArrayList,
+    PriorityQueue,
     unlinked
 }
 
@@ -87,6 +88,11 @@ shared class Rule(Method<Nothing,Object> meth, ParseTree<Object> tree) {
     }
 }
 
+"An error in parsing"
+class Error(replaces = null) {
+    shared Integer? replaces;
+}
+
 "An Earley parser state"
 class EPState(pos, rule, matchPos, start, children = [], baseLsd = 0) {
     "Starting Levenshtein distance"
@@ -96,7 +102,9 @@ class EPState(pos, rule, matchPos, start, children = [], baseLsd = 0) {
     shared Integer start;
 
     "Tokens"
-    shared [Symbol|EPState*] children;
+    shared [Symbol|EPState|Error*] children;
+
+    assert(matchPos <= children.size);
 
     "Position this state belongs to"
     shared Integer pos;
@@ -149,7 +157,8 @@ class EPState(pos, rule, matchPos, start, children = [], baseLsd = 0) {
             }
         }
 
-        return Symbol(rule.produces, rule.consume(sym), pos - start);
+        value s = Symbol(rule.produces, rule.consume(sym), pos - start);
+        return s;
     }
 
     "Propagate this state with a trailing error. If badToken is set, we stopped
@@ -157,16 +166,20 @@ class EPState(pos, rule, matchPos, start, children = [], baseLsd = 0) {
     shared {EPState *} failPropagate({Integer *} skipBoundaries, Boolean
             badToken = false) {
 
-        value delete = { for (s in skipBoundaries) EPState(pos + s,
-                rule, matchPos, start, children, baseLsd + 1)
+        value delete = { for (s in skipBoundaries) EPState(s,
+                rule, matchPos, start, children.withTrailing(Error()),
+                baseLsd + 1)
         };
 
-        value replace = { for (s in skipBoundaries) EPState(pos + s,
-                rule, matchPos + 1, start, children, baseLsd + 1)
+        value replace = { for (s in skipBoundaries) EPState(s,
+                rule, matchPos + 1, start,
+                children.withTrailing(Error(rule.consumes[matchPos])),
+                baseLsd + 1)
         };
 
         if (! badToken) {
-            value insert = EPState(pos, rule, matchPos + 1, start, children,
+            value insert = EPState(pos, rule, matchPos + 1, start,
+                    children.withTrailing(Error(rule.consumes[matchPos])),
                     baseLsd + 1);
 
             return delete.chain(replace).chain({insert});
@@ -287,6 +300,23 @@ class StateQueue() {
 
     shared <Integer->HashSet<EPState>>? latest => states.last;
 
+    variable PriorityQueue<EPState>? recoveryQueue = null;
+
+    "Initialize recovery queue"
+    shared void initRecovery(Rule[] rules) {
+        if (recoveryQueue exists) { return; }
+        recoveryQueue = PriorityQueue<EPState>((x,y) => x.compareRecovery(y,
+                    rules));
+
+        assert(exists r = recoveryQueue);
+
+        for (set in states.items) {
+            for (item in set) {
+                if (! item.complete) { r.offer(item); }
+            }
+        }
+    }
+
     "Offer an item to this queue"
     shared void offer(EPState state) {
         if (! states.defines(state.pos)) {
@@ -306,6 +336,12 @@ class StateQueue() {
 
         assert(exists queue = queues[state.lsd]);
         queue.offer(state);
+
+        if (state.complete) { return; }
+
+        if (exists r=recoveryQueue) {
+            r.offer(state);
+        }
     }
 
     "Accept an item from this queue"
@@ -326,6 +362,13 @@ class StateQueue() {
     shared HashSet<EPState> at(Integer pos) {
         if (! states.defines(pos)) { return HashSet<EPState>(); }
         assert(exists ret = states[pos]);
+        return ret;
+    }
+
+    "Accept a recovery state"
+    shared EPState acceptRecoveryState() {
+        assert(exists r=recoveryQueue);
+        assert(exists ret=r.accept());
         return ret;
     }
 }
@@ -366,33 +409,57 @@ shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
         }
     }
 
+    Set<Token> getTokens(Integer loc) {
+        if (exists ret = tokens[loc]) { return ret; }
+        throw TokenException();
+    }
+
     "Propagate a state"
     void propagateState(EPState state) {
-        value newTokens = tokens[state.pos];
-        if (exists newTokens) {
-            value symbols = tokensToSymbols(newTokens);
-            for (s in state.propagate(rules, symbols)) {
-                stateQueue.offer(s);
-            }
-        } else {
-            throw TokenException();
+        value symbols = tokensToSymbols(getTokens(state.pos));
+        for (s in state.propagate(rules, symbols)) {
+            stateQueue.offer(s);
         }
     }
 
     "Recover an error"
     void recoverError() {
-        /* TODO: Error recovery */
-        assert(false);
+        stateQueue.initRecovery(rules);
+        value state = stateQueue.acceptRecoveryState();
+        value tokens = getTokens(state.pos);
+        value badToken = tokens.size == 0;
+        {Integer *} resetPos;
+
+        if (badToken) {
+            variable value i = state.pos + 1;
+
+            while (getTokens(i).size == 0) { continue; }
+
+            resetPos = {i};
+        } else {
+            value posSet = HashSet<Integer>{elements={ for (t in tokens)
+                t.length + state.pos };};
+            assert(exists maxPos = max(posSet));
+
+            for (i in (state.pos + 1)..(maxPos - 1)) {
+                if (posSet.contains(i)) { continue; }
+                if (getTokens(i).size == 0) { continue; }
+                posSet.add(i);
+            }
+
+            resetPos = posSet;
+        }
+
+        for (s in state.failPropagate(resetPos, badToken)) {
+            stateQueue.offer(s);
+        }
     }
 
     "Confirm that we have successfully parsed."
     RootTerminal? validate() {
         assert(exists endsPair = stateQueue.latest);
 
-        value eosTokens = tokens[endsPair.key];
-
-        if (! eosTokens exists) { throw TokenException(); }
-        assert(exists eosTokens);
+        value eosTokens = getTokens(endsPair.key);
 
         if (eosTokens.size != 1) {
             recoverError();
