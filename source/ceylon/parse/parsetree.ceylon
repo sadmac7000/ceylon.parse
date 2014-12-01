@@ -88,7 +88,10 @@ shared class Rule(Method<Nothing,Object> meth, ParseTree<Object> tree) {
 }
 
 "An Earley parser state"
-class EPState(pos, rule, matchPos, start, children = []) {
+class EPState(pos, rule, matchPos, start, children = [], baseLsd = 0) {
+    "Starting Levenshtein distance"
+    Integer baseLsd;
+
     "Starting position for the rule match"
     shared Integer start;
 
@@ -99,13 +102,33 @@ class EPState(pos, rule, matchPos, start, children = []) {
     shared Integer pos;
 
     "Position within the rule we are matching"
-    Integer matchPos;
+    shared Integer matchPos;
 
     "The rule we are matching"
     shared Rule rule;
 
-    shared actual Integer hash = start ^ 4 + pos ^ 3 +
-        matchPos ^ 2 + rule.hash;
+    variable Integer? _lsd = null;
+
+    "Levenshtein distance between what we matched after error correction and
+     the real string"
+    shared Integer lsd {
+        if (exists l=_lsd) { return l; }
+
+        variable value prev = start;
+        variable value ret = baseLsd;
+
+        for (c in children) {
+            if (is EPState c) {
+                ret += c.lsd;
+            }
+        }
+
+        _lsd = ret;
+        return ret;
+    }
+
+    shared actual Integer hash = start ^ 4 +
+        pos ^ 3 + matchPos ^ 2 + rule.hash;
 
     "Whether this state is complete"
     shared Boolean complete = rule.consumes.size == matchPos;
@@ -129,6 +152,29 @@ class EPState(pos, rule, matchPos, start, children = []) {
         return Symbol(rule.produces, rule.consume(sym), pos - start);
     }
 
+    "Propagate this state with a trailing error. If badToken is set, we stopped
+     at a position where there was no parseable token."
+    shared {EPState *} failPropagate({Integer *} skipBoundaries, Boolean
+            badToken = false) {
+
+        value delete = { for (s in skipBoundaries) EPState(pos + s,
+                rule, matchPos, start, children, baseLsd + 1)
+        };
+
+        value replace = { for (s in skipBoundaries) EPState(pos + s,
+                rule, matchPos + 1, start, children, baseLsd + 1)
+        };
+
+        if (! badToken) {
+            value insert = EPState(pos, rule, matchPos + 1, start, children,
+                    baseLsd + 1);
+
+            return delete.chain(replace).chain({insert});
+        } else {
+            return delete.chain(replace);
+        }
+    }
+
     "Offer a symbol to this state for scanning or completion"
     shared EPState? feed(Symbol|EPState other) {
         value want = rule.consumes[matchPos];
@@ -138,12 +184,12 @@ class EPState(pos, rule, matchPos, start, children = []) {
             if (want != other.type) { return null; }
 
             return EPState(pos + other.length, rule, matchPos + 1, start,
-                    children.withTrailing(other));
+                    children.withTrailing(other), baseLsd);
         } else if (is EPState other) {
             if (want != other.rule.produces) { return null; }
 
             return EPState(other.pos, rule, matchPos + 1, start,
-                    children.withTrailing(other));
+                    children.withTrailing(other), baseLsd);
         } else {
             /* Unreachable */
             assert(false);
@@ -180,6 +226,31 @@ class EPState(pos, rule, matchPos, start, children = []) {
         } else {
             return false;
         }
+    }
+
+    "Checks which of two states (this and another) would make the best recovery
+     token. The least state is the winner"
+    shared Comparison compareRecovery(EPState other, {Rule *} rules) {
+        HashSet<Integer> productions = HashSet<Integer>{elements={for (r in
+                rules) r.produces};};
+
+        if (other.lsd != lsd) { return lsd.compare(other.lsd); }
+        if (other.pos != pos) { return other.pos.compare(pos); }
+
+        assert(exists otherNext = other.rule.consumes[other.matchPos]);
+        assert(exists next = rule.consumes[matchPos]);
+        value otherStrictlyTerminal = productions.contains(otherNext);
+        value thisStrictlyTerminal = productions.contains(next);
+
+        if (otherStrictlyTerminal != thisStrictlyTerminal) {
+            if (otherStrictlyTerminal) { return larger; }
+            return smaller;
+        }
+
+        value otherToGo = other.rule.consumes.size - other.matchPos;
+        value toGo = rule.consumes.size - matchPos;
+
+        return toGo.compare(otherToGo);
     }
 }
 
