@@ -106,6 +106,12 @@ class EPState(pos, rule, matchPos, start, children = [], baseLsd = 0) {
 
     assert(matchPos <= children.size);
 
+    "Number of tokens matched. It is important that this does not count error
+     tokens."
+    shared Integer tokensProcessed = sum({ for (c in children) if (is EPState c)
+        c.tokensProcessed }.chain({ for (c in children) if (is Symbol c) 1
+        }).chain({0}));
+
     "Position this state belongs to"
     shared Integer pos;
 
@@ -248,8 +254,14 @@ class EPState(pos, rule, matchPos, start, children = [], baseLsd = 0) {
         HashSet<Integer> productions = HashSet<Integer>{elements={for (r in
                 rules) r.produces};};
 
+        /* Error tokens don't count in tokensProcessed, so this is penalized
+         * slightly for errors as compared to just comparing position.
+         */
+        if (other.tokensProcessed != tokensProcessed) { return
+            other.tokensProcessed.compare(tokensProcessed); }
         if (other.lsd != lsd) { return lsd.compare(other.lsd); }
-        if (other.pos != pos) { return other.pos.compare(pos); }
+
+        /* Most of the important comparison is done now. */
 
         assert(exists otherNext = other.rule.consumes[other.matchPos]);
         assert(exists next = rule.consumes[matchPos]);
