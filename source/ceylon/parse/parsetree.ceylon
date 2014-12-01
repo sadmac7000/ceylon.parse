@@ -191,22 +191,6 @@ shared final annotation class GrammarRule()
  correspond to production rules"
 shared annotation GrammarRule rule() => GrammarRule();
 
-"Insert a new EPState into a hash of sets of states."
-Boolean insertEPState(EPState state, HashMap<Integer,HashSet<EPState>> map)
-{
-    if (! map.defines(state.pos)) {
-        map.put(state.pos, HashSet<EPState>());
-    }
-
-    value target = map[state.pos];
-    assert(exists target);
-
-    if (target.contains(state)) { return false; }
-
-    target.add(state);
-    return true;
-}
-
 "Exception thrown when we get a null value from a [[TokenArray]]. This should
  never happen for properly-implemented [[TokenArrays|TokenArray]], as we only
  consume from values right after tokens we've gotten back, and the zero length
@@ -225,6 +209,56 @@ shared class AmbiguityException() extends Exception("Parser generated ambiguous
             t.length)};
 }
 
+"A queue of states, ordered and also prioritized by amount of error"
+class StateQueue() {
+    value queues = HashMap<Integer,ArrayList<EPState>>();
+    value states = HashMap<Integer,HashSet<EPState>>();
+
+    shared <Integer->HashSet<EPState>>? latest => states.last;
+
+    "Offer an item to this queue"
+    shared void offer(EPState state) {
+        if (! states.defines(state.pos)) {
+            states.put(state.pos, HashSet<EPState>());
+        }
+
+        value target = states[state.pos];
+        assert(exists target);
+
+        if (target.contains(state)) { return; }
+
+        target.add(state);
+
+        if (! queues.defines(state.lsd)) {
+            queues.put(state.lsd, ArrayList<EPState>());
+        }
+
+        assert(exists queue = queues[state.lsd]);
+        queue.offer(state);
+    }
+
+    "Accept an item from this queue"
+    shared EPState? accept() {
+        for (lsd in queues.keys.sort(uncurry(Integer.compare))) {
+            assert(exists queue = queues[lsd]);
+            value ret = queue.accept();
+
+            if (exists ret) { return ret; }
+
+            queues.remove(lsd);
+        }
+
+        return null;
+    }
+
+    "Get states for a given position"
+    shared HashSet<EPState> at(Integer pos) {
+        if (! states.defines(pos)) { return HashSet<EPState>(); }
+        assert(exists ret = states[pos]);
+        return ret;
+    }
+}
+
 "A `ParseTree` is defined by a series of BNF-style production rules. The rules
  are specifed by defining methods with the `rule` annotation.  The parser will
  create an appropriate production rule and call the annotated method in order
@@ -237,11 +271,8 @@ shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
     "The result symbol we expect from this tree"
     shared Integer result = typeAtomCache.getAlias(`RootTerminal`);
 
-    "States per position in stream"
-    value states = HashMap<Integer,HashSet<EPState>>();
-
     "Queue of states to process"
-    value stateQueue = ArrayList<EPState>();
+    value stateQueue = StateQueue();
 
     "Process queued states"
     void pumpStateQueue() {
@@ -256,14 +287,11 @@ shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
 
     "Process a complete state"
     void completeState(EPState state) {
-        value prev = states[state.start];
-        assert(exists prev);
+        value prev = stateQueue.at(state.start);
         for (s in prev) {
             value n = s.feed(state);
 
-            if (exists n) {
-                if (insertEPState(n, states)) { stateQueue.offer(n); }
-            }
+            if (exists n) { stateQueue.offer(n); }
         }
     }
 
@@ -273,7 +301,7 @@ shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
         if (exists newTokens) {
             value symbols = tokensToSymbols(newTokens);
             for (s in state.propagate(rules, symbols)) {
-                if (insertEPState(s, states)) { stateQueue.offer(s); }
+                stateQueue.offer(s);
             }
         } else {
             throw TokenException();
@@ -288,7 +316,7 @@ shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
 
     "Confirm that we have successfully parsed."
     RootTerminal? validate() {
-        assert(exists endsPair = states.last);
+        assert(exists endsPair = stateQueue.latest);
 
         value eosTokens = tokens[endsPair.key];
 
@@ -367,8 +395,6 @@ shared abstract class ParseTree<out RootTerminal>(TokenArray tokens)
 
             value newState = EPState(0, rule, 0, 0);
             stateQueue.offer(newState);
-
-            assert(insertEPState(newState, states));
         }
     }
 }
