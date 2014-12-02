@@ -59,26 +59,9 @@ object typeAtomCache {
 }
 
 "A rule. Specifies produced and consumed symbols and a method to execute them"
-shared class Rule(Method<Nothing,Object> meth, ParseTree<Object> tree) {
-    "Sequence of symbols consumed by this production"
-    shared Integer[] consumes = [ for (x in meth.parameterTypes)
-        typeAtomCache.getAlias(x) ];
-
-    "Symbol produced by this production"
-    shared Integer produces = typeAtomCache.getAlias(meth.type);
-
-    "Declaration object for the method we call"
-    value declaration = meth.declaration;
-
+shared class Rule(shared Object(Object*) consume, shared Integer[] consumes,
+        shared Integer produces) {
     shared actual Integer hash = consumes.hash ^ 2 + produces.hash;
-
-    "Run the production-handling code for this method."
-    shared Object consume(Object[] syms) {
-        value result = declaration.memberInvoke{container=tree;
-            typeArguments=[]; arguments=syms;};
-        assert(is Object result);
-        return result;
-    }
 
     shared actual Boolean equals(Object other) {
         if (is Rule other) {
@@ -165,7 +148,7 @@ class EPState(pos, rule, matchPos, start, children = [], baseLsd = 0) {
             }
         }
 
-        value s = Symbol(rule.produces, rule.consume(sym), pos - start);
+        value s = Symbol(rule.produces, rule.consume(*sym), pos - start);
         return s;
     }
 
@@ -555,7 +538,16 @@ shared abstract class ParseTree<out Root>(TokenArray tokens)
             type(this).getMethods<Nothing,Object>(`GrammarErrorConstructor`);
 
         for (r in meths) {
-            value rule = Rule(r, this);
+            Object consume(Object *o) {
+                assert(is Object ret = r.declaration.memberInvoke(this, [], *o));
+                return ret;
+            }
+
+            value consumes = [ for (p in r.parameterTypes)
+                typeAtomCache.getAlias(p) ];
+            value produces = typeAtomCache.getAlias(r.type);
+            value rule = Rule(consume, consumes, produces);
+
             rules = rules.withTrailing(rule);
 
             if (rule.produces != result) { continue; }
