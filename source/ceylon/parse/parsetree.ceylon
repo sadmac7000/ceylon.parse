@@ -72,18 +72,46 @@ shared class Rule(shared Object(Object*) consume, shared Integer[] consumes,
     }
 }
 
+"Exception thrown when we need an error constructor but one isn't defined"
+class ErrorConstructorException(Type token)
+        extends Exception("Could not construct error of type ``token``") {}
+
 "An error in parsing"
-class Error(replaces = null) {
+class Error(errorConstructors, replaces = null) {
     shared Integer? replaces;
+    Map<Integer, Object()> errorConstructors;
+
+    shared Object()? construct;
+
+    if (exists replaces) {
+        if (exists func = errorConstructors[replaces]) {
+            construct = func;
+        } else {
+            "Default error constructor"
+            Object defaultErrorConstructor() {
+                throw ErrorConstructorException(typeAtomCache.resolve(replaces));
+            }
+            construct = defaultErrorConstructor;
+        }
+    } else {
+        construct = null;
+    }
 }
 
 "An Earley parser state"
-class EPState(pos, rule, matchPos, start, children = [], baseLsd = 0) {
+class EPState(pos, rule, matchPos, start, children, baseLsd,
+        errorConstructors, tokensProcessedBefore) {
     "Starting Levenshtein distance"
     Integer baseLsd;
 
+    "Tokens processed before we began to parse this state"
+    Integer tokensProcessedBefore;
+
     "Starting position for the rule match"
     shared Integer start;
+
+    "Error constructors"
+    shared Map<Integer,Object()> errorConstructors;
 
     "Tokens"
     shared [Symbol|EPState|Error*] children;
@@ -94,7 +122,7 @@ class EPState(pos, rule, matchPos, start, children = [], baseLsd = 0) {
      tokens."
     shared Integer tokensProcessed = sum({ for (c in children) if (is EPState c)
         c.tokensProcessed }.chain({ for (c in children) if (is Symbol c) 1
-        }).chain({0}));
+        }).chain({0})) + tokensProcessedBefore;
 
     "Position this state belongs to"
     shared Integer pos;
@@ -145,6 +173,10 @@ class EPState(pos, rule, matchPos, start, children = [], baseLsd = 0) {
                 sym = sym.withTrailing(c.sym);
             } else if (is EPState c) {
                 sym = sym.withTrailing(c.astNode.sym);
+            } else if (is Error c) {
+                if (exists cons = c.construct) {
+                    sym = sym.withTrailing(cons());
+                }
             }
         }
 
@@ -171,24 +203,24 @@ class EPState(pos, rule, matchPos, start, children = [], baseLsd = 0) {
         }
 
         return EPState(newPos, rule, newMatchPos, start, newChildren,
-                newBaseLsd);
+                newBaseLsd, errorConstructors, tokensProcessedBefore);
     }
 
     "Propagate this state with a trailing error. If badToken is set, we stopped
      at a position where there was no parseable token."
-    shared {EPState *} failPropagate({Integer *} skipBoundaries, Boolean
-            badToken = false) {
+    shared {EPState *} failPropagate({Integer *} skipBoundaries,
+            Boolean badToken = false) {
 
         value delete = { for (s in skipBoundaries) derive(s,
-                matchPos, Error(), true)
+                matchPos, Error(errorConstructors), true)
         };
 
         value replace = { for (s in skipBoundaries) derive(s,
-                matchPos + 1, Error(rule.consumes[matchPos]), true)
+                matchPos + 1, Error(errorConstructors, rule.consumes[matchPos]), true)
         };
 
         if (! badToken) {
-            value insert = derive(pos, matchPos + 1, Error(
+            value insert = derive(pos, matchPos + 1, Error(errorConstructors,
                         rule.consumes[matchPos]), true);
 
             return delete.chain(replace).chain({insert});
@@ -227,7 +259,8 @@ class EPState(pos, rule, matchPos, start, children = [], baseLsd = 0) {
         {EPState *} predict = {
             for (other in rules)
                 if (exists c=rule.consumes[matchPos], other.produces == c)
-                    EPState(pos, other, 0, pos)
+                    EPState(pos, other, 0, pos, [], 0, errorConstructors,
+                            tokensProcessed)
         };
 
         {EPState *} scan = {
@@ -409,7 +442,7 @@ shared abstract class ParseTree<out Root>(TokenArray tokens)
     shared Integer result = typeAtomCache.getAlias(`Root`);
 
     "Error constructors"
-    value errorConstructors = HashMap<Integer, FunctionDeclaration>();
+    value errorConstructors = HashMap<Integer, Object()>();
 
     "Queue of states to process"
     value stateQueue = StateQueue();
@@ -553,6 +586,17 @@ shared abstract class ParseTree<out Root>(TokenArray tokens)
         value errConMeths =
             type(this).getMethods<Nothing,Object>(`GrammarErrorConstructor`);
 
+        for (c in errConMeths) {
+            value type = typeAtomCache.getAlias(c.type);
+
+            Object construct() {
+                assert(is Object ret = c.declaration.memberInvoke(this));
+                return ret;
+            }
+
+            errorConstructors.put(type, construct);
+        }
+
         for (r in meths) {
             Object consume(Object *o) {
                 assert(is Object ret = r.declaration.memberInvoke(this, [], *o));
@@ -568,13 +612,9 @@ shared abstract class ParseTree<out Root>(TokenArray tokens)
 
             if (rule.produces != result) { continue; }
 
-            value newState = EPState(0, rule, 0, 0);
+            value newState = EPState(0, rule, 0, 0, [], 0,
+                    errorConstructors, 0);
             stateQueue.offer(newState);
-        }
-
-        for (c in errConMeths) {
-            value type = typeAtomCache.getAlias(c.type);
-            errorConstructors.put(type, c.declaration);
         }
     }
 }
