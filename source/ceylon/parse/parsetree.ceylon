@@ -10,24 +10,20 @@ import ceylon.collection {
 }
 
 "A single token result returned by a TokenArray"
-shared class Token(type, sym, length) {
+shared class Token(sym, length) {
     shared Object sym;
     shared Integer length;
-    shared Type type;
 }
 
 "A parsed symbol."
-class Symbol(type, sym, length) {
-    shared Object sym;
-    shared Integer length;
-    shared Integer type;
-}
+class Symbol(shared Integer type, Object symIn, Integer lenIn)
+        extends Token(symIn, lenIn) {}
 
 "The type we need for a token input"
 shared alias TokenArray => Correspondence<Integer, Set<Token>>;
 
 "A result to represent the end of a stream."
-shared Token eos = Token(type(eosObject), eosObject, 0);
+shared Token eos = Token(eosObject, 0);
 object eosObject {}
 
 "We have to convert type objects to integers to pass them around, otherwise we
@@ -345,8 +341,8 @@ shared class AmbiguityException() extends Exception("Parser generated ambiguous
 
 "Bulk-add types to the atom cache and return Symbol objects for them"
 {Symbol *} tokensToSymbols({Token *} tokens) {
-    return {for (t in tokens) Symbol(typeAtomCache.getAlias(t.type), t.sym,
-            t.length)};
+    return {for (t in tokens) Symbol(typeAtomCache.getAlias(type(t.sym)),
+            t.sym, t.length)};
 }
 
 "A queue of states, ordered and also prioritized by amount of error"

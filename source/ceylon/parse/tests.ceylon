@@ -77,9 +77,9 @@ class SimpleTokenizer(String input)
         assert(exists char);
         
         if (char == 'a') {
-            ret.add(Token(`ATerm`, ATerm(), 1));
+            ret.add(Token(ATerm(), 1));
         } else if (char == 'b') {
-            ret.add(Token(`BTerm`, BTerm(), 1));
+            ret.add(Token(BTerm(), 1));
         }
 
         return ret;
