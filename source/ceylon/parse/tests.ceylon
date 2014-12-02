@@ -48,47 +48,9 @@ class A(Sym* children) extends Sym(*children) {}
 class ATerm() extends Sym() {}
 class BTerm() extends Sym() {}
 
-"A tokenizer that tokenizes only 'a' and 'b' with no whitespace removal"
-class SimpleTokenizer(String input)
-        satisfies Correspondence<Integer, Set<Token>> {
-    value cache = HashMap<Integer, Set<Token>>();
-
-    shared actual Boolean defines(Integer i) {
-        return i <= input.size;
-    }
-
-    shared actual Set<Token>? get(Integer i) {
-        if (cache.defines(i)) {
-            value x = cache[i];
-            assert(exists x);
-            return x;
-        }
-
-        value ret = HashSet<Token>();
-        cache.put(i, ret);
-        value char = input[i];
-
-        if (! char exists) {
-            if (i != input.size) { return null; }
-            ret.add(eos);
-            return ret;
-        }
-
-        assert(exists char);
-        
-        if (char == 'a') {
-            ret.add(Token(ATerm(), 1));
-        } else if (char == 'b') {
-            ret.add(Token(BTerm(), 1));
-        }
-
-        return ret;
-    }
-}
-
 "A parse tree that accepts a very, very simple grammar. There are only 4 words
  in it (aaa, aaaa, baab, bab)."
-class SimpleTree(TokenArray tokens) extends ParseTree<S>(tokens) {
+class SimpleTree(String input) extends ParseTree<S>(input) {
     rule
     shared S rule1(ATerm at, A a, ATerm at2) => S(at, a, at2);
 
@@ -101,6 +63,18 @@ class SimpleTree(TokenArray tokens) extends ParseTree<S>(tokens) {
     rule
     shared A rule4(ATerm at, ATerm at2) => A(at, at2);
 
+    tokenizer
+    shared Token? aTerm(String input) {
+        if (input.startsWith("a")) { return Token(ATerm(),1); }
+        return null;
+    }
+
+    tokenizer
+    shared Token? bTerm(String input) {
+        if (input.startsWith("b")) { return Token(BTerm(),1); }
+        return null;
+    }
+
     errorConstructor
     shared ATerm error() => ATerm();
 
@@ -110,7 +84,7 @@ class SimpleTree(TokenArray tokens) extends ParseTree<S>(tokens) {
 
 test
 shared void simple_word1() {
-    value root = SimpleTree(SimpleTokenizer("baab")).ast;
+    value root = SimpleTree("baab").ast;
     value expect = S (
         BTerm(),
         A (
@@ -125,7 +99,7 @@ shared void simple_word1() {
 
 test
 shared void simple_word2() {
-    value root = SimpleTree(SimpleTokenizer("bab")).ast;
+    value root = SimpleTree("bab").ast;
     value expect = S (
         BTerm(),
         A (
@@ -139,7 +113,7 @@ shared void simple_word2() {
 
 test
 shared void simple_word3() {
-    value root = SimpleTree(SimpleTokenizer("aaa")).ast;
+    value root = SimpleTree("aaa").ast;
     value expect = S (
         ATerm(),
         A (
@@ -153,7 +127,7 @@ shared void simple_word3() {
 
 test
 shared void simple_word4() {
-    value root = SimpleTree(SimpleTokenizer("aaaa")).ast;
+    value root = SimpleTree("aaaa").ast;
     value expect = S (
         ATerm(),
         A (
@@ -168,7 +142,7 @@ shared void simple_word4() {
 
 test
 shared void simple_word4_bad() {
-    value root = SimpleTree(SimpleTokenizer("aaqaa")).ast;
+    value root = SimpleTree("aaqaa").ast;
     value expect = S (
         ATerm(),
         A (
@@ -183,7 +157,7 @@ shared void simple_word4_bad() {
 
 test
 shared void simple_word2_bad() {
-    value root = SimpleTree(SimpleTokenizer("bqb")).ast;
+    value root = SimpleTree("bqb").ast;
     value expect = S (
         BTerm(),
         A (
@@ -197,7 +171,7 @@ shared void simple_word2_bad() {
 
 test
 shared void simple_word2_bad2() {
-    value root = SimpleTree(SimpleTokenizer("bb")).ast;
+    value root = SimpleTree("bb").ast;
     value expect = S (
         BTerm(),
         A (

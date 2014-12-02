@@ -9,7 +9,7 @@ import ceylon.collection {
     unlinked
 }
 
-"A single token result returned by a TokenArray"
+"A single token result returned by a tokenizer"
 shared class Token(sym, length) {
     shared Object sym;
     shared Integer length;
@@ -18,9 +18,6 @@ shared class Token(sym, length) {
 "A parsed symbol."
 class Symbol(shared Integer type, Object symIn, Integer lenIn)
         extends Token(symIn, lenIn) {}
-
-"The type we need for a token input"
-shared alias TokenArray => Correspondence<Integer, Set<Token>>;
 
 "A result to represent the end of a stream."
 shared Token eos = Token(eosObject, 0);
@@ -327,12 +324,12 @@ shared final annotation class GrammarRule()
  correspond to production rules"
 shared annotation GrammarRule rule() => GrammarRule();
 
-"Exception thrown when we get a null value from a [[TokenArray]]. This should
- never happen for properly-implemented [[TokenArrays|TokenArray]], as we only
- consume from values right after tokens we've gotten back, and the zero length
- [[end of stream token|eos]] should always be the last token we get."
-shared class TokenException() extends Exception("TokenArray must be contiguously
-                                                 defined") {}
+"A do-nothing annotation class for the `tokenizer` annotation."
+shared final annotation class Tokenizer()
+        satisfies OptionalAnnotation<Tokenizer, Annotated> {}
+
+"Methods annotated with `tokenizer` take a sequence and return a token."
+shared annotation Tokenizer tokenizer() => Tokenizer();
 
 "Exception thrown when a [[ParseTree]] is ambiguous. [[ParseTree]] subtypes
  which override [[resolveAmbiguity]] may choose not to throw this exception."
@@ -429,7 +426,7 @@ class StateQueue() {
  are specifed by defining methods with the `rule` annotation.  The parser will
  create an appropriate production rule and call the annotated method in order
  to reduce the value."
-shared abstract class ParseTree<out Root>(TokenArray tokens)
+shared abstract class ParseTree<out Root>(List<Object> data)
         given Root satisfies Object {
     "A list of rules for this object"
     shared variable Rule[] rules = [];
@@ -439,6 +436,11 @@ shared abstract class ParseTree<out Root>(TokenArray tokens)
 
     "Error constructors"
     value errorConstructors = HashMap<Integer, Object()>();
+
+    value tokenCache = HashMap<Integer, Set<Symbol>>();
+
+    "Tokenizers"
+    variable Token?(List<Object>)[] tokenizers = [];
 
     "Queue of states to process"
     value stateQueue = StateQueue();
@@ -464,9 +466,24 @@ shared abstract class ParseTree<out Root>(TokenArray tokens)
         }
     }
 
-    Set<Token> getTokens(Integer loc) {
-        if (exists ret = tokens[loc]) { return ret; }
-        throw TokenException();
+    "Get tokens at a given location"
+    Set<Symbol> getTokens(Integer loc) {
+        assert(loc <= data.size);
+
+        if (loc == data.size) {
+            return HashSet{elements=tokensToSymbols({eos});};
+        }
+
+        if (tokenCache.defines(loc)) {
+            assert(exists ret = tokenCache[loc]);
+            return ret;
+        }
+
+        value ret = HashSet{elements=tokensToSymbols({ for (t in tokenizers)
+            if (exists r = t(data[loc...])) r});};
+
+        tokenCache.put(loc, ret);
+        return ret;
     }
 
     "Propagate a state"
@@ -578,9 +595,20 @@ shared abstract class ParseTree<out Root>(TokenArray tokens)
 
     "Set up the list of rules"
     void populateRules() {
-        value meths = type(this).getMethods<Nothing,Object>(`GrammarRule`);
+        value meths = type(this).getMethods<Nothing>(`GrammarRule`);
         value errConMeths =
-            type(this).getMethods<Nothing,Object>(`GrammarErrorConstructor`);
+            type(this).getMethods<Nothing>(`GrammarErrorConstructor`);
+        value tokenizerMeths = type(this).getMethods<Nothing>(`Tokenizer`);
+
+        for (t in tokenizerMeths) {
+            Token? tokenizer(List<Object> s) {
+                assert(is Token? ret = t.declaration.memberInvoke(this, [],
+                            s));
+                return ret;
+            }
+
+            tokenizers = tokenizers.withTrailing(tokenizer);
+        }
 
         for (c in errConMeths) {
             value type = typeAtomCache.getAlias(c.type);
