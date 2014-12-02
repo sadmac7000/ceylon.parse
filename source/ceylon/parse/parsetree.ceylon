@@ -152,26 +152,44 @@ class EPState(pos, rule, matchPos, start, children = [], baseLsd = 0) {
         return s;
     }
 
+    "Derive a new state"
+    EPState derive(Integer newPos=pos, Integer newMatchPos=matchPos, Symbol|EPState|Error?
+            newChild=null, Boolean error=false) {
+        Integer newBaseLsd;
+        [Symbol|EPState|Error*] newChildren;
+
+        if (error) {
+            newBaseLsd = baseLsd + 1;
+        } else {
+            newBaseLsd = baseLsd;
+        }
+
+        if (exists newChild) {
+            newChildren = children.withTrailing(newChild);
+        } else {
+            newChildren = children;
+        }
+
+        return EPState(newPos, rule, newMatchPos, start, newChildren,
+                newBaseLsd);
+    }
+
     "Propagate this state with a trailing error. If badToken is set, we stopped
      at a position where there was no parseable token."
     shared {EPState *} failPropagate({Integer *} skipBoundaries, Boolean
             badToken = false) {
 
-        value delete = { for (s in skipBoundaries) EPState(s,
-                rule, matchPos, start, children.withTrailing(Error()),
-                baseLsd + 1)
+        value delete = { for (s in skipBoundaries) derive(s,
+                matchPos, Error(), true)
         };
 
-        value replace = { for (s in skipBoundaries) EPState(s,
-                rule, matchPos + 1, start,
-                children.withTrailing(Error(rule.consumes[matchPos])),
-                baseLsd + 1)
+        value replace = { for (s in skipBoundaries) derive(s,
+                matchPos + 1, Error(rule.consumes[matchPos]), true)
         };
 
         if (! badToken) {
-            value insert = EPState(pos, rule, matchPos + 1, start,
-                    children.withTrailing(Error(rule.consumes[matchPos])),
-                    baseLsd + 1);
+            value insert = derive(pos, matchPos + 1, Error(
+                        rule.consumes[matchPos]), true);
 
             return delete.chain(replace).chain({insert});
         } else {
@@ -187,13 +205,11 @@ class EPState(pos, rule, matchPos, start, children = [], baseLsd = 0) {
         if (is Symbol other) {
             if (want != other.type) { return null; }
 
-            return EPState(pos + other.length, rule, matchPos + 1, start,
-                    children.withTrailing(other), baseLsd);
+            return derive(pos + other.length, matchPos + 1, other);
         } else if (is EPState other) {
             if (want != other.rule.produces) { return null; }
 
-            return EPState(other.pos, rule, matchPos + 1, start,
-                    children.withTrailing(other), baseLsd);
+            return derive(other.pos, matchPos + 1, other);
         } else {
             /* Unreachable */
             assert(false);
