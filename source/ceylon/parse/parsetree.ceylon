@@ -70,26 +70,20 @@ class ErrorConstructorException(Type token)
         extends Exception("Could not construct error of type ``token``") {}
 
 "An error in parsing"
-class Error(errorConstructors, replaces = null) {
-    shared Integer? replaces;
-    Map<Integer, Object()> errorConstructors;
+abstract class Error() {}
 
-    shared Object()? construct;
+"Error resolved by replacing a token"
+class ErrorReplace(shared Object(Object?) construct,
+        shared Object original) extends Error() {}
 
-    if (exists replaces) {
-        if (exists func = errorConstructors[replaces]) {
-            construct = func;
-        } else {
-            "Default error constructor"
-            Object defaultErrorConstructor() {
-                throw ErrorConstructorException(typeAtomCache.resolve(replaces));
-            }
-            construct = defaultErrorConstructor;
-        }
-    } else {
-        construct = null;
-    }
-}
+"Error resolved by deleting a token"
+class ErrorDelete(shared Object original) extends Error() {}
+
+"Error resolved by inserting a new token"
+class ErrorInsert(shared Object(Object?) construct) extends Error() {}
+
+"Bad token"
+shared class Badness(shared List<Object> data) {}
 
 "An Earley parser state"
 class EPState(pos, rule, matchPos, start, children, baseLsd,
@@ -104,7 +98,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     shared Integer start;
 
     "Error constructors"
-    shared Map<Integer,Object()> errorConstructors;
+    shared Map<Integer,Object(Object?)> errorConstructors;
 
     "Tokens"
     shared [Symbol|EPState|Error*] children;
@@ -166,10 +160,12 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
                 sym = sym.withTrailing(c.sym);
             } else if (is EPState c) {
                 sym = sym.withTrailing(c.astNode.sym);
-            } else if (is Error c) {
-                if (exists cons = c.construct) {
-                    sym = sym.withTrailing(cons());
-                }
+            } else if (is ErrorInsert c) {
+                sym = sym.withTrailing(c.construct(null));
+            } else if (is ErrorDelete c) {
+                /* Notify deletion */
+            } else if (is ErrorReplace c) {
+                sym = sym.withTrailing(c.construct(c.original));
             }
         }
 
@@ -201,25 +197,31 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
 
     "Propagate this state with a trailing error. If badToken is set, we stopped
      at a position where there was no parseable token."
-    shared {EPState *} failPropagate({Integer *} skipBoundaries,
-            Boolean badToken = false) {
+    shared {EPState *} failPropagate({[Object,Integer] *} skip) {
+        assert(exists next = rule.consumes[matchPos]);
+        value inscons = errorConstructors[next];
 
-        value delete = { for (s in skipBoundaries) derive(s,
-                matchPos, Error(errorConstructors), true)
+        if (! inscons exists) {
+            throw ErrorConstructorException(typeAtomCache.resolve(next));
+        }
+
+        assert(exists inscons);
+
+        value delete = { for (s in skip) derive(pos + s[1],
+                matchPos, ErrorDelete(s[0]), true)
         };
 
-        value replace = { for (s in skipBoundaries) derive(s,
-                matchPos + 1, Error(errorConstructors, rule.consumes[matchPos]), true)
+        value replace = { for (s in skip) derive(pos + s[1],
+                matchPos + 1, ErrorReplace(inscons, s[0]), true)
         };
 
-        if (! badToken) {
-            value insert = derive(pos, matchPos + 1, Error(errorConstructors,
-                        rule.consumes[matchPos]), true);
-
-            return delete.chain(replace).chain({insert});
-        } else {
+        if (is [Badness,Integer] s=skip.first, skip.size == 1) {
             return delete.chain(replace);
         }
+
+        value insert = derive(pos, matchPos + 1, ErrorInsert(inscons), true);
+
+        return delete.chain(replace).chain({insert});
     }
 
     "Offer a symbol to this state for scanning or completion"
@@ -435,7 +437,7 @@ shared abstract class ParseTree<out Root>(List<Object> data)
     shared Integer result = typeAtomCache.getAlias(`Root`);
 
     "Error constructors"
-    value errorConstructors = HashMap<Integer, Object()>();
+    value errorConstructors = HashMap<Integer, Object(Object?)>();
 
     value tokenCache = HashMap<Integer, Set<Symbol>>();
 
@@ -501,29 +503,42 @@ shared abstract class ParseTree<out Root>(List<Object> data)
         value state = stateQueue.acceptRecoveryState();
         value tokens = getTokens(state.pos);
         value badToken = tokens.size == 0;
-        {Integer *} resetPos;
+        {[Object,Integer] *} skips;
 
         if (badToken) {
             variable value i = state.pos + 1;
 
-            while (getTokens(i).size == 0) { continue; }
+            while (getTokens(i).size == 0) { i++; continue; }
 
-            resetPos = {i};
+            skips = {[Badness(data[state.pos..(i-1)]), i - state.pos]};
         } else {
             value posSet = HashSet<Integer>{elements={ for (t in tokens)
                 t.length + state.pos };};
             assert(exists maxPos = max(posSet));
+            value resultSet = HashSet<[Object,Integer]>{elements={ for (t in
+                    tokens) [t.sym, t.length] };};
 
             for (i in (state.pos + 1)..(maxPos - 1)) {
                 if (posSet.contains(i)) { continue; }
-                if (getTokens(i).size == 0) { continue; }
-                posSet.add(i);
+
+                value toks = getTokens(i);
+
+                for (tok in toks) {
+                    if (posSet.contains(tok.length + state.pos)) {
+                        continue;
+                    }
+
+                    resultSet.add([Badness(data[state.pos..(i-1)]),
+                            i - state.pos]);
+                    posSet.add(i);
+                    break;
+                }
             }
 
-            resetPos = posSet;
+            skips = resultSet;
         }
 
-        for (s in state.failPropagate(resetPos, badToken)) {
+        for (s in state.failPropagate(skips)) {
             stateQueue.offer(s);
         }
     }
@@ -614,8 +629,9 @@ shared abstract class ParseTree<out Root>(List<Object> data)
         for (c in errConMeths) {
             value type = typeAtomCache.getAlias(c.type);
 
-            Object construct() {
-                assert(is Object ret = c.declaration.memberInvoke(this));
+            Object construct(Object? o) {
+                assert(is Object ret = c.declaration.memberInvoke(this, [],
+                            o));
                 return ret;
             }
 

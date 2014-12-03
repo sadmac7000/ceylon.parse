@@ -77,7 +77,7 @@ class SimpleTree(String input) extends ParseTree<S>(input) {
     }
 
     errorConstructor
-    shared ATerm error() => ATermError();
+    shared ATerm error(Object? replaces) => ATermError();
 }
 
 test
