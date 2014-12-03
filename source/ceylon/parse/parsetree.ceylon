@@ -280,6 +280,16 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
         HashSet<Integer> productions = HashSet<Integer>{elements={for (r in
                 rules) r.produces};};
 
+        assert(exists otherNext = other.rule.consumes[other.matchPos]);
+        assert(exists next = rule.consumes[matchPos]);
+        value otherStrictlyTerminal = !productions.contains(otherNext);
+        value thisStrictlyTerminal = !productions.contains(next);
+
+        if (otherStrictlyTerminal != thisStrictlyTerminal) {
+            if (otherStrictlyTerminal) { return larger; }
+            return smaller;
+        }
+
         /* Error tokens don't count in tokensProcessed, so this is penalized
          * slightly for errors as compared to just comparing position.
          */
@@ -288,16 +298,6 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
         if (other.lsd != lsd) { return lsd.compare(other.lsd); }
 
         /* Most of the important comparison is done now. */
-
-        assert(exists otherNext = other.rule.consumes[other.matchPos]);
-        assert(exists next = rule.consumes[matchPos]);
-        value otherStrictlyTerminal = productions.contains(otherNext);
-        value thisStrictlyTerminal = productions.contains(next);
-
-        if (otherStrictlyTerminal != thisStrictlyTerminal) {
-            if (otherStrictlyTerminal) { return larger; }
-            return smaller;
-        }
 
         value otherToGo = other.rule.consumes.size - other.matchPos;
         value toGo = rule.consumes.size - matchPos;
