@@ -460,6 +460,7 @@ shared abstract class ParseTree<out Root>(List<Object> data)
     void completeState(EPState state) {
         value prev = stateQueue.at(state.start);
         for (s in prev) {
+            if (s.complete) { continue; }
             value n = s.feed(state);
 
             if (exists n) { stateQueue.offer(n); }
