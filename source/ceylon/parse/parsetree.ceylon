@@ -9,15 +9,20 @@ import ceylon.collection {
     unlinked
 }
 
+"Default errorPrefix argument"
+void defaultErrorPrefix(Object s) {}
+
 "A single token result returned by a tokenizer"
-shared class Token(sym, length) {
+shared class Token(sym, length, errorPrefix = defaultErrorPrefix) {
     shared Object sym;
     shared Integer length;
+    shared Anything(Object) errorPrefix;
 }
 
 "A parsed symbol."
-class Symbol(shared Integer type, Object symIn, Integer lenIn)
-        extends Token(symIn, lenIn) {}
+class Symbol(shared Integer type, Object symIn, Integer lenIn,
+        Anything(Object) errorPrefix = defaultErrorPrefix)
+        extends Token(symIn, lenIn, errorPrefix) {}
 
 "A result to represent the end of a stream."
 shared Token eos = Token(eosObject, 0);
@@ -160,6 +165,8 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
         assert(complete);
 
         variable Object[] sym = [];
+
+        variable Error errorPrefix();
 
         for (c in children) {
             if (is Symbol c) {
