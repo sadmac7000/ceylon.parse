@@ -47,6 +47,7 @@ class S(Sym* children) extends Sym(*children) {}
 class A(Sym* children) extends Sym(*children) {}
 class ATerm() extends Sym() {}
 class BTerm() extends Sym() {}
+class ATermError() extends ATerm() {}
 
 "A parse tree that accepts a very, very simple grammar. There are only 4 words
  in it (aaa, aaaa, baab, bab)."
@@ -76,7 +77,7 @@ class SimpleTree(String input) extends ParseTree<S>(input) {
     }
 
     errorConstructor
-    shared ATerm error() => ATerm();
+    shared ATerm error() => ATermError();
 }
 
 test
@@ -158,7 +159,7 @@ shared void simple_word2_bad() {
     value expect = S (
         BTerm(),
         A (
-            ATerm()
+            ATermError()
         ),
         BTerm()
     );
@@ -172,7 +173,7 @@ shared void simple_word2_bad2() {
     value expect = S (
         BTerm(),
         A (
-            ATerm()
+            ATermError()
         ),
         BTerm()
     );
