@@ -277,7 +277,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     }
 
     "Checks which of two states (this and another) would make the best recovery
-     token. The least state is the winner"
+     token. The least state, by the returned comparison, is the winner"
     shared Comparison compareRecovery(EPState other, {Rule *} rules) {
         HashSet<Integer> productions = HashSet<Integer>{elements={for (r in
                 rules) r.produces};};
