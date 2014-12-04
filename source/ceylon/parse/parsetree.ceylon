@@ -346,7 +346,7 @@ shared class AmbiguityException() extends Exception("Parser generated ambiguous
 
 "A queue of states, ordered and also prioritized by amount of error"
 class StateQueue() {
-    value queues = HashMap<Integer,ArrayList<EPState>>();
+    value queue = ArrayList<EPState>();
     value states = HashMap<Integer,HashSet<EPState>>();
 
     shared <Integer->HashSet<EPState>>? latest => states.last;
@@ -381,11 +381,6 @@ class StateQueue() {
 
         target.add(state);
 
-        if (! queues.defines(state.lsd)) {
-            queues.put(state.lsd, ArrayList<EPState>());
-        }
-
-        assert(exists queue = queues[state.lsd]);
         queue.offer(state);
 
         if (state.complete) { return; }
@@ -396,18 +391,7 @@ class StateQueue() {
     }
 
     "Accept an item from this queue"
-    shared EPState? accept() {
-        for (lsd in queues.keys.sort(uncurry(Integer.compare))) {
-            assert(exists queue = queues[lsd]);
-            value ret = queue.accept();
-
-            if (exists ret) { return ret; }
-
-            queues.remove(lsd);
-        }
-
-        return null;
-    }
+    shared EPState? accept() => queue.accept();
 
     "Get states for a given position"
     shared HashSet<EPState> at(Integer pos) {
