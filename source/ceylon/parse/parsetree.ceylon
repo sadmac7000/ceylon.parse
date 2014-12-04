@@ -303,6 +303,23 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
 
         return toGo.compare(otherToGo);
     }
+
+    shared actual String string {
+        String produces = typeAtomCache.resolve(rule.produces).string;
+        variable value ret = "``pos``: ``produces`` =>";
+        variable value loc = 0;
+
+        for (i in rule.consumes) {
+            ret += " ";
+            if (loc++ == matchPos) { ret += "*"; }
+
+            ret += typeAtomCache.resolve(i).string;
+        }
+
+        if (complete) { ret +=" *"; }
+
+        return ret + " ``lsd``";
+    }
 }
 
 "A do-nothing annotation class for the `error` annotation"
