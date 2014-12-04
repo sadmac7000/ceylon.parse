@@ -5,26 +5,11 @@ import ceylon.test { test, assertEquals }
 "A base class for symbols in the test that defines a few handy features."
 class Sym(Sym* children) {
     shared actual Integer hash {
-        variable value ret = shortName.hash;
-
-        for (i in 0:children.size) {
-            assert(exists child = children[i]);
-            ret += child.hash ^ (children.size + 1 - i);
-        }
-
-        return ret;
+        return string.hash;
     }
 
     shared actual Boolean equals(Object other) {
-        if (is Sym other) {
-            if (type(other) != type(this)) { return false; }
-            for (i in zipPairs(this.children, other.children)) {
-                if (i[0] != i[1]) { return false; }
-            }
-            return true;
-        } else {
-            return false;
-        }
+        return string.equals(other.string);
     }
 
     shared actual String string {
@@ -35,7 +20,7 @@ class Sym(Sym* children) {
         return "[``this.shortName`` ``[for (x in children) x.string]``]";
     }
 
-    String shortName {
+    shared default String shortName {
         value start = className(this);
         value properIdx = start.lastOccurrence('.');
         assert(exists properIdx);
@@ -47,7 +32,18 @@ class S(Sym* children) extends Sym(*children) {}
 class A(Sym* children) extends Sym(*children) {}
 class ATerm() extends Sym() {}
 class BTerm() extends Sym() {}
-class ATermError() extends ATerm() {}
+class ATermError(Object? replaces = null) extends ATerm() {
+    shared actual String shortName {
+        if (! replaces exists) { return super.shortName + "(Missing 'a')"; }
+
+        if (is Badness replaces) {
+            return "``super.shortName``(Bad token: '``replaces.data``')";
+        } else {
+            assert(exists replaces);
+            return "``super.shortName``(Replaced: '``replaces``')";
+        }
+    }
+}
 
 "A parse tree that accepts a very, very simple grammar. There are only 4 words
  in it (aaa, aaaa, baab, bab)."
@@ -77,7 +73,7 @@ class SimpleTree(String input) extends ParseTree<S>(input) {
     }
 
     errorConstructor
-    shared ATerm error(Object? replaces) => ATermError();
+    shared ATerm error(Object? replaces) => ATermError(replaces);
 }
 
 test
@@ -159,7 +155,7 @@ shared void simple_word2_bad() {
     value expect = S (
         BTerm(),
         A (
-            ATermError()
+            ATermError(Badness("q"))
         ),
         BTerm()
     );
