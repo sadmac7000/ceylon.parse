@@ -292,12 +292,9 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
             return smaller;
         }
 
-        /* Error tokens don't count in tokensProcessed, so this is penalized
-         * slightly for errors as compared to just comparing position.
-         */
+        if (other.lsd != lsd) { return lsd.compare(other.lsd); }
         if (other.tokensProcessed != tokensProcessed) { return
             other.tokensProcessed.compare(tokensProcessed); }
-        if (other.lsd != lsd) { return lsd.compare(other.lsd); }
 
         /* Most of the important comparison is done now. */
 
