@@ -1,6 +1,7 @@
 import ceylon.language.meta { type }
-import ceylon.language.meta.model { Method, Type }
-import ceylon.language.meta.declaration { FunctionDeclaration }
+import ceylon.language.meta.model { Method, Type, Model }
+import ceylon.language.meta.declaration { FunctionDeclaration,
+    NestableDeclaration }
 import ceylon.collection {
     HashSet,
     HashMap,
@@ -26,12 +27,12 @@ object eosObject {}
 "We have to convert type objects to integers to pass them around, otherwise we
  encounter weird performance issues."
 object typeAtomCache {
-    value from = HashMap<Type, Integer>();
-    value to = HashMap<Integer, Type>();
+    value from = HashMap<NestableDeclaration, Integer>();
+    value to = HashMap<Integer, NestableDeclaration>();
     variable value next = 0;
 
     "Get an alias for a type"
-    shared Integer getAlias(Type t) {
+    shared Integer getAlias(NestableDeclaration t) {
         if (from.defines(t)) {
             value ret = from[t];
             assert(exists ret);
@@ -44,7 +45,7 @@ object typeAtomCache {
     }
 
     "Resolve a type"
-    shared Type resolve(Integer i) {
+    shared NestableDeclaration resolve(Integer i) {
         value ret = to[i];
         assert(exists ret);
         return ret;
@@ -66,7 +67,7 @@ shared class Rule(shared Object(Object*) consume, shared Integer[] consumes,
 }
 
 "Exception thrown when we need an error constructor but one isn't defined"
-class ErrorConstructorException(Type token)
+class ErrorConstructorException(NestableDeclaration token)
         extends Exception("Could not construct error of type ``token``") {}
 
 "An error in parsing"
@@ -354,7 +355,8 @@ shared class AmbiguityException() extends Exception("Parser generated ambiguous
 
 "Bulk-add types to the atom cache and return Symbol objects for them"
 {Symbol *} tokensToSymbols({Token *} tokens) {
-    return {for (t in tokens) Symbol(typeAtomCache.getAlias(type(t.sym)),
+    return {for (t in tokens)
+        Symbol(typeAtomCache.getAlias(type(t.sym).declaration),
             t.sym, t.length)};
 }
 
@@ -431,8 +433,10 @@ shared abstract class ParseTree<out Root>(List<Object> data)
     "A list of rules for this object"
     shared variable Rule[] rules = [];
 
+    assert(is Model r = `Root`);
+
     "The result symbol we expect from this tree"
-    shared Integer result = typeAtomCache.getAlias(`Root`);
+    shared Integer result = typeAtomCache.getAlias(r.declaration);
 
     "Error constructors"
     value errorConstructors = HashMap<Integer, Object(Object?)>();
@@ -625,7 +629,8 @@ shared abstract class ParseTree<out Root>(List<Object> data)
         }
 
         for (c in errConMeths) {
-            value type = typeAtomCache.getAlias(c.type);
+            assert(is Model decl = c.type);
+            value type = typeAtomCache.getAlias(decl.declaration);
 
             Object construct(Object? o) {
                 assert(is Object ret = c.declaration.memberInvoke(this, [],
@@ -642,9 +647,15 @@ shared abstract class ParseTree<out Root>(List<Object> data)
                 return ret;
             }
 
-            value consumes = [ for (p in r.parameterTypes)
-                typeAtomCache.getAlias(p) ];
-            value produces = typeAtomCache.getAlias(r.type);
+            variable Integer[] consumes = [];
+
+            for (p in r.parameterTypes) {
+                assert(is Model mod = p);
+                consumes = consumes.withTrailing(typeAtomCache.getAlias(mod.declaration));
+            }
+
+            assert(is Model mod = r.type);
+            value produces = typeAtomCache.getAlias(mod.declaration);
             value rule = Rule(consume, consumes, produces);
 
             rules = rules.withTrailing(rule);
