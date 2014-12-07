@@ -79,7 +79,7 @@ class CeylonParseTree(String source)
 
     "Section 2.3 of the specification"
     tokenizer
-    shared Token? identifier(String input) {
+    shared Token<Identifier>? identifier(String input) {
         variable value start = findWhitespaceEnd(input);
         variable value inputClean = input[start...];
         Boolean upper;

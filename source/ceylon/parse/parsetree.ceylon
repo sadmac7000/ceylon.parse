@@ -10,14 +10,11 @@ import ceylon.collection {
 }
 
 "A single token result returned by a tokenizer"
-shared class Token(sym, length) {
-    shared Object sym;
-    shared Integer length;
-}
+shared class Token<out SymType = Object>(Object sym, Integer length)
+        extends Symbol(typeAtomCache.getAlias(`SymType`), sym, length) {}
 
 "A parsed symbol."
-class Symbol(shared Integer type, Object symIn, Integer lenIn)
-        extends Token(symIn, lenIn) {}
+shared class Symbol(shared Integer type, shared Object sym, shared Integer length) {}
 
 "A result to represent the end of a stream."
 shared Token eos = Token(eosObject, 0);
@@ -437,7 +434,7 @@ shared abstract class ParseTree<out Root>(List<Object> data)
     "Error constructors"
     value errorConstructors = HashMap<Integer, Object(Object?)>();
 
-    value tokenCache = HashMap<Integer, Set<Symbol>>();
+    value tokenCache = HashMap<Integer, Set<Token>>();
 
     "Tokenizers"
     variable Token?(List<Object>)[] tokenizers = [];
@@ -468,11 +465,11 @@ shared abstract class ParseTree<out Root>(List<Object> data)
     }
 
     "Get tokens at a given location"
-    Set<Symbol> getTokens(Integer loc) {
+    Set<Token> getTokens(Integer loc) {
         assert(loc <= data.size);
 
         if (loc == data.size) {
-            return HashSet{elements=tokensToSymbols({eos});};
+            return HashSet{elements={eos};};
         }
 
         if (tokenCache.defines(loc)) {
@@ -480,8 +477,8 @@ shared abstract class ParseTree<out Root>(List<Object> data)
             return ret;
         }
 
-        value ret = HashSet{elements=tokensToSymbols({ for (t in tokenizers)
-            if (exists r = t(data[loc...])) r});};
+        value ret = HashSet{elements={ for (t in tokenizers)
+            if (exists r = t(data[loc...])) r};};
 
         tokenCache.put(loc, ret);
         return ret;

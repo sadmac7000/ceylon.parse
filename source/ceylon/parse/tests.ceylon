@@ -61,13 +61,13 @@ class SimpleTree(String input) extends ParseTree<S>(input) {
     shared A rule4(ATerm at, ATerm at2) => A(at, at2);
 
     tokenizer
-    shared Token? aTerm(String input) {
+    shared Token<ATerm>? aTerm(String input) {
         if (input.startsWith("a")) { return Token(ATerm(),1); }
         return null;
     }
 
     tokenizer
-    shared Token? bTerm(String input) {
+    shared Token<BTerm>? bTerm(String input) {
         if (input.startsWith("b")) { return Token(BTerm(),1); }
         return null;
     }
