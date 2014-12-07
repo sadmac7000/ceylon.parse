@@ -1,5 +1,10 @@
 import ceylon.language.meta { type }
-import ceylon.language.meta.model { Method, Type }
+import ceylon.language.meta.model {
+    Method,
+    Type,
+    Generic,
+    UnionType
+}
 import ceylon.language.meta.declaration { FunctionDeclaration }
 import ceylon.collection {
     HashSet,
@@ -434,7 +439,8 @@ shared abstract class ParseTree<out Root>(List<Object> data)
     value tokenCache = HashMap<Integer, Set<Token>>();
 
     "Tokenizers"
-    variable Token?(List<Object>)[] tokenizers = [];
+    variable HashMap<Integer, Token?(List<Object>)> tokenizers =
+    HashMap<Integer, Token?(List<Object>)>();
 
     "Queue of states to process"
     value stateQueue = StateQueue();
@@ -474,7 +480,7 @@ shared abstract class ParseTree<out Root>(List<Object> data)
             return cached;
         }
 
-        value ret = HashSet{elements={ for (t in tokenizers)
+        value ret = HashSet{elements={ for (t in tokenizers.items)
             if (exists r = t(data[loc...])) r};};
 
         tokenCache.put(loc, ret);
@@ -615,7 +621,17 @@ shared abstract class ParseTree<out Root>(List<Object> data)
                 return ret;
             }
 
-            tokenizers = tokenizers.withTrailing(tokenizer);
+            assert(is UnionType retType = t.type);
+            value caseTypes =  retType.caseTypes;
+            assert(caseTypes.size == 2);
+            assert(is Generic tokenType = {for (r in caseTypes) if (
+                        !r.typeOf(null)) r}.first);
+
+            value typeArgs = tokenType.typeArguments.items;
+            assert(typeArgs.size == 1);
+            assert(exists type = typeArgs.first);
+
+            tokenizers.put(typeAtomCache.getAlias(type), tokenizer);
         }
 
         for (c in errConMeths) {
