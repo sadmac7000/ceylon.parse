@@ -230,13 +230,10 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
             if (want != other.type) { return null; }
 
             return derive(pos + other.length, matchPos + 1, other);
-        } else if (is EPState other) {
+        } else {
             if (want != other.rule.produces) { return null; }
 
             return derive(other.pos, matchPos + 1, other);
-        } else {
-            /* Unreachable */
-            assert(false);
         }
     }
 
@@ -473,8 +470,8 @@ shared abstract class ParseTree<out Root>(List<Object> data)
         }
 
         if (tokenCache.defines(loc)) {
-            assert(exists ret = tokenCache[loc]);
-            return ret;
+            assert(exists cached = tokenCache[loc]);
+            return cached;
         }
 
         value ret = HashSet{elements={ for (t in tokenizers)
