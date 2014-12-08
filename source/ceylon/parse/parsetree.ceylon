@@ -87,9 +87,12 @@ shared class Badness(shared List<Object> data) {}
 
 "An Earley parser state"
 class EPState(pos, rule, matchPos, start, children, baseLsd,
-        errorConstructors, tokensProcessedBefore) {
+        errorConstructors, tokensProcessedBefore, overrideLastToken = null) {
     "Starting Levenshtein distance"
     Integer baseLsd;
+
+    "Token we processed before parsing this rule"
+    Object? overrideLastToken;
 
     "Tokens processed before we began to parse this state"
     Integer tokensProcessedBefore;
@@ -102,6 +105,24 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
 
     "Tokens"
     shared [Symbol|EPState|Error*] children;
+
+    "The last token processed before matchPos"
+    shared Object? lastToken {
+        if (exists overrideLastToken) {
+            return null;
+        }
+        value last = children.last;
+        if (is Symbol last) {
+            return last.sym;
+        } else if (is EPState last) {
+            return last.lastToken;
+        } else /* null OR an error token */ {
+            /* We're either at the start, or overrideLastToken should have been
+             * set.
+             */
+            return null;
+        }
+    }
 
     assert(matchPos <= children.size);
 
@@ -173,8 +194,9 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     }
 
     "Derive a new state"
-    EPState derive(Integer newPos=pos, Integer newMatchPos=matchPos, Symbol|EPState|Error?
-            newChild=null, Boolean error=false) {
+    EPState derive(Integer newPos=pos, Integer newMatchPos=matchPos,
+            Symbol|EPState|Error?  newChild=null, Boolean error=false,
+            Object? overrideLast = null) {
         Integer newBaseLsd;
         [Symbol|EPState|Error*] newChildren;
 
@@ -191,7 +213,8 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
         }
 
         return EPState(newPos, rule, newMatchPos, start, newChildren,
-                newBaseLsd, errorConstructors, tokensProcessedBefore);
+                newBaseLsd, errorConstructors, tokensProcessedBefore,
+                overrideLast);
     }
 
     "Propagate this state with a trailing error. If badToken is set, we stopped
@@ -207,18 +230,20 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
         assert(exists inscons);
 
         value delete = { for (s in skip) derive(pos + s[1],
-                matchPos, ErrorDelete(s[0]), true)
+                matchPos, ErrorDelete(s[0]), true, s[0])
         };
 
         value replace = { for (s in skip) derive(pos + s[1],
-                matchPos + 1, ErrorReplace(inscons, s[0]), true)
+                matchPos + 1, ErrorReplace(inscons, s[0]), true,
+                lastToken)
         };
 
         if (is [Badness,Integer] s=skip.first, skip.size == 1) {
             return delete.chain(replace);
         }
 
-        value insert = derive(pos, matchPos + 1, ErrorInsert(inscons), true);
+        value insert = derive(pos, matchPos + 1, ErrorInsert(inscons), true,
+                lastToken);
 
         return delete.chain(replace).chain({insert});
     }
@@ -250,7 +275,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
             for (other in rules)
                 if (exists c=rule.consumes[matchPos], other.produces == c)
                     EPState(pos, other, 0, pos, [], 0, errorConstructors,
-                            tokensProcessed)
+                            tokensProcessed, lastToken)
         };
 
         if (exists nextToken,
@@ -431,8 +456,8 @@ shared abstract class ParseTree<out Root>(List<Object> data)
     value tokenCache = HashMap<Integer, Set<Token>>();
 
     "Tokenizers"
-    variable HashMap<Integer, Token?(List<Object>)> tokenizers =
-    HashMap<Integer, Token?(List<Object>)>();
+    variable HashMap<Integer, Token?(List<Object>, Object?)> tokenizers =
+    HashMap<Integer, Token?(List<Object>, Object?)>();
 
     "Queue of states to process"
     value stateQueue = StateQueue();
@@ -460,7 +485,7 @@ shared abstract class ParseTree<out Root>(List<Object> data)
     }
 
     "Get tokens at a given location"
-    Set<Token> getTokens(Integer loc) {
+    Set<Token> getTokens(Integer loc, Object? last) {
         assert(loc <= data.size);
 
         if (loc == data.size) {
@@ -473,7 +498,7 @@ shared abstract class ParseTree<out Root>(List<Object> data)
         }
 
         value ret = HashSet{elements={ for (t in tokenizers.items)
-            if (exists r = t(data[loc...])) r};};
+            if (exists r = t(data[loc...], last)) r};};
 
         tokenCache.put(loc, ret);
         return ret;
@@ -481,18 +506,18 @@ shared abstract class ParseTree<out Root>(List<Object> data)
 
     "Propagate a state"
     void propagateState(EPState state) {
-        {Symbol *} symbols;
+        Symbol? symbol;
 
         assert(exists want = state.rule.consumes[state.matchPos]);
 
         if (exists t = tokenizers[want],
-            exists sym = t(data[state.pos...])) {
-            symbols = {sym};
+            exists sym = t(data[state.pos...], state.lastToken)) {
+            symbol = sym;
         } else {
-            symbols = {};
+            symbol = null;
         }
 
-        for (s in state.propagate(rules, symbols)) {
+        for (s in state.propagate(rules, symbol)) {
             stateQueue.offer(s);
         }
     }
@@ -501,16 +526,21 @@ shared abstract class ParseTree<out Root>(List<Object> data)
     void recoverError() {
         stateQueue.initRecovery(rules);
         value state = stateQueue.acceptRecoveryState();
-        value tokens = getTokens(state.pos);
+        value tokens = getTokens(state.pos, state.lastToken);
         value badToken = tokens.size == 0;
         {[Object,Integer] *} skips;
 
         if (badToken) {
             variable value i = state.pos + 1;
+            variable Badness bad = Badness(data[state.pos..(i-1)]);
 
-            while (getTokens(i).size == 0) { i++; continue; }
+            while (getTokens(i, bad).size == 0) {
+                i++;
+                bad = Badness(data[state.pos..(i-1)]);
+                continue;
+            }
 
-            skips = {[Badness(data[state.pos..(i-1)]), i - state.pos]};
+            skips = {[bad, i - state.pos]};
         } else {
             value posSet = HashSet<Integer>{elements={ for (t in tokens)
                 t.length + state.pos };};
@@ -521,15 +551,15 @@ shared abstract class ParseTree<out Root>(List<Object> data)
             for (i in (state.pos + 1)..(maxPos - 1)) {
                 if (posSet.contains(i)) { continue; }
 
-                value toks = getTokens(i);
+                value bad = Badness(data[state.pos..(i-1)]);
+                value toks = getTokens(i, bad);
 
                 for (tok in toks) {
                     if (posSet.contains(tok.length + state.pos)) {
                         continue;
                     }
 
-                    resultSet.add([Badness(data[state.pos..(i-1)]),
-                            i - state.pos]);
+                    resultSet.add([bad, i - state.pos]);
                     posSet.add(i);
                     break;
                 }
@@ -547,7 +577,7 @@ shared abstract class ParseTree<out Root>(List<Object> data)
     Root? validate() {
         assert(exists endsPair = stateQueue.latest);
 
-        value eosTokens = getTokens(endsPair.key);
+        value eosTokens = getTokens(endsPair.key, null);
 
         if (eosTokens.size != 1) {
             recoverError();
@@ -615,9 +645,9 @@ shared abstract class ParseTree<out Root>(List<Object> data)
         value tokenizerMeths = type(this).getMethods<Nothing>(`Tokenizer`);
 
         for (t in tokenizerMeths) {
-            Token? tokenizer(List<Object> s) {
+            Token? tokenizer(List<Object> s, Object? last) {
                 assert(is Token? ret = t.declaration.memberInvoke(this, [],
-                            s));
+                            s, last));
                 return ret;
             }
 
