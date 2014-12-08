@@ -1,17 +1,14 @@
 import ceylon.language.meta { type }
 import ceylon.language.meta.model {
-    Method,
     Type,
     Generic,
     UnionType
 }
-import ceylon.language.meta.declaration { FunctionDeclaration }
 import ceylon.collection {
     HashSet,
     HashMap,
     ArrayList,
-    PriorityQueue,
-    unlinked
+    PriorityQueue
 }
 
 "A single token result returned by a tokenizer"
@@ -129,7 +126,6 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     shared Integer lsd {
         if (exists l=_lsd) { return l; }
 
-        variable value prev = start;
         variable value ret = baseLsd;
 
         for (c in children) {
@@ -347,7 +343,8 @@ shared final annotation class Tokenizer()
 shared annotation Tokenizer tokenizer() => Tokenizer();
 
 "Exception thrown when a [[ParseTree]] is ambiguous. [[ParseTree]] subtypes
- which override [[resolveAmbiguity]] may choose not to throw this exception."
+ which override [[ParseTree.resolveAmbiguity]] may choose not to throw this
+ exception."
 shared class AmbiguityException() extends Exception("Parser generated ambiguous
                                                      results") {}
 
@@ -559,8 +556,6 @@ shared abstract class ParseTree<out Root>(List<Object> data)
             recoverError();
             return null;
         }
-
-        value ends = endsPair.item;
 
         value resultNodes = ArrayList<Root>();
 

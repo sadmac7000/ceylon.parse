@@ -1,5 +1,3 @@
-import ceylon.language.meta { type }
-import ceylon.collection { HashSet, HashMap }
 import ceylon.test { test, assertEquals }
 
 "A base class for symbols in the test that defines a few handy features."
