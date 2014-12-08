@@ -1,4 +1,4 @@
-import ceylon.parse { ParseTree, Token, rule, tokenizer, errorConstructor }
+import ceylon.parse { ParseTree, Token, rule, tokenizer/*, errorConstructor*/ }
 import ceylon.ast.core {
     AnyCompilationUnit,
     Identifier,
@@ -71,11 +71,119 @@ String[] reservedWords = ["assembly", "module", "package", "import", "alias",
     "switch", "case", "for", "while", "try", "catch", "finally", "then", "let",
     "this", "outer", "super", "is", "exists", "nonempty"];
 
+class LineComment() {}
+class CommentStart() {}
+class CommentEnd() {}
+class CommentBody() {}
+class CommentBodySegment() {}
+class NestedCommentBody() {}
+class BlockComment() {}
+class Comment() {}
+
 "A parse tree for the Ceylon language"
 by("Casey Dahlin")
 class CeylonParseTree(String source)
         extends ParseTree<AnyCompilationUnit>(source) {
 
+    "Section 2.2 of the specification"
+    tokenizer
+    shared Token<LineComment>? lineComment(String input) {
+        if (! (input.startsWith("//") || input.startsWith("#!"))) {
+            return null;
+        }
+
+        variable value i = 2;
+
+        while (exists c = input[i], c != '\r', c != '\n') { i++; }
+
+        return Token(LineComment(), i);
+    }
+
+    "Section 2.2 of the specification"
+    tokenizer
+    shared Token<CommentStart>? commentStart(String input) {
+        if (input.startsWith("/*")) {
+            return Token(CommentStart(), 2);
+        }
+
+        return null;
+    }
+
+    "Section 2.2 of the specification"
+    tokenizer
+    shared Token<CommentEnd>? commentEnd(String input) {
+        if (input.startsWith("*/")) {
+            return Token(CommentEnd(), 2);
+        }
+
+        return null;
+    }
+
+    "Section 2.2 of the specification"
+    tokenizer
+    shared Token<CommentBody>? commentBody(String input) {
+        variable value i = 0;
+
+        while (i < input.size) {
+            if (input[i...].startsWith("/*")) { break; }
+            if (input[i...].startsWith("*/")) { break; }
+            i++;
+        }
+
+        if (i == 0) { return null; }
+
+        return Token(CommentBody(), i);
+    }
+
+    "Section 2.2 of the specification"
+    rule
+    shared BlockComment emptyBlockComment(CommentStart start, CommentEnd end) {
+        return BlockComment();
+    }
+
+    "Section 2.2 of the specification"
+    rule
+    shared CommentBodySegment simpleCommentBody(CommentBody body) {
+        return CommentBodySegment();
+    }
+
+    "Section 2.2 of the specification"
+    rule
+    shared CommentBodySegment repeatCommentBody(BlockComment body) {
+        return CommentBodySegment();
+    }
+
+    "Section 2.2 of the specification"
+    rule
+    shared NestedCommentBody simpleNestedCommentBody(CommentBodySegment body) {
+        return NestedCommentBody();
+    }
+
+    "Section 2.2 of the specification"
+    rule
+    shared NestedCommentBody nestedCommentBody(NestedCommentBody loop,
+            CommentBodySegment body) {
+        return NestedCommentBody();
+    }
+
+    "Section 2.2 of the specification"
+    rule
+    shared BlockComment blockComment(CommentStart start,
+            NestedCommentBody body, CommentEnd end) {
+        return BlockComment();
+    }
+
+    "Section 2.2 of the specification"
+    rule
+    shared Comment commentA(LineComment start) {
+        return Comment();
+    }
+
+    "Section 2.2 of the specification"
+    rule
+    shared Comment commentB(BlockComment start) {
+        return Comment();
+    }
 
     "Section 2.3 of the specification"
     tokenizer
