@@ -225,8 +225,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
 
     "Offer a symbol to this state for scanning or completion"
     shared EPState? feed(Symbol|EPState other) {
-        value want = rule.consumes[matchPos];
-        assert(exists want);
+        assert(exists want = rule.consumes[matchPos]);
 
         if (is Symbol other) {
             if (want != other.type) { return null; }
@@ -240,7 +239,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     }
 
     "Generate a prediction set for this state"
-    shared {EPState *} propagate({Rule *} rules, {Symbol *} newTokens) {
+    shared {EPState *} propagate({Rule *} rules, Symbol? nextToken) {
         if (propagated) {
             return {};
         }
@@ -254,11 +253,12 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
                             tokensProcessed)
         };
 
-        {EPState *} scan = {
-            for (token in newTokens) if (exists x = feed(token)) x
-        };
+        if (exists nextToken,
+            exists x = feed(nextToken)) {
+            return predict.chain({x});
+        }
 
-        return predict.chain(scan);
+        return predict;
     }
 
     shared actual Boolean equals(Object other) {
@@ -481,7 +481,17 @@ shared abstract class ParseTree<out Root>(List<Object> data)
 
     "Propagate a state"
     void propagateState(EPState state) {
-        value symbols = getTokens(state.pos);
+        {Symbol *} symbols;
+
+        assert(exists want = state.rule.consumes[state.matchPos]);
+
+        if (exists t = tokenizers[want],
+            exists sym = t(data[state.pos...])) {
+            symbols = {sym};
+        } else {
+            symbols = {};
+        }
+
         for (s in state.propagate(rules, symbols)) {
             stateQueue.offer(s);
         }
