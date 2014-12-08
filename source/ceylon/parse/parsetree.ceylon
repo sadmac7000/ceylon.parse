@@ -1,4 +1,6 @@
-import ceylon.language.meta { type }
+import ceylon.language.meta {
+    _type = type
+}
 import ceylon.language.meta.model {
     Type,
     Generic,
@@ -17,7 +19,19 @@ shared class Token<out SymType = Object>(SymType sym, Integer length)
         given SymType satisfies Object {}
 
 "A parsed symbol."
-shared class Symbol(shared Integer type, shared Object sym, shared Integer length) {}
+shared class Symbol(shared Integer type, shared Object sym, shared Integer length) {
+    shared actual Integer hash => type ^ 2 + length;
+
+    shared actual Boolean equals(Object that) {
+        if (! is Symbol that) {
+            return false;
+        } else {
+            if (_type(this) != _type(that)) { return false; }
+
+            return this.length == that.length;
+        }
+    }
+}
 
 "A result to represent the end of a stream."
 shared Token eos = Token(eosObject, 0);
@@ -70,7 +84,11 @@ class ErrorConstructorException(Type token)
         extends Exception("Could not construct error of type ``token``") {}
 
 "An error in parsing"
-abstract class Error() {}
+abstract class Error() {
+    shared actual Boolean equals(Object that) {
+        return _type(this) == _type(that);
+    }
+}
 
 "Error resolved by replacing a token"
 class ErrorReplace(shared Object(Object?) construct,
@@ -288,10 +306,18 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
 
     shared actual Boolean equals(Object other) {
         if (is EPState other) {
-            return other.start == start &&
-                other.pos == pos &&
-                other.rule == rule &&
-                other.matchPos == matchPos;
+            if (other.start != start) { return false; }
+            if (other.pos != pos) { return false; }
+            if (other.rule != rule) { return false; }
+            if (other.matchPos != matchPos) { return false; }
+
+            if (other.children.size != children.size) { return false;  }
+
+            for (a -> b in zipEntries(other.children, children)) {
+                if (a != b) { return false; }
+            }
+
+            return true;
         } else {
             return false;
         }
@@ -639,10 +665,10 @@ shared abstract class ParseTree<out Root>(List<Object> data)
 
     "Set up the list of rules"
     void populateRules() {
-        value meths = type(this).getMethods<Nothing>(`GrammarRule`);
+        value meths = _type(this).getMethods<Nothing>(`GrammarRule`);
         value errConMeths =
-            type(this).getMethods<Nothing>(`GrammarErrorConstructor`);
-        value tokenizerMeths = type(this).getMethods<Nothing>(`Tokenizer`);
+            _type(this).getMethods<Nothing>(`GrammarErrorConstructor`);
+        value tokenizerMeths = _type(this).getMethods<Nothing>(`Tokenizer`);
 
         for (t in tokenizerMeths) {
             Token? tokenizer(List<Object> s, Object? last) {
