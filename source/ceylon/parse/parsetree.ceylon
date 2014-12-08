@@ -101,7 +101,9 @@ class ErrorDelete(shared Object original) extends Error() {}
 class ErrorInsert(shared Object(Object?) construct) extends Error() {}
 
 "Bad token"
-shared class Badness(shared List<Object> data) {}
+shared class Badness(shared List<Object> data) {
+    shared Integer length => data.size;
+}
 
 "An Earley parser state"
 class EPState(pos, rule, matchPos, start, children, baseLsd,
@@ -235,9 +237,8 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
                 overrideLast);
     }
 
-    "Propagate this state with a trailing error. If badToken is set, we stopped
-     at a position where there was no parseable token."
-    shared {EPState *} failPropagate({[Object,Integer] *} skip) {
+    "Propagate this state with a trailing error."
+    shared {EPState *} failPropagate({Token|Badness *} skip) {
         assert(exists next = rule.consumes[matchPos]);
         value inscons = errorConstructors[next];
 
@@ -245,18 +246,34 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
             throw ErrorConstructorException(typeAtomCache.resolve(next));
         }
 
+        Integer len(Token|Badness item) {
+            if (is Token item) {
+                return item.length;
+            } else {
+                return item.length;
+            }
+        }
+
+        Object sym(Token|Badness item) {
+            if (is Badness item) {
+                return item;
+            } else {
+                return item.sym;
+            }
+        }
+
         assert(exists inscons);
 
-        value delete = { for (s in skip) derive(pos + s[1],
-                matchPos, ErrorDelete(s[0]), true, s[0])
+        value delete = { for (s in skip) derive(pos + len(s),
+                matchPos, ErrorDelete(sym(s)), true, sym(s))
         };
 
-        value replace = { for (s in skip) derive(pos + s[1],
-                matchPos + 1, ErrorReplace(inscons, s[0]), true,
+        value replace = { for (s in skip) derive(pos + len(s),
+                matchPos + 1, ErrorReplace(inscons, sym(s)), true,
                 lastToken)
         };
 
-        if (is [Badness,Integer] s=skip.first, skip.size == 1) {
+        if (is Badness s=skip.first, skip.size == 1) {
             return delete.chain(replace);
         }
 
@@ -554,7 +571,7 @@ shared abstract class ParseTree<out Root>(List<Object> data)
         value state = stateQueue.acceptRecoveryState();
         value tokens = getTokens(state.pos, state.lastToken);
         value badToken = tokens.size == 0;
-        {[Object,Integer] *} skips;
+        {Token|Badness *} skips;
 
         if (badToken) {
             variable value i = state.pos + 1;
@@ -566,13 +583,13 @@ shared abstract class ParseTree<out Root>(List<Object> data)
                 continue;
             }
 
-            skips = {[bad, i - state.pos]};
+            skips = {bad};
         } else {
             value posSet = HashSet<Integer>{elements={ for (t in tokens)
                 t.length + state.pos };};
             assert(exists maxPos = max(posSet));
-            value resultSet = HashSet<[Object,Integer]>{elements={ for (t in
-                    tokens) [t.sym, t.length] };};
+            value resultSet = HashSet<Token|Badness>{elements={ for (t in
+                    tokens) t };};
 
             for (i in (state.pos + 1)..(maxPos - 1)) {
                 if (posSet.contains(i)) { continue; }
@@ -585,7 +602,7 @@ shared abstract class ParseTree<out Root>(List<Object> data)
                         continue;
                     }
 
-                    resultSet.add([bad, i - state.pos]);
+                    resultSet.add(bad);
                     posSet.add(i);
                     break;
                 }
