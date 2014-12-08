@@ -12,8 +12,9 @@ import ceylon.collection {
 }
 
 "A single token result returned by a tokenizer"
-shared class Token<out SymType = Object>(Object sym, Integer length)
-        extends Symbol(typeAtomCache.getAlias(`SymType`), sym, length) {}
+shared class Token<out SymType = Object>(SymType sym, Integer length)
+        extends Symbol(typeAtomCache.getAlias(`SymType`), sym, length)
+        given SymType satisfies Object {}
 
 "A parsed symbol."
 shared class Symbol(shared Integer type, shared Object sym, shared Integer length) {}
@@ -348,12 +349,6 @@ shared annotation Tokenizer tokenizer() => Tokenizer();
 shared class AmbiguityException() extends Exception("Parser generated ambiguous
                                                      results") {}
 
-"Bulk-add types to the atom cache and return Symbol objects for them"
-{Symbol *} tokensToSymbols({Token *} tokens) {
-    return {for (t in tokens) Symbol(typeAtomCache.getAlias(type(t.sym)),
-            t.sym, t.length)};
-}
-
 "A queue of states, ordered and also prioritized by amount of error"
 class StateQueue() {
     value queue = ArrayList<EPState>();
@@ -486,7 +481,7 @@ shared abstract class ParseTree<out Root>(List<Object> data)
 
     "Propagate a state"
     void propagateState(EPState state) {
-        value symbols = tokensToSymbols(getTokens(state.pos));
+        value symbols = getTokens(state.pos);
         for (s in state.propagate(rules, symbols)) {
             stateQueue.offer(s);
         }
