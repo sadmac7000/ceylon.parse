@@ -238,7 +238,8 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     }
 
     "Propagate this state with a trailing error."
-    shared {EPState *} failPropagate({Token|Badness *} skip) {
+    shared {EPState *} failPropagate({Token|Badness *} skip,
+            Boolean badToken) {
         assert(exists next = rule.consumes[matchPos]);
         value inscons = errorConstructors[next];
 
@@ -273,7 +274,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
                 lastToken)
         };
 
-        if (is Badness s=skip.first, skip.size == 1) {
+        if (badToken) {
             return delete.chain(replace);
         }
 
@@ -571,7 +572,6 @@ shared abstract class ParseTree<out Root>(List<Object> data)
         value state = stateQueue.acceptRecoveryState();
         value tokens = getTokens(state.pos, state.lastToken);
         value badToken = tokens.size == 0;
-        {Token|Badness *} skips;
 
         if (badToken) {
             variable value i = state.pos + 1;
@@ -583,7 +583,9 @@ shared abstract class ParseTree<out Root>(List<Object> data)
                 continue;
             }
 
-            skips = {bad};
+            for (s in state.failPropagate({bad}, true)) {
+                stateQueue.offer(s);
+            }
         } else {
             value posSet = HashSet<Integer>{elements={ for (t in tokens)
                 t.length + state.pos };};
@@ -608,11 +610,9 @@ shared abstract class ParseTree<out Root>(List<Object> data)
                 }
             }
 
-            skips = resultSet;
-        }
-
-        for (s in state.failPropagate(skips)) {
-            stateQueue.offer(s);
+            for (s in state.failPropagate(resultSet, false)) {
+                stateQueue.offer(s);
+            }
         }
     }
 
