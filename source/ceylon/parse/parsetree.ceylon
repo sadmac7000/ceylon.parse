@@ -94,24 +94,29 @@ abstract class Error() {
     }
 }
 
+"Interface for errors that delete a token"
+interface DeletingError {
+    shared formal Object original;
+}
+
 "Error resolved by replacing a token"
 class ErrorReplace(shared Object(Object?) construct,
-        shared Object original) extends Error() {}
+        shared actual Object original) extends Error() satisfies DeletingError {}
 
 "Error resolved by deleting a token"
-class ErrorDelete(shared Object original) extends Error() {}
+class ErrorDelete(shared actual Object original) extends Error() satisfies DeletingError {}
 
 "Error resolved by inserting a new token"
 class ErrorInsert(shared Object(Object?) construct) extends Error() {}
 
 "An Earley parser state"
 class EPState(pos, rule, matchPos, start, children, baseLsd,
-        errorConstructors, tokensProcessedBefore, overrideLastToken = null) {
+        errorConstructors, tokensProcessedBefore, lastToken = null) {
     "Starting Levenshtein distance"
     Integer baseLsd;
 
     "Token we processed before parsing this rule"
-    Object? overrideLastToken;
+    shared Object? lastToken;
 
     "Tokens processed before we began to parse this state"
     Integer tokensProcessedBefore;
@@ -124,24 +129,6 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
 
     "Tokens"
     shared [Symbol|EPState|Error*] children;
-
-    "The last token processed before matchPos"
-    shared Object? lastToken {
-        if (exists overrideLastToken) {
-            return null;
-        }
-        value last = children.last;
-        if (is Symbol last) {
-            return last.sym;
-        } else if (is EPState last) {
-            return last.lastToken;
-        } else /* null OR an error token */ {
-            /* We're either at the start, or overrideLastToken should have been
-             * set.
-             */
-            return null;
-        }
-    }
 
     assert(matchPos <= children.size);
 
@@ -214,10 +201,21 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
 
     "Derive a new state"
     EPState derive(Integer newPos=pos, Integer newMatchPos=matchPos,
-            Symbol|EPState|Error?  newChild=null, Boolean error=false,
-            Object? overrideLast = null) {
+            Symbol|EPState|Error?  newChild=null, Boolean error=false) {
         Integer newBaseLsd;
         [Symbol|EPState|Error*] newChildren;
+
+        Object? last;
+
+        if (is Symbol newChild) {
+            last = newChild.sym;
+        } else if (is EPState newChild) {
+            last = newChild.lastToken;
+        } else if (is DeletingError newChild) {
+            last = newChild.original;
+        } else {
+            last = lastToken;
+        }
 
         if (error) {
             newBaseLsd = baseLsd + 1;
@@ -233,7 +231,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
 
         return EPState(newPos, rule, newMatchPos, start, newChildren,
                 newBaseLsd, errorConstructors, tokensProcessedBefore,
-                overrideLast);
+                last);
     }
 
     "Propagate this state with a trailing error."
@@ -249,20 +247,18 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
         assert(exists inscons);
 
         value delete = { for (s in skip) derive(pos + s.length,
-                matchPos, ErrorDelete(s.sym), true, s.sym)
+                matchPos, ErrorDelete(s.sym), true)
         };
 
         value replace = { for (s in skip) derive(pos + s.length,
-                matchPos + 1, ErrorReplace(inscons, s.sym), true,
-                lastToken)
+                matchPos + 1, ErrorReplace(inscons, s.sym), true)
         };
 
         if (badToken) {
             return delete.chain(replace);
         }
 
-        value insert = derive(pos, matchPos + 1, ErrorInsert(inscons), true,
-                lastToken);
+        value insert = derive(pos, matchPos + 1, ErrorInsert(inscons), true);
 
         return delete.chain(replace).chain({insert});
     }
