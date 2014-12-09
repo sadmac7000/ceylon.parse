@@ -469,7 +469,8 @@ class StateQueue() {
  are specifed by defining methods with the `rule` annotation.  The parser will
  create an appropriate production rule and call the annotated method in order
  to reduce the value."
-shared abstract class ParseTree<out Root>(List<Object> data)
+shared abstract class ParseTree<out Root, in Data>(Data data)
+        given Data satisfies List<Object>
         given Root satisfies Object {
     "A list of rules for this object"
     shared variable Rule[] rules = [];
@@ -483,8 +484,8 @@ shared abstract class ParseTree<out Root>(List<Object> data)
     value tokenCache = HashMap<Integer, Set<Token>>();
 
     "Tokenizers"
-    variable HashMap<Integer, Token?(List<Object>, Object?)> tokenizers =
-    HashMap<Integer, Token?(List<Object>, Object?)>();
+    variable HashMap<Integer, Token?(Data, Object?)> tokenizers =
+    HashMap<Integer, Token?(Data, Object?)>();
 
     "Queue of states to process"
     value stateQueue = StateQueue();
@@ -524,8 +525,9 @@ shared abstract class ParseTree<out Root>(List<Object> data)
             return cached;
         }
 
+        assert(is Data tail = data[loc...]);
         value ret = HashSet{elements={ for (t in tokenizers.items)
-            if (exists r = t(data[loc...], last)) r};};
+            if (exists r = t(tail, last)) r};};
 
         tokenCache.put(loc, ret);
         return ret;
@@ -538,7 +540,8 @@ shared abstract class ParseTree<out Root>(List<Object> data)
         assert(exists want = state.rule.consumes[state.matchPos]);
 
         if (exists t = tokenizers[want],
-            exists sym = t(data[state.pos...], state.lastToken)) {
+            is Data tail = data[state.pos...],
+            exists sym = t(tail, state.lastToken)) {
             symbol = sym;
         } else {
             symbol = null;
@@ -561,8 +564,8 @@ shared abstract class ParseTree<out Root>(List<Object> data)
 
             while (getTokens(i, state.lastToken).size == 0) { i++; }
 
-            value tok = constructBadToken(data[state.pos..(i - 1)],
-                    state.lastToken);
+            assert(is Data tokenData = data[state.pos..(i - 1)]);
+            value tok = constructBadToken(tokenData, state.lastToken);
 
             for (s in state.failPropagate({tok}, true)) {
                 stateQueue.offer(s);
@@ -584,8 +587,8 @@ shared abstract class ParseTree<out Root>(List<Object> data)
                         continue;
                     }
 
-                    value bad = constructBadToken(data[state.pos..(i-1)],
-                            state.lastToken);
+                    assert(is Data tokenData = data[state.pos..(i - 1)]);
+                    value bad = constructBadToken(tokenData, state.lastToken);
 
                     resultSet.add(bad);
                     posSet.add(i);
@@ -671,7 +674,7 @@ shared abstract class ParseTree<out Root>(List<Object> data)
         value tokenizerMeths = _type(this).getMethods<Nothing>(`Tokenizer`);
 
         for (t in tokenizerMeths) {
-            Token? tokenizer(List<Object> s, Object? last) {
+            Token? tokenizer(Data s, Object? last) {
                 assert(is Token? ret = t.declaration.memberInvoke(this, [],
                             s, last));
                 return ret;
@@ -723,11 +726,11 @@ shared abstract class ParseTree<out Root>(List<Object> data)
         }
     }
 
-    Token constructBadToken(List<Object> data, Object? previous) {
+    Token constructBadToken(Data data, Object? previous) {
         return Token(badTokenConstructor(data, previous), data.size);
     }
 
-    shared default Object badTokenConstructor(List<Object> data, Object? previous) {
+    shared default Object badTokenConstructor(Data data, Object? previous) {
         throw BadTokenConstructorException();
     }
 }

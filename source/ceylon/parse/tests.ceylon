@@ -57,7 +57,7 @@ class Crap(shared String data) {
 
 "A parse tree that accepts a very, very simple grammar. There are only 4 words
  in it (aaa, aaaa, baab, bab)."
-class SimpleTree(String input) extends ParseTree<S>(input) {
+class SimpleTree(String input) extends ParseTree<S, String>(input) {
     rule
     shared S rule1(ATerm at, A a, ATerm at2) => S(at, a, at2);
 
@@ -85,8 +85,7 @@ class SimpleTree(String input) extends ParseTree<S>(input) {
     errorConstructor
     shared ATerm error(Object? replaces) => ATermError(replaces);
 
-    shared actual Crap badTokenConstructor(List<Object> data, Object? last) {
-        assert(is String data);
+    shared actual Crap badTokenConstructor(String data, Object? last) {
         return Crap(data);
     }
 }

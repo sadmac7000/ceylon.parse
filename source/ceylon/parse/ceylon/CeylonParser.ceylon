@@ -83,7 +83,7 @@ class Comment() {}
 "A parse tree for the Ceylon language"
 by("Casey Dahlin")
 class CeylonParseTree(String source)
-        extends ParseTree<AnyCompilationUnit>(source) {
+        extends ParseTree<AnyCompilationUnit, String>(source) {
 
     "Section 2.2 of the specification"
     tokenizer
