@@ -561,7 +561,7 @@ shared abstract class ParseTree<out Root>(List<Object> data)
 
             while (getTokens(i, state.lastToken).size == 0) { i++; }
 
-            value tok = badTokenConstructor(data[state.pos..(i - 1)],
+            value tok = constructBadToken(data[state.pos..(i - 1)],
                     state.lastToken);
 
             for (s in state.failPropagate({tok}, true)) {
@@ -584,7 +584,7 @@ shared abstract class ParseTree<out Root>(List<Object> data)
                         continue;
                     }
 
-                    value bad = badTokenConstructor(data[state.pos..(i-1)],
+                    value bad = constructBadToken(data[state.pos..(i-1)],
                             state.lastToken);
 
                     resultSet.add(bad);
@@ -723,7 +723,11 @@ shared abstract class ParseTree<out Root>(List<Object> data)
         }
     }
 
-    shared default Token badTokenConstructor(List<Object> data, Object? previous) {
+    Token constructBadToken(List<Object> data, Object? previous) {
+        return Token(badTokenConstructor(data, previous), data.size);
+    }
+
+    shared default Object badTokenConstructor(List<Object> data, Object? previous) {
         throw BadTokenConstructorException();
     }
 }

@@ -85,9 +85,9 @@ class SimpleTree(String input) extends ParseTree<S>(input) {
     errorConstructor
     shared ATerm error(Object? replaces) => ATermError(replaces);
 
-    shared actual Token<Crap> badTokenConstructor(List<Object> data, Object? last) {
+    shared actual Crap badTokenConstructor(List<Object> data, Object? last) {
         assert(is String data);
-        return Token(Crap(data), data.size);
+        return Crap(data);
     }
 }
 
