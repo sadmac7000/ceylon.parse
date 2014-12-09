@@ -83,6 +83,10 @@ shared class Rule(shared Object(Object*) consume, shared Integer[] consumes,
 class ErrorConstructorException(Type token)
         extends Exception("Could not construct error of type ``token``") {}
 
+"Exception thrown when we need a bad token constructor but one isn't defined"
+class BadTokenConstructorException()
+        extends Exception("Could not construct invalid token") {}
+
 "An error in parsing"
 abstract class Error() {
     shared actual Boolean equals(Object that) {
@@ -99,11 +103,6 @@ class ErrorDelete(shared Object original) extends Error() {}
 
 "Error resolved by inserting a new token"
 class ErrorInsert(shared Object(Object?) construct) extends Error() {}
-
-"Bad token"
-shared class Badness(shared List<Object> data) {
-    shared Integer length => data.size;
-}
 
 "An Earley parser state"
 class EPState(pos, rule, matchPos, start, children, baseLsd,
@@ -238,7 +237,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     }
 
     "Propagate this state with a trailing error."
-    shared {EPState *} failPropagate({Token|Badness *} skip,
+    shared {EPState *} failPropagate({Token *} skip,
             Boolean badToken) {
         assert(exists next = rule.consumes[matchPos]);
         value inscons = errorConstructors[next];
@@ -247,30 +246,14 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
             throw ErrorConstructorException(typeAtomCache.resolve(next));
         }
 
-        Integer len(Token|Badness item) {
-            if (is Token item) {
-                return item.length;
-            } else {
-                return item.length;
-            }
-        }
-
-        Object sym(Token|Badness item) {
-            if (is Badness item) {
-                return item;
-            } else {
-                return item.sym;
-            }
-        }
-
         assert(exists inscons);
 
-        value delete = { for (s in skip) derive(pos + len(s),
-                matchPos, ErrorDelete(sym(s)), true, sym(s))
+        value delete = { for (s in skip) derive(pos + s.length,
+                matchPos, ErrorDelete(s.sym), true, s.sym)
         };
 
-        value replace = { for (s in skip) derive(pos + len(s),
-                matchPos + 1, ErrorReplace(inscons, sym(s)), true,
+        value replace = { for (s in skip) derive(pos + s.length,
+                matchPos + 1, ErrorReplace(inscons, s.sym), true,
                 lastToken)
         };
 
@@ -575,34 +558,34 @@ shared abstract class ParseTree<out Root>(List<Object> data)
 
         if (badToken) {
             variable value i = state.pos + 1;
-            variable Badness bad = Badness(data[state.pos..(i-1)]);
 
-            while (getTokens(i, bad).size == 0) {
-                i++;
-                bad = Badness(data[state.pos..(i-1)]);
-                continue;
-            }
+            while (getTokens(i, state.lastToken).size == 0) { i++; }
 
-            for (s in state.failPropagate({bad}, true)) {
+            value tok = badTokenConstructor(data[state.pos..(i - 1)],
+                    state.lastToken);
+
+            for (s in state.failPropagate({tok}, true)) {
                 stateQueue.offer(s);
             }
         } else {
             value posSet = HashSet<Integer>{elements={ for (t in tokens)
                 t.length + state.pos };};
             assert(exists maxPos = max(posSet));
-            value resultSet = HashSet<Token|Badness>{elements={ for (t in
+            value resultSet = HashSet<Token>{elements={ for (t in
                     tokens) t };};
 
             for (i in (state.pos + 1)..(maxPos - 1)) {
                 if (posSet.contains(i)) { continue; }
 
-                value bad = Badness(data[state.pos..(i-1)]);
-                value toks = getTokens(i, bad);
+                value toks = getTokens(i, state.lastToken);
 
                 for (tok in toks) {
                     if (posSet.contains(tok.length + state.pos)) {
                         continue;
                     }
+
+                    value bad = badTokenConstructor(data[state.pos..(i-1)],
+                            state.lastToken);
 
                     resultSet.add(bad);
                     posSet.add(i);
@@ -738,5 +721,9 @@ shared abstract class ParseTree<out Root>(List<Object> data)
                     errorConstructors, 0);
             stateQueue.offer(newState);
         }
+    }
+
+    shared default Token badTokenConstructor(List<Object> data, Object? previous) {
+        throw BadTokenConstructorException();
     }
 }

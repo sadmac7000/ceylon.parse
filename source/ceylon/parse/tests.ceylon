@@ -34,12 +34,24 @@ class ATermError(Object? replaces = null) extends ATerm() {
     shared actual String shortName {
         if (! replaces exists) { return super.shortName + "(Missing 'a')"; }
 
-        if (is Badness replaces) {
+        if (is Crap replaces) {
             return "``super.shortName``(Bad token: '``replaces.data``')";
         } else {
             assert(exists replaces);
             return "``super.shortName``(Replaced: '``replaces``')";
         }
+    }
+}
+
+"A string of bad data"
+class Crap(shared String data) {
+    shared actual Integer hash = data.hash;
+    shared actual Boolean equals(Object that) {
+        if (is Crap that) {
+            return that.data == this.data;
+        }
+
+        return false;
     }
 }
 
@@ -72,6 +84,11 @@ class SimpleTree(String input) extends ParseTree<S>(input) {
 
     errorConstructor
     shared ATerm error(Object? replaces) => ATermError(replaces);
+
+    shared actual Token<Crap> badTokenConstructor(List<Object> data, Object? last) {
+        assert(is String data);
+        return Token(Crap(data), data.size);
+    }
 }
 
 test
@@ -153,7 +170,7 @@ shared void simple_word2_bad() {
     value expect = S (
         BTerm(),
         A (
-            ATermError(Badness("q"))
+            ATermError(Crap("q"))
         ),
         BTerm()
     );
