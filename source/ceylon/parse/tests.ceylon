@@ -135,7 +135,6 @@ shared void simple_word1() {
         ),
         BTerm(3)
     );
-    print(root);
 
     assertEquals(root, expect);
 }
