@@ -26,10 +26,6 @@ shared class Rule(shared Object(Object*) consume, shared Integer[] consumes,
     }
 }
 
-"Exception thrown when we need a bad token constructor but one isn't defined"
-class BadTokenConstructorException()
-        extends Exception("Could not construct invalid token") {}
-
 "A do-nothing annotation class for the `error` annotation"
 shared final annotation class GrammarErrorConstructor()
         satisfies OptionalAnnotation<GrammarErrorConstructor, Annotated> {}
@@ -58,10 +54,14 @@ shared annotation Tokenizer tokenizer() => Tokenizer();
 "Exception thrown when a [[ParseTree]] is ambiguous. [[ParseTree]] subtypes
  which override [[ParseTree.resolveAmbiguity]] may choose not to throw this
  exception."
-shared class AmbiguityException() extends Exception("Parser generated ambiguous
-                                                     results") {}
+class AmbiguityException()
+        extends Exception("Parser generated ambiguous results") {}
 
-"A queue of states, ordered and also prioritized by amount of error"
+"Exception thrown when we need a bad token constructor but one isn't defined"
+class BadTokenConstructorException()
+        extends Exception("Could not construct invalid token") {}
+
+"A queue of states"
 class StateQueue() {
     value queue = ArrayList<EPState>();
     value states = HashMap<Integer,HashSet<EPState>>();
