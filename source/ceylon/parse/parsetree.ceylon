@@ -2,7 +2,6 @@ import ceylon.language.meta {
     _type = type
 }
 import ceylon.language.meta.model {
-    Type,
     Generic,
     UnionType
 }
@@ -11,34 +10,6 @@ import ceylon.collection {
     HashMap,
     ArrayList,
     PriorityQueue
-}
-
-"We have to convert type objects to integers to pass them around, otherwise we
- encounter weird performance issues."
-object typeAtomCache {
-    value from = HashMap<Type, Integer>();
-    value to = HashMap<Integer, Type>();
-    variable value next = 0;
-
-    "Get an alias for a type"
-    shared Integer getAlias(Type t) {
-        if (from.defines(t)) {
-            value ret = from[t];
-            assert(exists ret);
-            return ret;
-        }
-
-        from.put(t, next);
-        to.put(next, t);
-        return next++;
-    }
-
-    "Resolve a type"
-    shared Type resolve(Integer i) {
-        value ret = to[i];
-        assert(exists ret);
-        return ret;
-    }
 }
 
 "A rule. Specifies produced and consumed symbols and a method to execute them"
