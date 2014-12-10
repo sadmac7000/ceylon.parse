@@ -7,7 +7,7 @@ class ErrorConstructorException(Type token)
         extends Exception("Could not construct error of type ``token``") {}
 
 "An error in parsing"
-abstract class Error() {
+abstract class Error(shared Object? prev) {
     shared actual Boolean equals(Object that) {
         return _type(this) == _type(that);
     }
@@ -20,24 +20,29 @@ interface DeletingError {
 
 "Interface for errors that insert a token"
 interface InsertingError {
-    shared formal Object(Object?) construct;
+    shared formal Object(Object?, Object?) constructor;
+    shared formal Object construct(Object? a);
 }
 
 "Error resolved by replacing a token"
-class ErrorReplace(shared actual Object(Object?) construct,
-                   shared actual Object original)
-        extends Error()
-        satisfies DeletingError, InsertingError {}
+class ErrorReplace(shared actual Object(Object?, Object?) constructor,
+                   shared actual Object original, Object? p)
+        extends Error(p)
+        satisfies DeletingError, InsertingError {
+    shared actual Object construct(Object? a) => constructor(a, prev);
+}
 
 "Error resolved by deleting a token"
-class ErrorDelete(shared actual Object original)
-        extends Error()
+class ErrorDelete(shared actual Object original, Object? p)
+        extends Error(p)
         satisfies DeletingError {}
 
 "Error resolved by inserting a new token"
-class ErrorInsert(shared actual Object(Object?) construct)
-        extends Error()
-        satisfies InsertingError {}
+class ErrorInsert(shared actual Object(Object?, Object?) constructor, Object? p)
+        extends Error(p)
+        satisfies InsertingError {
+    shared actual Object construct(Object? a) => constructor(a, prev);
+}
 
 "An Earley parser state"
 class EPState(pos, rule, matchPos, start, children, baseLsd,
@@ -55,7 +60,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     shared Integer start;
 
     "Error constructors"
-    shared Map<Integer,Object(Object?)> errorConstructors;
+    shared Map<Integer,Object(Object?, Object?)> errorConstructors;
 
     "Tokens"
     shared [Symbol|EPState|Error*] children;
@@ -175,18 +180,18 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
         assert(exists inscons);
 
         value delete = { for (s in skip) derive(pos + s.length,
-                matchPos, ErrorDelete(s.sym), true)
+                matchPos, ErrorDelete(s.sym, lastToken), true)
         };
 
         value replace = { for (s in skip) derive(pos + s.length,
-                matchPos + 1, ErrorReplace(inscons, s.sym), true)
+                matchPos + 1, ErrorReplace(inscons, s.sym, lastToken), true)
         };
 
         if (badToken) {
             return delete.chain(replace);
         }
 
-        value insert = derive(pos, matchPos + 1, ErrorInsert(inscons), true);
+        value insert = derive(pos, matchPos + 1, ErrorInsert(inscons, lastToken), true);
 
         return delete.chain(replace).chain({insert});
     }

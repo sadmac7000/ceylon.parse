@@ -92,7 +92,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
     shared Integer result = g.result;
 
     "Error constructors"
-    shared Map<Integer, Object(Object?)> errorConstructors =
+    shared Map<Integer, Object(Object?, Object?)> errorConstructors =
         g.errorConstructors;
 
     "Tokenizers"

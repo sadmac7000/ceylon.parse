@@ -63,8 +63,8 @@ shared abstract class Grammar<out Root, Data>()
     shared Integer result = typeAtomCache.getAlias(`Root`);
 
     "Error constructors"
-    shared HashMap<Integer, Object(Object?)> errorConstructors =
-        HashMap<Integer, Object(Object?)>();
+    shared HashMap<Integer, Object(Object?, Object?)> errorConstructors =
+        HashMap<Integer, Object(Object?, Object?)>();
 
     "Tokenizers"
     shared variable HashMap<Integer, Token?(Data, Object?)> tokenizers =
@@ -105,9 +105,9 @@ shared abstract class Grammar<out Root, Data>()
         for (c in errConMeths) {
             value type = typeAtomCache.getAlias(c.type);
 
-            Object construct(Object? o) {
+            Object construct(Object? o, Object? prev) {
                 assert(is Object ret = c.declaration.memberInvoke(this, [],
-                            o));
+                            o, prev));
                 return ret;
             }
 
