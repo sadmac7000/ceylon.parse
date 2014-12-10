@@ -2,6 +2,8 @@ import ceylon.test { test, assertEquals }
 
 "A base class for symbols in the test that defines a few handy features."
 class Sym(shared variable Integer position = 0, Sym* children) {
+    shared default Object? prevError = null;
+
     shared actual Integer hash {
         return string.hash;
     }
@@ -11,25 +13,32 @@ class Sym(shared variable Integer position = 0, Sym* children) {
     }
 
     shared actual String string {
-        if (children.size == 0) {
-            return shortName;
+        String prefix;
+
+        if (exists p = prevError) {
+            prefix = "(``p``)";
+        } else {
+            prefix = "";
         }
 
-        return "[``this.shortName`` ``[for (x in children) x.string]``]";
+        if (children.size == 0) {
+            return prefix + shortName;
+        }
+
+        return "[``prefix + shortName`` ``[for (x in children) x.string]``]";
     }
 
     shared default String shortName {
         value start = className(this);
-        value properIdx = start.lastOccurrence('.');
-        assert(exists properIdx);
+        assert(exists properIdx = start.lastOccurrence('.'));
         return start[(properIdx+1)...] + "@``position``";
     }
 }
 
 class S(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
 class A(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
-class ATerm(Integer pos = 0) extends Sym(pos) {}
-class BTerm(Integer pos = 0) extends Sym(pos) {}
+class ATerm(Integer pos = 0, shared actual Object? prevError = null) extends Sym(pos) {}
+class BTerm(Integer pos = 0, shared actual Object? prevError = null) extends Sym(pos) {}
 class ATermError(Object? replaces = null, Integer pos = 0)
         extends ATerm(pos) {
     shared actual String shortName {
@@ -54,6 +63,11 @@ class Crap(shared String data, shared Integer position = 0) {
 
         return false;
     }
+    shared variable Boolean consumed = false;
+
+    shared actual String string {
+        return "``position``-``data``";
+    }
 }
 
 "A parse tree that accepts a very, very simple grammar. There are only 4 words
@@ -74,31 +88,39 @@ object simpleGrammar extends Grammar<S, String>() {
     tokenizer
     shared Token<ATerm>? aTerm(String input, Object? last) {
         Integer position;
+        Crap? prevError;
 
         if (is Sym last) {
             position = last.position + 1;
+            prevError = null;
         } else if (is Crap last) {
             position = last.position + last.data.size;
+            prevError = last;
         } else {
             position = 0;
+            prevError = null;
         }
-        if (input.startsWith("a")) { return Token(ATerm(position),1); }
+        if (input.startsWith("a")) { return Token(ATerm(position, prevError),1); }
         return null;
     }
 
     tokenizer
     shared Token<BTerm>? bTerm(String input, Object? last) {
         Integer position;
+        Crap? prevError;
 
         if (is Sym last) {
             position = last.position + 1;
+            prevError = null;
         } else if (is Crap last) {
             position = last.position + last.data.size;
+            prevError = last;
         } else {
             position = 0;
+            prevError = null;
         }
 
-        if (input.startsWith("b")) { return Token(BTerm(position),1); }
+        if (input.startsWith("b")) { return Token(BTerm(position, prevError),1); }
         return null;
     }
 
@@ -189,7 +211,7 @@ shared void simple_word4_bad() {
         ATerm(0),
         A (1,
             ATerm(1),
-            ATerm(3)
+            ATerm(3, Crap("q", 2))
         ),
         ATerm(4)
     );

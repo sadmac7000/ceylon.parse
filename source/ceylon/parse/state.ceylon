@@ -20,17 +20,14 @@ interface DeletingError {
 
 "Interface for errors that insert a token"
 interface InsertingError {
-    shared formal Object(Object?, Object?) constructor;
-    shared formal Object construct(Object? a);
+    shared formal Object newSym;
 }
 
 "Error resolved by replacing a token"
-class ErrorReplace(shared actual Object(Object?, Object?) constructor,
+class ErrorReplace(shared actual Object newSym,
                    shared actual Object original, Object? p)
         extends Error(p)
-        satisfies DeletingError, InsertingError {
-    shared actual Object construct(Object? a) => constructor(a, prev);
-}
+        satisfies DeletingError, InsertingError {}
 
 "Error resolved by deleting a token"
 class ErrorDelete(shared actual Object original, Object? p)
@@ -38,11 +35,9 @@ class ErrorDelete(shared actual Object original, Object? p)
         satisfies DeletingError {}
 
 "Error resolved by inserting a new token"
-class ErrorInsert(shared actual Object(Object?, Object?) constructor, Object? p)
+class ErrorInsert(shared actual Object newSym, Object? p)
         extends Error(p)
-        satisfies InsertingError {
-    shared actual Object construct(Object? a) => constructor(a, prev);
-}
+        satisfies InsertingError {}
 
 "An Earley parser state"
 class EPState(pos, rule, matchPos, start, children, baseLsd,
@@ -122,9 +117,9 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
             } else if (is EPState c) {
                 sym = sym.withTrailing(c.astNode.sym);
             } else if (is ErrorInsert c) {
-                sym = sym.withTrailing(c.construct(null));
+                sym = sym.withTrailing(c.newSym);
             } else if (is ErrorReplace c) {
-                sym = sym.withTrailing(c.construct(c.original));
+                sym = sym.withTrailing(c.newSym);
             }
         }
 
@@ -144,6 +139,8 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
             last = newChild.sym;
         } else if (is EPState newChild) {
             last = newChild.lastToken;
+        } else if (is ErrorReplace newChild) {
+            last = newChild.newSym;
         } else if (is DeletingError newChild) {
             last = newChild.original;
         } else {
@@ -183,15 +180,21 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
                 matchPos, ErrorDelete(s.sym, lastToken), true)
         };
 
-        value replace = { for (s in skip) derive(pos + s.length,
-                matchPos + 1, ErrorReplace(inscons, s.sym, lastToken), true)
+        EPState deriveErrorReplace(Integer p, Integer m, Object sym) {
+            value newSym = inscons(sym, lastToken);
+            return derive(p, m, ErrorReplace(newSym, sym, lastToken));
+        }
+
+        value replace = { for (s in skip) deriveErrorReplace(pos + s.length,
+                matchPos + 1, s.sym)
         };
 
         if (badToken) {
             return delete.chain(replace);
         }
 
-        value insert = derive(pos, matchPos + 1, ErrorInsert(inscons, lastToken), true);
+        value newToken = inscons(null, lastToken);
+        value insert = derive(pos, matchPos + 1, ErrorInsert(newToken, lastToken), true);
 
         return delete.chain(replace).chain({insert});
     }
