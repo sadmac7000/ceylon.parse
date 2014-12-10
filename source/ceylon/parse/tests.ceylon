@@ -1,7 +1,7 @@
 import ceylon.test { test, assertEquals }
 
 "A base class for symbols in the test that defines a few handy features."
-class Sym(Sym* children) {
+class Sym(shared variable Integer position = 0, Sym* children) {
     shared actual Integer hash {
         return string.hash;
     }
@@ -22,15 +22,16 @@ class Sym(Sym* children) {
         value start = className(this);
         value properIdx = start.lastOccurrence('.');
         assert(exists properIdx);
-        return start[(properIdx+1)...];
+        return start[(properIdx+1)...] + "@``position``";
     }
 }
 
-class S(Sym* children) extends Sym(*children) {}
-class A(Sym* children) extends Sym(*children) {}
-class ATerm() extends Sym() {}
-class BTerm() extends Sym() {}
-class ATermError(Object? replaces = null) extends ATerm() {
+class S(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
+class A(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
+class ATerm(Integer pos = 0) extends Sym(pos) {}
+class BTerm(Integer pos = 0) extends Sym(pos) {}
+class ATermError(Object? replaces = null, Integer pos = 0)
+        extends ATerm(pos) {
     shared actual String shortName {
         if (! replaces exists) { return super.shortName + "(Missing 'a')"; }
 
@@ -44,7 +45,7 @@ class ATermError(Object? replaces = null) extends ATerm() {
 }
 
 "A string of bad data"
-class Crap(shared String data) {
+class Crap(shared String data, shared Integer position = 0) {
     shared actual Integer hash = data.hash;
     shared actual Boolean equals(Object that) {
         if (is Crap that) {
@@ -59,48 +60,82 @@ class Crap(shared String data) {
  in it (aaa, aaaa, baab, bab)."
 object simpleGrammar extends Grammar<S, String>() {
     rule
-    shared S rule1(ATerm at, A a, ATerm at2) => S(at, a, at2);
+    shared S rule1(ATerm at, A a, ATerm at2) => S(at.position, at, a, at2);
 
     rule
-    shared S rule2(BTerm bt, A a, BTerm bt2) => S(bt, a, bt2);
+    shared S rule2(BTerm bt, A a, BTerm bt2) => S(bt.position, bt, a, bt2);
 
     rule
-    shared A rule3(ATerm at) => A(at);
+    shared A rule3(ATerm at) => A(at.position, at);
 
     rule
-    shared A rule4(ATerm at, ATerm at2) => A(at, at2);
+    shared A rule4(ATerm at, ATerm at2) => A(at.position, at, at2);
 
     tokenizer
     shared Token<ATerm>? aTerm(String input, Object? last) {
-        if (input.startsWith("a")) { return Token(ATerm(),1); }
+        Integer position;
+
+        if (is Sym last) {
+            position = last.position + 1;
+        } else if (is Crap last) {
+            position = last.position + last.data.size;
+        } else {
+            position = 0;
+        }
+        if (input.startsWith("a")) { return Token(ATerm(position),1); }
         return null;
     }
 
     tokenizer
     shared Token<BTerm>? bTerm(String input, Object? last) {
-        if (input.startsWith("b")) { return Token(BTerm(),1); }
+        Integer position;
+
+        if (is Sym last) {
+            position = last.position + 1;
+        } else if (is Crap last) {
+            position = last.position + last.data.size;
+        } else {
+            position = 0;
+        }
+
+        if (input.startsWith("b")) { return Token(BTerm(position),1); }
         return null;
     }
 
     errorConstructor
-    shared ATerm error(Object? replaces) => ATermError(replaces);
+    shared ATerm error(Object? replaces, Object? last) {
+        if (is Sym last) {
+            return ATermError(replaces, last.position + 1);
+        } else if (is Crap last) {
+            return ATermError(replaces, last.position + last.data.size);
+        } else {
+            return ATermError(replaces);
+        }
+    }
 
     shared actual Crap badTokenConstructor(String data, Object? last) {
-        return Crap(data);
+        if (is Sym last) {
+            return Crap(data, last.position + 1);
+        } else if (is Crap last) {
+            return Crap(data, last.position + last.data.size);
+        } else {
+            return Crap(data);
+        }
     }
 }
 
 test
 shared void simple_word1() {
     value root = ParseTree(simpleGrammar, "baab").ast;
-    value expect = S (
-        BTerm(),
-        A (
-            ATerm(),
-            ATerm()
+    value expect = S (0,
+        BTerm(0),
+        A (1,
+            ATerm(1),
+            ATerm(2)
         ),
-        BTerm()
+        BTerm(3)
     );
+    print(root);
 
     assertEquals(root, expect);
 }
@@ -108,12 +143,12 @@ shared void simple_word1() {
 test
 shared void simple_word2() {
     value root = ParseTree(simpleGrammar, "bab").ast;
-    value expect = S (
-        BTerm(),
-        A (
-            ATerm()
+    value expect = S (0,
+        BTerm(0),
+        A (1,
+            ATerm(1)
         ),
-        BTerm()
+        BTerm(2)
     );
 
     assertEquals(root, expect);
@@ -122,12 +157,12 @@ shared void simple_word2() {
 test
 shared void simple_word3() {
     value root = ParseTree(simpleGrammar, "aaa").ast;
-    value expect = S (
-        ATerm(),
-        A (
-            ATerm()
+    value expect = S (0,
+        ATerm(0),
+        A (1,
+            ATerm(1)
         ),
-        ATerm()
+        ATerm(2)
     );
 
     assertEquals(root, expect);
@@ -136,13 +171,13 @@ shared void simple_word3() {
 test
 shared void simple_word4() {
     value root = ParseTree(simpleGrammar, "aaaa").ast;
-    value expect = S (
-        ATerm(),
-        A (
-            ATerm(),
-            ATerm()
+    value expect = S (0,
+        ATerm(0),
+        A (1,
+            ATerm(1),
+            ATerm(2)
         ),
-        ATerm()
+        ATerm(3)
     );
 
     assertEquals(root, expect);
@@ -151,13 +186,13 @@ shared void simple_word4() {
 test
 shared void simple_word4_bad() {
     value root = ParseTree(simpleGrammar, "aaqaa").ast;
-    value expect = S (
-        ATerm(),
-        A (
-            ATerm(),
-            ATerm()
+    value expect = S (0,
+        ATerm(0),
+        A (1,
+            ATerm(1),
+            ATerm(3)
         ),
-        ATerm()
+        ATerm(4)
     );
 
     assertEquals(root, expect);
@@ -166,12 +201,12 @@ shared void simple_word4_bad() {
 test
 shared void simple_word2_bad() {
     value root = ParseTree(simpleGrammar, "bqb").ast;
-    value expect = S (
-        BTerm(),
-        A (
-            ATermError(Crap("q"))
+    value expect = S (0,
+        BTerm(0),
+        A (1,
+            ATermError(Crap("q"), 1)
         ),
-        BTerm()
+        BTerm(2)
     );
 
     assertEquals(root, expect);
@@ -180,12 +215,12 @@ shared void simple_word2_bad() {
 test
 shared void simple_word2_bad2() {
     value root = ParseTree(simpleGrammar, "bb").ast;
-    value expect = S (
-        BTerm(),
-        A (
-            ATermError()
+    value expect = S (0,
+        BTerm(0),
+        A (1,
+            ATermError(null, 1)
         ),
-        BTerm()
+        BTerm(1)
     );
 
     assertEquals(root, expect);
