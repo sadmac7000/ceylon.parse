@@ -123,12 +123,11 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
 
     "Process a complete state"
     void completeState(EPState state) {
-        value prev = stateQueue.at(state.start);
-        for (s in prev) {
-            if (s.complete) { continue; }
-            value n = s.feed(state);
-
-            if (exists n) { stateQueue.offer(n); }
+        for (s in stateQueue.at(state.start)) {
+            if (! s.complete,
+                exists n = s.feed(state)) {
+                stateQueue.offer(n);
+            }
         }
     }
 
@@ -155,19 +154,16 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
 
     "Propagate a state"
     void propagateState(EPState state) {
-        Symbol? symbol;
-
         assert(exists want = state.rule.consumes[state.matchPos]);
 
         if (exists t = tokenizers[want],
             is Data tail = data[state.pos...],
-            exists sym = t(tail, state.lastToken)) {
-            symbol = sym;
-        } else {
-            symbol = null;
+            exists sym = t(tail, state.lastToken),
+            exists s = state.feed(sym)) {
+            stateQueue.offer(s);
         }
 
-        for (s in state.propagate(rules, symbol)) {
+        for (s in state.propagate(rules)) {
             stateQueue.offer(s);
         }
     }

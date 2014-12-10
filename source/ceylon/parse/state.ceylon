@@ -7,7 +7,7 @@ class ErrorConstructorException(Type token)
         extends Exception("Could not construct error of type ``token``") {}
 
 "An error in parsing"
-abstract class Error(shared Object? prev) {
+abstract class Error() {
     shared actual Boolean equals(Object that) {
         return _type(this) == _type(that);
     }
@@ -25,18 +25,18 @@ interface InsertingError {
 
 "Error resolved by replacing a token"
 class ErrorReplace(shared actual Object newSym,
-                   shared actual Object original, Object? p)
-        extends Error(p)
+                   shared actual Object original)
+        extends Error()
         satisfies DeletingError, InsertingError {}
 
 "Error resolved by deleting a token"
-class ErrorDelete(shared actual Object original, Object? p)
-        extends Error(p)
+class ErrorDelete(shared actual Object original)
+        extends Error()
         satisfies DeletingError {}
 
 "Error resolved by inserting a new token"
-class ErrorInsert(shared actual Object newSym, Object? p)
-        extends Error(p)
+class ErrorInsert(shared actual Object newSym)
+        extends Error()
         satisfies InsertingError {}
 
 "An Earley parser state"
@@ -102,9 +102,6 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     "Whether this state is complete"
     shared Boolean complete = rule.consumes.size == matchPos;
 
-    "Whether this state has propagated from its position"
-    variable Boolean propagated = complete;
-
     "The AST node for this state"
     shared Symbol astNode {
         assert(complete);
@@ -128,9 +125,10 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     }
 
     "Derive a new state"
-    EPState derive(Integer newPos=pos, Integer newMatchPos=matchPos,
-            Symbol|EPState|Error?  newChild=null, Boolean error=false) {
+    EPState derive(Integer newPos,
+            Symbol|EPState|Error newChild) {
         Integer newBaseLsd;
+        Integer newMatchPos;
         [Symbol|EPState|Error*] newChildren;
 
         Object? last;
@@ -147,17 +145,19 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
             last = lastToken;
         }
 
-        if (error) {
+        if (is ErrorDelete newChild) {
+            newMatchPos = matchPos;
+        } else {
+            newMatchPos = matchPos + 1;
+        }
+
+        if (is Error newChild) {
             newBaseLsd = baseLsd + 1;
         } else {
             newBaseLsd = baseLsd;
         }
 
-        if (exists newChild) {
-            newChildren = children.withTrailing(newChild);
-        } else {
-            newChildren = children;
-        }
+        newChildren = children.withTrailing(newChild);
 
         return EPState(newPos, rule, newMatchPos, start, newChildren,
                 newBaseLsd, errorConstructors, tokensProcessedBefore,
@@ -177,16 +177,11 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
         assert(exists inscons);
 
         value delete = { for (s in skip) derive(pos + s.length,
-                matchPos, ErrorDelete(s.sym, lastToken), true)
+                ErrorDelete(s.sym))
         };
 
-        EPState deriveErrorReplace(Integer p, Integer m, Object sym) {
-            value newSym = inscons(sym, lastToken);
-            return derive(p, m, ErrorReplace(newSym, sym, lastToken));
-        }
-
-        value replace = { for (s in skip) deriveErrorReplace(pos + s.length,
-                matchPos + 1, s.sym)
+        value replace = { for (s in skip) derive(pos + s.length,
+                ErrorReplace(inscons(s.sym, lastToken), s.sym))
         };
 
         if (badToken) {
@@ -194,7 +189,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
         }
 
         value newToken = inscons(null, lastToken);
-        value insert = derive(pos, matchPos + 1, ErrorInsert(newToken, lastToken), true);
+        value insert = derive(pos, ErrorInsert(newToken));
 
         return delete.chain(replace).chain({insert});
     }
@@ -206,33 +201,22 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
         if (is Symbol other) {
             if (want != other.type) { return null; }
 
-            return derive(pos + other.length, matchPos + 1, other);
+            return derive(pos + other.length, other);
         } else {
             if (want != other.rule.produces) { return null; }
 
-            return derive(other.pos, matchPos + 1, other);
+            return derive(other.pos, other);
         }
     }
 
     "Generate a prediction set for this state"
-    shared {EPState *} propagate({Rule *} rules, Symbol? nextToken) {
-        if (propagated) {
-            return {};
-        }
-
-        propagated = true;
-
+    shared {EPState *} propagate({Rule *} rules) {
         {EPState *} predict = {
             for (other in rules)
                 if (exists c=rule.consumes[matchPos], other.produces == c)
                     EPState(pos, other, 0, pos, [], 0, errorConstructors,
                             tokensProcessed, lastToken)
         };
-
-        if (exists nextToken,
-            exists x = feed(nextToken)) {
-            return predict.chain({x});
-        }
 
         return predict;
     }
