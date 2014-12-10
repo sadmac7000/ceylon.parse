@@ -1,10 +1,3 @@
-import ceylon.language.meta {
-    _type = type
-}
-import ceylon.language.meta.model {
-    Generic,
-    UnionType
-}
 import ceylon.collection {
     HashSet,
     HashMap,
@@ -12,54 +5,11 @@ import ceylon.collection {
     PriorityQueue
 }
 
-"A rule. Specifies produced and consumed symbols and a method to execute them"
-shared class Rule(shared Object(Object*) consume, shared Integer[] consumes,
-        shared Integer produces) {
-    shared actual Integer hash = consumes.hash ^ 2 + produces.hash;
-
-    shared actual Boolean equals(Object other) {
-        if (is Rule other) {
-            return other.consumes == consumes && other.produces == produces;
-        } else {
-            return false;
-        }
-    }
-}
-
-"A do-nothing annotation class for the `error` annotation"
-shared final annotation class GrammarErrorConstructor()
-        satisfies OptionalAnnotation<GrammarErrorConstructor, Annotated> {}
-
-"We annotate some methods of a `ParseTree` object to indicate that those
- methods can construct an error version of symbols so we can build error
- reporting into the parse tree."
-shared annotation GrammarErrorConstructor errorConstructor() =>
-        GrammarErrorConstructor();
-
-"A do-nothing annotation class for the `rule` annotation"
-shared final annotation class GrammarRule()
-        satisfies OptionalAnnotation<GrammarRule, Annotated> {}
-
-"We annotate methods of a `ParseTree` object to indicate that those methods
- correspond to production rules"
-shared annotation GrammarRule rule() => GrammarRule();
-
-"A do-nothing annotation class for the `tokenizer` annotation."
-shared final annotation class Tokenizer()
-        satisfies OptionalAnnotation<Tokenizer, Annotated> {}
-
-"Methods annotated with `tokenizer` take a sequence and return a token."
-shared annotation Tokenizer tokenizer() => Tokenizer();
-
 "Exception thrown when a [[ParseTree]] is ambiguous. [[ParseTree]] subtypes
  which override [[ParseTree.resolveAmbiguity]] may choose not to throw this
  exception."
 class AmbiguityException()
         extends Exception("Parser generated ambiguous results") {}
-
-"Exception thrown when we need a bad token constructor but one isn't defined"
-class BadTokenConstructorException()
-        extends Exception("Could not construct invalid token") {}
 
 "A queue of states"
 class StateQueue() {
@@ -129,26 +79,36 @@ class StateQueue() {
  are specifed by defining methods with the `rule` annotation.  The parser will
  create an appropriate production rule and call the annotated method in order
  to reduce the value."
-shared abstract class ParseTree<out Root, in Data>(Data data)
+shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
+                                                   Data data)
         given Data satisfies List<Object>
         given Root satisfies Object {
+    g.populateRules();
+
     "A list of rules for this object"
-    shared variable Rule[] rules = [];
+    shared Rule[] rules = g.rules;
 
     "The result symbol we expect from this tree"
-    shared Integer result = typeAtomCache.getAlias(`Root`);
+    shared Integer result = g.result;
 
     "Error constructors"
-    value errorConstructors = HashMap<Integer, Object(Object?)>();
+    shared Map<Integer, Object(Object?)> errorConstructors =
+        g.errorConstructors;
+
+    "Tokenizers"
+    value tokenizers = g.tokenizers;
 
     value tokenCache = HashMap<Integer, Set<Token>>();
 
-    "Tokenizers"
-    variable HashMap<Integer, Token?(Data, Object?)> tokenizers =
-    HashMap<Integer, Token?(Data, Object?)>();
-
     "Queue of states to process"
     value stateQueue = StateQueue();
+
+    for (rule in rules) {
+        if (rule.produces != result) { continue; }
+
+        value newState = EPState(0, rule, 0, 0, [], 0, errorConstructors, 0);
+        stateQueue.offer(newState);
+    }
 
     "Process queued states"
     void pumpStateQueue() {
@@ -306,7 +266,6 @@ shared abstract class ParseTree<out Root, in Data>(Data data)
 
     "The root node of the parse tree"
     shared Root ast {
-        if (rules.size == 0) { populateRules(); }
         variable Root? ret = null;
 
         while (! ret exists) {
@@ -318,79 +277,15 @@ shared abstract class ParseTree<out Root, in Data>(Data data)
         return v;
     }
 
+    Token constructBadToken(Data data, Object? previous) {
+        return Token(g.badTokenConstructor(data, previous), data.size);
+    }
+
     "Method to resolve parse ambiguities. The default implementation simply
      throws [[AmbiguityException]]. Child classes may override this behavior.
      If the child class would like to recover the error, it should return
      a single root node which will be used as the resolved root."
     shared default Root resolveAmbiguity({Object *} roots) {
         throw AmbiguityException();
-    }
-
-    "Set up the list of rules"
-    void populateRules() {
-        value meths = _type(this).getMethods<Nothing>(`GrammarRule`);
-        value errConMeths =
-            _type(this).getMethods<Nothing>(`GrammarErrorConstructor`);
-        value tokenizerMeths = _type(this).getMethods<Nothing>(`Tokenizer`);
-
-        for (t in tokenizerMeths) {
-            Token? tokenizer(Data s, Object? last) {
-                assert(is Token? ret = t.declaration.memberInvoke(this, [],
-                            s, last));
-                return ret;
-            }
-
-            assert(is UnionType retType = t.type);
-            value caseTypes =  retType.caseTypes;
-            assert(caseTypes.size == 2);
-            assert(is Generic tokenType = {for (r in caseTypes) if (
-                        !r.typeOf(null)) r}.first);
-
-            value typeArgs = tokenType.typeArguments.items;
-            assert(typeArgs.size == 1);
-            assert(exists type = typeArgs.first);
-
-            tokenizers.put(typeAtomCache.getAlias(type), tokenizer);
-        }
-
-        for (c in errConMeths) {
-            value type = typeAtomCache.getAlias(c.type);
-
-            Object construct(Object? o) {
-                assert(is Object ret = c.declaration.memberInvoke(this, [],
-                            o));
-                return ret;
-            }
-
-            errorConstructors.put(type, construct);
-        }
-
-        for (r in meths) {
-            Object consume(Object *o) {
-                assert(is Object ret = r.declaration.memberInvoke(this, [], *o));
-                return ret;
-            }
-
-            value consumes = [ for (p in r.parameterTypes)
-                typeAtomCache.getAlias(p) ];
-            value produces = typeAtomCache.getAlias(r.type);
-            value rule = Rule(consume, consumes, produces);
-
-            rules = rules.withTrailing(rule);
-
-            if (rule.produces != result) { continue; }
-
-            value newState = EPState(0, rule, 0, 0, [], 0,
-                    errorConstructors, 0);
-            stateQueue.offer(newState);
-        }
-    }
-
-    Token constructBadToken(Data data, Object? previous) {
-        return Token(badTokenConstructor(data, previous), data.size);
-    }
-
-    shared default Object badTokenConstructor(Data data, Object? previous) {
-        throw BadTokenConstructorException();
     }
 }

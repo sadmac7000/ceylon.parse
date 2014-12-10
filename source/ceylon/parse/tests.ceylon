@@ -57,7 +57,7 @@ class Crap(shared String data) {
 
 "A parse tree that accepts a very, very simple grammar. There are only 4 words
  in it (aaa, aaaa, baab, bab)."
-class SimpleTree(String input) extends ParseTree<S, String>(input) {
+object simpleGrammar extends Grammar<S, String>() {
     rule
     shared S rule1(ATerm at, A a, ATerm at2) => S(at, a, at2);
 
@@ -92,7 +92,7 @@ class SimpleTree(String input) extends ParseTree<S, String>(input) {
 
 test
 shared void simple_word1() {
-    value root = SimpleTree("baab").ast;
+    value root = ParseTree(simpleGrammar, "baab").ast;
     value expect = S (
         BTerm(),
         A (
@@ -107,7 +107,7 @@ shared void simple_word1() {
 
 test
 shared void simple_word2() {
-    value root = SimpleTree("bab").ast;
+    value root = ParseTree(simpleGrammar, "bab").ast;
     value expect = S (
         BTerm(),
         A (
@@ -121,7 +121,7 @@ shared void simple_word2() {
 
 test
 shared void simple_word3() {
-    value root = SimpleTree("aaa").ast;
+    value root = ParseTree(simpleGrammar, "aaa").ast;
     value expect = S (
         ATerm(),
         A (
@@ -135,7 +135,7 @@ shared void simple_word3() {
 
 test
 shared void simple_word4() {
-    value root = SimpleTree("aaaa").ast;
+    value root = ParseTree(simpleGrammar, "aaaa").ast;
     value expect = S (
         ATerm(),
         A (
@@ -150,7 +150,7 @@ shared void simple_word4() {
 
 test
 shared void simple_word4_bad() {
-    value root = SimpleTree("aaqaa").ast;
+    value root = ParseTree(simpleGrammar, "aaqaa").ast;
     value expect = S (
         ATerm(),
         A (
@@ -165,7 +165,7 @@ shared void simple_word4_bad() {
 
 test
 shared void simple_word2_bad() {
-    value root = SimpleTree("bqb").ast;
+    value root = ParseTree(simpleGrammar, "bqb").ast;
     value expect = S (
         BTerm(),
         A (
@@ -179,7 +179,7 @@ shared void simple_word2_bad() {
 
 test
 shared void simple_word2_bad2() {
-    value root = SimpleTree("bb").ast;
+    value root = ParseTree(simpleGrammar, "bb").ast;
     value expect = S (
         BTerm(),
         A (
