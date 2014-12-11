@@ -129,6 +129,8 @@ shared abstract class Grammar<out Root, Data>()
         }
     }
 
+    "Returns a token to represent an unparseable region. The input data is
+     exactly the contents of that region."
     shared default Object badTokenConstructor(Data data, Object? previous) {
         throw BadTokenConstructorException();
     }
