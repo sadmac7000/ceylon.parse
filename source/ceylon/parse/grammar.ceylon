@@ -3,6 +3,7 @@ import ceylon.language.meta {
 }
 import ceylon.language.meta.model {
     Generic,
+    Type,
     UnionType
 }
 import ceylon.collection {
@@ -66,6 +67,26 @@ shared class Rule(shared Object(Object*) consume, shared ProductionClause[] cons
         } else {
             return false;
         }
+    }
+}
+
+"Break a type down into type atoms or aggregate producion clauses"
+ProductionClause|Integer makeTypeAtom(Type p) {
+    if (is UnionType p) {
+        return ProductionClause(*{for (t in p.caseTypes) makeTypeAtom(t)});
+    } else {
+        return typeAtomCache.getAlias(p);
+    }
+}
+
+"Turn a type into a production clause"
+ProductionClause makeProductionClause(Type p) {
+    value x = makeTypeAtom(p);
+
+    if (is Integer x) {
+        return ProductionClause(x);
+    } else {
+        return x;
     }
 }
 
@@ -140,7 +161,7 @@ shared abstract class Grammar<out Root, Data>()
             }
 
             value consumes = [ for (p in r.parameterTypes)
-                ProductionClause(typeAtomCache.getAlias(p)) ];
+                makeProductionClause(p) ];
             value produces = typeAtomCache.getAlias(r.type);
             value rule = Rule(consume, consumes, produces);
 

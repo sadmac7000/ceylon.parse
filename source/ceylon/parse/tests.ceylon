@@ -12,7 +12,7 @@ class Sym(shared variable Integer position = 0, Sym* children) {
         return string.equals(other.string);
     }
 
-    shared actual String string {
+    shared String sexp {
         String prefix;
 
         if (exists p = prevError) {
@@ -25,8 +25,10 @@ class Sym(shared variable Integer position = 0, Sym* children) {
             return prefix + shortName;
         }
 
-        return "[``prefix + shortName`` ``[for (x in children) x.string]``]";
+        return "``prefix + shortName`` ``[for (x in children) x.sexp]``";
     }
+
+    shared actual String string => "[``sexp``]";
 
     shared default String shortName {
         value start = className(this);
@@ -246,3 +248,100 @@ shared void simple_word2_bad2() {
 
     assertEquals(root, expect);
 }
+
+"A parse tree that accepts any string of A's and B's using union matching."
+object choiceGrammar extends Grammar<S, String>() {
+    rule
+    shared S rule1(A a) => S(a.position, a);
+
+    rule
+    shared S rule2(S s, A a) => S(s.position, s, a);
+
+    rule
+    shared A rule3(ATerm|BTerm t) => A(t.position, t);
+
+    tokenizer
+    shared Token<ATerm>? aTerm(String input, Object? last) {
+        Integer position;
+        Crap? prevError;
+
+        if (is Sym last) {
+            position = last.position + 1;
+            prevError = null;
+        } else if (is Crap last) {
+            position = last.position + last.data.size;
+            prevError = last;
+        } else {
+            position = 0;
+            prevError = null;
+        }
+        if (input.startsWith("a")) { return Token(ATerm(position, prevError),1); }
+        return null;
+    }
+
+    tokenizer
+    shared Token<BTerm>? bTerm(String input, Object? last) {
+        Integer position;
+        Crap? prevError;
+
+        if (is Sym last) {
+            position = last.position + 1;
+            prevError = null;
+        } else if (is Crap last) {
+            position = last.position + last.data.size;
+            prevError = last;
+        } else {
+            position = 0;
+            prevError = null;
+        }
+
+        if (input.startsWith("b")) { return Token(BTerm(position, prevError),1); }
+        return null;
+    }
+
+    errorConstructor
+    shared ATerm error(Object? replaces, Object? last) {
+        if (is Sym last) {
+            return ATermError(replaces, last.position + 1);
+        } else if (is Crap last) {
+            return ATermError(replaces, last.position + last.data.size);
+        } else {
+            return ATermError(replaces);
+        }
+    }
+
+    shared actual Crap badTokenConstructor(String data, Object? last) {
+        if (is Sym last) {
+            return Crap(data, last.position + 1);
+        } else if (is Crap last) {
+            return Crap(data, last.position + last.data.size);
+        } else {
+            return Crap(data);
+        }
+    }
+}
+
+test
+shared void choice1() {
+    value root = ParseTree(choiceGrammar, "abababab").ast;
+    value expect = S (0,
+        S (0,
+            S(0,
+                S(0,
+                    S(0,
+                        S(0,
+                            S(0,
+                                S(0,
+                                    A(0, ATerm(0))),
+                                A(1, BTerm(1))),
+                            A(2, ATerm(2))),
+                        A(3, BTerm(3))),
+                    A(4, ATerm(4))),
+                A(5, BTerm(5))),
+            A(6, ATerm(6))),
+        A(7, BTerm(7))
+    );
+
+    assertEquals(root, expect);
+}
+
