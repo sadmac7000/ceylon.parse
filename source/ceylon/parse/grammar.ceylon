@@ -57,7 +57,7 @@ shared class ProductionClause(shared Integer|ProductionClause *values)
 }
 
 "A rule. Specifies produced and consumed symbols and a method to execute them"
-shared class Rule(shared Object(Object*) consume, shared ProductionClause[] consumes,
+shared class Rule(shared Object(Object?*) consume, shared ProductionClause[] consumes,
         shared Integer produces) {
     shared actual Integer hash = consumes.hash ^ 2 + produces.hash;
 
@@ -155,7 +155,7 @@ shared abstract class Grammar<out Root, Data>()
         }
 
         for (r in meths) {
-            Object consume(Object *o) {
+            Object consume(Object? *o) {
                 assert(is Object ret = r.declaration.memberInvoke(this, [], *o));
                 return ret;
             }

@@ -58,7 +58,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     shared Map<Integer,Object(Object?, Object?)> errorConstructors;
 
     "Tokens"
-    shared [Symbol|EPState|Error*] children;
+    shared [Symbol|EPState|Error?*] children;
 
     assert(matchPos <= children.size);
 
@@ -106,13 +106,15 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     shared Symbol astNode {
         assert(complete);
 
-        variable Object[] sym = [];
+        variable Object?[] sym = [];
 
         for (c in children) {
             if (is Symbol c) {
                 sym = sym.withTrailing(c.sym);
             } else if (is EPState c) {
                 sym = sym.withTrailing(c.astNode.sym);
+            } else if (! exists c) {
+                sym = sym.withTrailing(null);
             } else if (is ErrorInsert c) {
                 sym = sym.withTrailing(c.newSym);
             } else if (is ErrorReplace c) {
@@ -126,10 +128,9 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
 
     "Derive a new state"
     EPState derive(Integer newPos,
-            Symbol|EPState|Error newChild) {
+            Symbol|EPState|Error? newChild) {
         Integer newBaseLsd;
         Integer newMatchPos;
-        [Symbol|EPState|Error*] newChildren;
 
         Object? last;
 
@@ -157,7 +158,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
             newBaseLsd = baseLsd;
         }
 
-        newChildren = children.withTrailing(newChild);
+        value newChildren = children.withTrailing(newChild);
 
         return EPState(newPos, rule, newMatchPos, start, newChildren,
                 newBaseLsd, errorConstructors, tokensProcessedBefore,
@@ -202,13 +203,17 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     }
 
     "Offer a symbol to this state for scanning or completion"
-    shared EPState? feed(Symbol|EPState other) {
+    shared EPState? feed(Symbol|EPState? other) {
         assert(exists want = rule.consumes[matchPos]);
 
         if (is Symbol other) {
             if (! want.contains(other.type)) { return null; }
 
             return derive(pos + other.length, other);
+        } else if (! exists other){
+            if (! want.contains(nullType)) { return null; }
+
+            return derive(pos, null);
         } else {
             if (! want.contains(other.rule.produces)) { return null; }
 
@@ -237,8 +242,14 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
 
             if (other.children.size != children.size) { return false;  }
 
-            for (a -> b in zipEntries(other.children, children)) {
-                if (a != b) { return false; }
+            for (e in zipPairs(other.children, children)) {
+                if (exists a = e[0],
+                    exists b = e[1],
+                    a != b) {
+                    return false;
+                }
+
+                if ((e[0] exists) != (e[1] exists)) { return false; }
             }
 
             return true;

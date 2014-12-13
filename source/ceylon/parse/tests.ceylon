@@ -72,21 +72,9 @@ class Crap(shared String data, shared Integer position = 0) {
     }
 }
 
-"A parse tree that accepts a very, very simple grammar. There are only 4 words
- in it (aaa, aaaa, baab, bab)."
-object simpleGrammar extends Grammar<S, String>() {
-    rule
-    shared S rule1(ATerm at, A a, ATerm at2) => S(at.position, at, a, at2);
-
-    rule
-    shared S rule2(BTerm bt, A a, BTerm bt2) => S(bt.position, bt, a, bt2);
-
-    rule
-    shared A rule3(ATerm at) => A(at.position, at);
-
-    rule
-    shared A rule4(ATerm at, ATerm at2) => A(at.position, at, at2);
-
+"A grammar on the alphabet of 'a' and 'b'"
+class ABGrammar<K>() extends Grammar<K, String>()
+        given K satisfies Object {
     tokenizer
     shared Token<ATerm>? aTerm(String input, Object? last) {
         Integer position;
@@ -146,6 +134,22 @@ object simpleGrammar extends Grammar<S, String>() {
             return Crap(data);
         }
     }
+}
+
+"A parse tree that accepts a very, very simple grammar. There are only 4 words
+ in it (aaa, aaaa, baab, bab)."
+object simpleGrammar extends ABGrammar<S>() {
+    rule
+    shared S rule1(ATerm at, A a, ATerm at2) => S(at.position, at, a, at2);
+
+    rule
+    shared S rule2(BTerm bt, A a, BTerm bt2) => S(bt.position, bt, a, bt2);
+
+    rule
+    shared A rule3(ATerm at) => A(at.position, at);
+
+    rule
+    shared A rule4(ATerm at, ATerm at2) => A(at.position, at, at2);
 }
 
 test
@@ -250,7 +254,7 @@ shared void simple_word2_bad2() {
 }
 
 "A parse tree that accepts any string of A's and B's using union matching."
-object choiceGrammar extends Grammar<S, String>() {
+object choiceGrammar extends ABGrammar<S>() {
     rule
     shared S rule1(A a) => S(a.position, a);
 
@@ -259,66 +263,6 @@ object choiceGrammar extends Grammar<S, String>() {
 
     rule
     shared A rule3(ATerm|BTerm t) => A(t.position, t);
-
-    tokenizer
-    shared Token<ATerm>? aTerm(String input, Object? last) {
-        Integer position;
-        Crap? prevError;
-
-        if (is Sym last) {
-            position = last.position + 1;
-            prevError = null;
-        } else if (is Crap last) {
-            position = last.position + last.data.size;
-            prevError = last;
-        } else {
-            position = 0;
-            prevError = null;
-        }
-        if (input.startsWith("a")) { return Token(ATerm(position, prevError),1); }
-        return null;
-    }
-
-    tokenizer
-    shared Token<BTerm>? bTerm(String input, Object? last) {
-        Integer position;
-        Crap? prevError;
-
-        if (is Sym last) {
-            position = last.position + 1;
-            prevError = null;
-        } else if (is Crap last) {
-            position = last.position + last.data.size;
-            prevError = last;
-        } else {
-            position = 0;
-            prevError = null;
-        }
-
-        if (input.startsWith("b")) { return Token(BTerm(position, prevError),1); }
-        return null;
-    }
-
-    errorConstructor
-    shared ATerm error(Object? replaces, Object? last) {
-        if (is Sym last) {
-            return ATermError(replaces, last.position + 1);
-        } else if (is Crap last) {
-            return ATermError(replaces, last.position + last.data.size);
-        } else {
-            return ATermError(replaces);
-        }
-    }
-
-    shared actual Crap badTokenConstructor(String data, Object? last) {
-        if (is Sym last) {
-            return Crap(data, last.position + 1);
-        } else if (is Crap last) {
-            return Crap(data, last.position + last.data.size);
-        } else {
-            return Crap(data);
-        }
-    }
 }
 
 test
@@ -341,6 +285,64 @@ shared void choice1() {
             A(6, ATerm(6))),
         A(7, BTerm(7))
     );
+
+    assertEquals(root, expect);
+}
+
+test
+shared void choice2() {
+    value root = ParseTree(choiceGrammar, "abbbabbb").ast;
+    value expect = S (0,
+        S (0,
+            S(0,
+                S(0,
+                    S(0,
+                        S(0,
+                            S(0,
+                                S(0,
+                                    A(0, ATerm(0))),
+                                A(1, BTerm(1))),
+                            A(2, BTerm(2))),
+                        A(3, BTerm(3))),
+                    A(4, ATerm(4))),
+                A(5, BTerm(5))),
+            A(6, BTerm(6))),
+        A(7, BTerm(7))
+    );
+
+    assertEquals(root, expect);
+}
+
+"A parse tree that accepts any string of A's and AB's using option matching."
+object optionGrammar extends ABGrammar<S>() {
+    rule
+    shared S rule1(A a) => S(a.position, a);
+
+    rule
+    shared S rule2(S s, A a) => S(s.position, s, a);
+
+    rule
+    shared A rule3(ATerm a, BTerm? b) {
+        if (exists b) {
+            return A(a.position, a, b);
+        } else {
+            return A(a.position, a);
+        }
+    }
+}
+
+test
+shared void option() {
+    value root = ParseTree(optionGrammar, "abababaa").ast;
+    value expect = S (0,
+        S (0,
+            S(0,
+                S(0,
+                    S(0, A(0, ATerm(0), BTerm(1))),
+                A(2, ATerm(2), BTerm(3))),
+            A(4, ATerm(4), BTerm(5))),
+        A(6, ATerm(6))),
+    A(7, ATerm(7)));
 
     assertEquals(root, expect);
 }

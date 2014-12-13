@@ -28,3 +28,6 @@ object typeAtomCache {
         return ret;
     }
 }
+
+"Type atom for the null type"
+Integer nullType = typeAtomCache.getAlias(`Null`);
