@@ -167,31 +167,38 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     "Propagate this state with a trailing error."
     shared {EPState *} failPropagate({Token *} skip,
             Boolean badToken) {
-        assert(exists next = rule.consumes[matchPos]);
-        value inscons = errorConstructors[next];
-
-        if (! inscons exists) {
-            throw ErrorConstructorException(typeAtomCache.resolve(next));
-        }
-
-        assert(exists inscons);
+        assert(exists nextSet = rule.consumes[matchPos]);
 
         value delete = { for (s in skip) derive(pos + s.length,
                 ErrorDelete(s.sym))
         };
 
-        value replace = { for (s in skip) derive(pos + s.length,
-                ErrorReplace(inscons(s.sym, lastToken), s.sym))
-        };
+        variable value ret = delete;
 
-        if (badToken) {
-            return delete.chain(replace);
+        for (next in nextSet) {
+            value inscons = errorConstructors[next];
+
+            if (! exists inscons) {
+                throw ErrorConstructorException(typeAtomCache.resolve(next));
+            }
+
+            assert(exists inscons);
+
+            value replace = { for (s in skip) derive(pos + s.length,
+                    ErrorReplace(inscons(s.sym, lastToken), s.sym))
+            };
+
+            ret = ret.chain(replace);
+
+            if (badToken) { continue; }
+
+            value newToken = inscons(null, lastToken);
+            value insert = derive(pos, ErrorInsert(newToken));
+
+            ret = ret.chain({insert});
         }
 
-        value newToken = inscons(null, lastToken);
-        value insert = derive(pos, ErrorInsert(newToken));
-
-        return delete.chain(replace).chain({insert});
+        return ret;
     }
 
     "Offer a symbol to this state for scanning or completion"
@@ -199,11 +206,11 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
         assert(exists want = rule.consumes[matchPos]);
 
         if (is Symbol other) {
-            if (want != other.type) { return null; }
+            if (! want.contains(other.type)) { return null; }
 
             return derive(pos + other.length, other);
         } else {
-            if (want != other.rule.produces) { return null; }
+            if (! want.contains(other.rule.produces)) { return null; }
 
             return derive(other.pos, other);
         }
@@ -213,7 +220,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     shared {EPState *} propagate({Rule *} rules) {
         {EPState *} predict = {
             for (other in rules)
-                if (exists c=rule.consumes[matchPos], other.produces == c)
+                if (exists c=rule.consumes[matchPos], c.contains(other.produces))
                     EPState(pos, other, 0, pos, [], 0, errorConstructors,
                             tokensProcessed, lastToken)
         };
@@ -277,7 +284,13 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
             ret += " ";
             if (loc++ == matchPos) { ret += "*"; }
 
-            ret += typeAtomCache.resolve(i).string;
+            variable value sep = "";
+
+            for (t in i) {
+                ret += sep;
+                ret += typeAtomCache.resolve(t).string;
+                sep = "|";
+            }
         }
 
         if (complete) { ret +=" *"; }

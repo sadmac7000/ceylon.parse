@@ -5,7 +5,10 @@ import ceylon.language.meta.model {
     Generic,
     UnionType
 }
-import ceylon.collection { HashMap }
+import ceylon.collection {
+    HashMap,
+    HashSet
+}
 
 "A do-nothing annotation class for the `error` annotation"
 shared final annotation class GrammarErrorConstructor()
@@ -36,8 +39,24 @@ shared annotation Tokenizer tokenizer() => Tokenizer();
 class BadTokenConstructorException()
         extends Exception("Could not construct invalid token") {}
 
+shared class ProductionClause(shared Integer|ProductionClause *values)
+        satisfies Iterable<Integer> {
+
+    value localIntegers = {for (x in values) if (is Integer x) x};
+    value productionClauses = {for (x in values) if (is ProductionClause x) x};
+    value allIterables = productionClauses.chain({localIntegers});
+    value integerIterator = allIterables.reduce<{Integer *}>((x,y) => x.chain(y));
+    value allIntegers = HashSet{*integerIterator};
+
+    shared actual Boolean contains(Object type) {
+        return allIntegers.contains(type);
+    }
+
+    shared actual Iterator<Integer> iterator() => allIntegers.iterator();
+}
+
 "A rule. Specifies produced and consumed symbols and a method to execute them"
-shared class Rule(shared Object(Object*) consume, shared Integer[] consumes,
+shared class Rule(shared Object(Object*) consume, shared ProductionClause[] consumes,
         shared Integer produces) {
     shared actual Integer hash = consumes.hash ^ 2 + produces.hash;
 
@@ -121,7 +140,7 @@ shared abstract class Grammar<out Root, Data>()
             }
 
             value consumes = [ for (p in r.parameterTypes)
-                typeAtomCache.getAlias(p) ];
+                ProductionClause(typeAtomCache.getAlias(p)) ];
             value produces = typeAtomCache.getAlias(r.type);
             value rule = Rule(consume, consumes, produces);
 

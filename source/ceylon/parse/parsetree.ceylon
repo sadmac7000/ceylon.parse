@@ -154,13 +154,15 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
 
     "Propagate a state"
     void propagateState(EPState state) {
-        assert(exists want = state.rule.consumes[state.matchPos]);
+        assert(exists wants = state.rule.consumes[state.matchPos]);
 
-        if (exists t = tokenizers[want],
-            is Data tail = data[state.pos...],
-            exists sym = t(tail, state.lastToken),
-            exists s = state.feed(sym)) {
-            stateQueue.offer(s);
+        for (want in wants ) {
+            if (exists t = tokenizers[want],
+                is Data tail = data[state.pos...],
+                exists sym = t(tail, state.lastToken),
+                exists s = state.feed(sym)) {
+                stateQueue.offer(s);
+            }
         }
 
         for (s in state.propagate(rules)) {
