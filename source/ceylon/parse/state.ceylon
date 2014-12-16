@@ -60,8 +60,6 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     "Tokens"
     shared [Symbol|EPState|Error?*] children;
 
-    assert(matchPos <= children.size);
-
     "Number of tokens matched. It is important that this does not count error
      tokens."
     shared Integer tokensProcessed = sum({ for (c in children) if (is EPState c)
@@ -127,8 +125,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     }
 
     "Derive a new state"
-    EPState derive(Integer newPos,
-            Symbol|EPState|Error? newChild) {
+    EPState derive(Integer newPos, Symbol|EPState|Error? newChild) {
         Integer newBaseLsd;
         Integer newMatchPos;
 
@@ -146,7 +143,11 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
             last = lastToken;
         }
 
+        assert(exists currentConsumes = rule.consumes[matchPos]);
+
         if (is ErrorDelete newChild) {
+            newMatchPos = matchPos;
+        } else if (currentConsumes.variadic) {
             newMatchPos = matchPos;
         } else {
             newMatchPos = matchPos + 1;
@@ -163,6 +164,16 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
         return EPState(newPos, rule, newMatchPos, start, newChildren,
                 newBaseLsd, errorConstructors, tokensProcessedBefore,
                 last);
+    }
+
+    shared EPState? breakVariadic() {
+        if (complete) { return null; }
+        assert(exists currentConsumes = rule.consumes[matchPos]);
+        if (! currentConsumes.variadic) { return null; }
+
+        return EPState(pos, rule, matchPos + 1, start, children,
+                baseLsd, errorConstructors, tokensProcessedBefore,
+                lastToken);
     }
 
     "Propagate this state with a trailing error."

@@ -169,6 +169,10 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
             stateQueue.offer(s);
         }
 
+        if (exists s = state.breakVariadic()) {
+            stateQueue.offer(s);
+        }
+
         for (s in state.propagate(rules)) {
             stateQueue.offer(s);
         }

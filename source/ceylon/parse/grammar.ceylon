@@ -6,6 +6,9 @@ import ceylon.language.meta.model {
     Type,
     UnionType
 }
+import ceylon.language.meta.declaration {
+    FunctionOrValueDeclaration
+}
 import ceylon.collection {
     HashMap,
     HashSet
@@ -40,7 +43,8 @@ shared annotation Tokenizer tokenizer() => Tokenizer();
 class BadTokenConstructorException()
         extends Exception("Could not construct invalid token") {}
 
-shared class ProductionClause(shared Integer|ProductionClause *values)
+shared class ProductionClause(shared Boolean variadic,
+        shared Integer|ProductionClause *values)
         satisfies Iterable<Integer> {
 
     value localIntegers = {for (x in values) if (is Integer x) x};
@@ -57,8 +61,9 @@ shared class ProductionClause(shared Integer|ProductionClause *values)
 }
 
 "A rule. Specifies produced and consumed symbols and a method to execute them"
-shared class Rule(shared Object(Object?*) consume, shared ProductionClause[] consumes,
-        shared Integer produces, shared Integer? variadic) {
+shared class Rule(shared Object(Object?*) consume,
+        shared ProductionClause[] consumes,
+        shared Integer produces) {
     shared actual Integer hash = consumes.hash ^ 2 + produces.hash;
 
     shared actual Boolean equals(Object other) {
@@ -71,20 +76,28 @@ shared class Rule(shared Object(Object?*) consume, shared ProductionClause[] con
 }
 
 "Break a type down into type atoms or aggregate producion clauses"
-ProductionClause|Integer makeTypeAtom(Type p) {
+ProductionClause|Integer makeTypeAtom(Type p, Boolean f) {
     if (is UnionType p) {
-        return ProductionClause(*{for (t in p.caseTypes) makeTypeAtom(t)});
+        return ProductionClause(f, *{for (t in p.caseTypes) makeTypeAtom(t, false)});
     } else {
         return typeAtomCache.getAlias(p);
     }
 }
 
 "Turn a type into a production clause"
-ProductionClause makeProductionClause(Type p) {
-    value x = makeTypeAtom(p);
+ProductionClause makeProductionClause(Type p, FunctionOrValueDeclaration f) {
+    ProductionClause|Integer x;
+
+    if (f.variadic) {
+        assert(is Generic p); /* In fact, p is Type<Sequential> */
+        assert(exists sub = p.typeArguments.items.first);
+        x = makeTypeAtom(sub, true);
+    } else {
+        x = makeTypeAtom(p, false);
+    }
 
     if (is Integer x) {
-        return ProductionClause(x);
+        return ProductionClause(f.variadic, x);
     } else {
         return x;
     }
@@ -160,21 +173,12 @@ shared abstract class Grammar<out Root, Data>()
                 return ret;
             }
 
-            variable Integer? variadic = 0;
-
-            for (paramDec in r.declaration.parameterDeclarations) {
-                if (paramDec.variadic) { break; }
-                assert(exists v = variadic);
-                variadic = v + 1;
-            }
-
-            value consumes = [ for (p in r.parameterTypes)
-                makeProductionClause(p) ];
+            value params = zipPairs(r.parameterTypes,
+                    r.declaration.parameterDeclarations);
+            value consumes = [ for (p in params) makeProductionClause(*p) ];
             value produces = typeAtomCache.getAlias(r.type);
 
-            assert(exists v = variadic);
-            if (v >= consumes.size) { variadic = null; }
-            value rule = Rule(consume, consumes, produces, variadic);
+            value rule = Rule(consume, consumes, produces);
 
             rules = rules.withTrailing(rule);
         }
