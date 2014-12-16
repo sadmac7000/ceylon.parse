@@ -58,7 +58,7 @@ shared class ProductionClause(shared Integer|ProductionClause *values)
 
 "A rule. Specifies produced and consumed symbols and a method to execute them"
 shared class Rule(shared Object(Object?*) consume, shared ProductionClause[] consumes,
-        shared Integer produces) {
+        shared Integer produces, shared Integer? variadic) {
     shared actual Integer hash = consumes.hash ^ 2 + produces.hash;
 
     shared actual Boolean equals(Object other) {
@@ -160,10 +160,21 @@ shared abstract class Grammar<out Root, Data>()
                 return ret;
             }
 
+            variable Integer? variadic = 0;
+
+            for (paramDec in r.declaration.parameterDeclarations) {
+                if (paramDec.variadic) { break; }
+                assert(exists v = variadic);
+                variadic = v + 1;
+            }
+
             value consumes = [ for (p in r.parameterTypes)
                 makeProductionClause(p) ];
             value produces = typeAtomCache.getAlias(r.type);
-            value rule = Rule(consume, consumes, produces);
+
+            assert(exists v = variadic);
+            if (v >= consumes.size) { variadic = null; }
+            value rule = Rule(consume, consumes, produces, variadic);
 
             rules = rules.withTrailing(rule);
         }
