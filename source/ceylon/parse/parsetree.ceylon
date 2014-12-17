@@ -104,7 +104,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
     value stateQueue = StateQueue();
 
     for (rule in rules) {
-        if (rule.produces != result) { continue; }
+        if (! typeAtomCache.subtypeSet(result).contains(rule.produces)) { continue; }
 
         value newState = EPState(0, rule, 0, 0, [], 0, errorConstructors, 0);
         stateQueue.offer(newState);
@@ -251,7 +251,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
 
         for (i in endsPair.item) {
             if (! i.complete) { continue; }
-            if (i.rule.produces != result) { continue; }
+            if (! typeAtomCache.subtypeSet(result).contains(i.rule.produces)) { continue; }
 
             assert(is Root t = i.astNode.sym);
             resultNodes.add(t);

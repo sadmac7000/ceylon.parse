@@ -218,7 +218,9 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
         assert(exists want = rule.consumes[matchPos]);
 
         if (is Symbol other) {
-            if (! want.contains(other.type)) { return null; }
+            value intersects = typeAtomCache.supertypeSet(other.type) &
+                HashSet{*want};
+            if (intersects.size == 0) { return null; }
 
             return derive(pos + other.length, other);
         } else if (! exists other){
@@ -226,7 +228,10 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
 
             return derive(pos, null);
         } else {
-            if (! want.contains(other.rule.produces)) { return null; }
+            value intersects =
+                typeAtomCache.supertypeSet(other.rule.produces) &
+                HashSet{*want};
+            if (intersects.size == 0) { return null; }
 
             return derive(other.pos, other);
         }
@@ -236,7 +241,9 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     shared {EPState *} propagate({Rule *} rules) {
         {EPState *} predict = {
             for (other in rules)
-                if (exists c=rule.consumes[matchPos], c.contains(other.produces))
+                if (exists c=rule.consumes[matchPos],
+                    (HashSet{*c} &
+                    typeAtomCache.supertypeSet(other.produces)).size > 0)
                     EPState(pos, other, 0, pos, [], 0, errorConstructors,
                             tokensProcessed, lastToken)
         };
@@ -272,19 +279,6 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     "Checks which of two states (this and another) would make the best recovery
      token. The least state, by the returned comparison, is the winner"
     shared Comparison compareRecovery(EPState other, {Rule *} rules) {
-        HashSet<Integer> productions = HashSet<Integer>{elements={for (r in
-                rules) r.produces};};
-
-        assert(exists otherNext = other.rule.consumes[other.matchPos]);
-        assert(exists next = rule.consumes[matchPos]);
-        value otherStrictlyTerminal = !productions.contains(otherNext);
-        value thisStrictlyTerminal = !productions.contains(next);
-
-        if (otherStrictlyTerminal != thisStrictlyTerminal) {
-            if (otherStrictlyTerminal) { return larger; }
-            return smaller;
-        }
-
         if (other.lsd != lsd) { return lsd.compare(other.lsd); }
         if (other.tokensProcessed != tokensProcessed) { return
             other.tokensProcessed.compare(tokensProcessed); }
