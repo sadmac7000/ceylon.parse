@@ -41,9 +41,13 @@ class ErrorInsert(shared actual Object newSym)
 
 "An Earley parser state"
 class EPState(pos, rule, matchPos, start, children, baseLsd,
-        errorConstructors, tokensProcessedBefore, lastToken = null) {
+        errorConstructors, tokensProcessedBefore, lastToken = null,
+        matchedOnce=false) {
     "Starting Levenshtein distance"
     Integer baseLsd;
+
+    "Whether we've matched once already"
+    Boolean matchedOnce;
 
     "Token we processed before parsing this rule"
     shared Object? lastToken;
@@ -128,6 +132,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     EPState derive(Integer newPos, Symbol|EPState|Error? newChild) {
         Integer newBaseLsd;
         Integer newMatchPos;
+        Boolean once;
 
         Object? last;
 
@@ -147,10 +152,13 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
 
         if (is ErrorDelete newChild) {
             newMatchPos = matchPos;
+            once = false;
         } else if (currentConsumes.variadic) {
             newMatchPos = matchPos;
+            once = true;
         } else {
             newMatchPos = matchPos + 1;
+            once = false;
         }
 
         if (is Error newChild) {
@@ -163,13 +171,14 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
 
         return EPState(newPos, rule, newMatchPos, start, newChildren,
                 newBaseLsd, errorConstructors, tokensProcessedBefore,
-                last);
+                last, once);
     }
 
     shared EPState? breakVariadic() {
         if (complete) { return null; }
         assert(exists currentConsumes = rule.consumes[matchPos]);
         if (! currentConsumes.variadic) { return null; }
+        if (currentConsumes.once && ! matchedOnce) { return null; }
 
         return EPState(pos, rule, matchPos + 1, start, children,
                 baseLsd, errorConstructors, tokensProcessedBefore,

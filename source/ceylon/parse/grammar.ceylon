@@ -4,7 +4,8 @@ import ceylon.language.meta {
 import ceylon.language.meta.model {
     Generic,
     Type,
-    UnionType
+    UnionType,
+    ClassOrInterface
 }
 import ceylon.language.meta.declaration {
     FunctionOrValueDeclaration
@@ -44,6 +45,7 @@ class BadTokenConstructorException()
         extends Exception("Could not construct invalid token") {}
 
 shared class ProductionClause(shared Boolean variadic,
+        shared Boolean once,
         shared Integer|ProductionClause *values)
         satisfies Iterable<Integer> {
 
@@ -76,9 +78,10 @@ shared class Rule(shared Object(Object?*) consume,
 }
 
 "Break a type down into type atoms or aggregate producion clauses"
-ProductionClause|Integer makeTypeAtom(Type p, Boolean f) {
+ProductionClause|Integer makeTypeAtom(Type p, Boolean f, Boolean once) {
     if (is UnionType p) {
-        return ProductionClause(f, *{for (t in p.caseTypes) makeTypeAtom(t, false)});
+        return ProductionClause(f, once, *{for (t in p.caseTypes)
+            makeTypeAtom(t, false, false)});
     } else {
         return typeAtomCache.getAlias(p);
     }
@@ -87,17 +90,20 @@ ProductionClause|Integer makeTypeAtom(Type p, Boolean f) {
 "Turn a type into a production clause"
 ProductionClause makeProductionClause(Type p, FunctionOrValueDeclaration f) {
     ProductionClause|Integer x;
+    Boolean once;
 
     if (f.variadic) {
-        assert(is Generic p); /* In fact, p is Type<Sequential> */
+        assert(is ClassOrInterface p);
         assert(exists sub = p.typeArguments.items.first);
-        x = makeTypeAtom(sub, true);
+        once = p.declaration == `interface Sequence`;
+        x = makeTypeAtom(sub, true, once);
     } else {
-        x = makeTypeAtom(p, false);
+        once = false;
+        x = makeTypeAtom(p, false, false);
     }
 
     if (is Integer x) {
-        return ProductionClause(f.variadic, x);
+        return ProductionClause(f.variadic, once, x);
     } else {
         return x;
     }

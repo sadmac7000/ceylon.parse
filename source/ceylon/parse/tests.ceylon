@@ -39,6 +39,7 @@ class Sym(shared variable Integer position = 0, Sym* children) {
 
 class S(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
 class A(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
+class B(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
 class ATerm(Integer pos = 0, shared actual Object? prevError = null) extends Sym(pos) {}
 class BTerm(Integer pos = 0, shared actual Object? prevError = null) extends Sym(pos) {}
 class ATermError(Object? replaces = null, Integer pos = 0)
@@ -378,7 +379,7 @@ class ASubtype(Integer pos = 0, Sym* children) extends A(pos, *children) {}
 object inheritingGrammar extends ABGrammar<S>() {
     rule
     shared S rule1(A* a) {
-        assert(exists first=a.first);
+        assert(exists first = a.first);
         return S(first.position, *a);
     }
 
@@ -397,6 +398,47 @@ shared void inheritance() {
                 ASubtype(2, ATerm(2)),
                 ASubtype(3, ATerm(3)),
                 ASubtype(4, ATerm(4))
+            );
+    assertEquals(root, expect);
+}
+
+"A parse tree that accepts the string babab with the first a repeating one or
+ more times and the second a repeating zero or more times"
+object advancedVariadicGrammar extends ABGrammar<S>() {
+    rule
+    shared S rule1(A a, B b, BTerm t) {
+        return S(a.position, a, b, t);
+    }
+
+    rule
+    shared A rule2(BTerm b, ATerm+ a) {
+        return A(b.position, b, *a);
+    }
+
+    rule
+    shared B rule3(BTerm b, ATerm* a) {
+        return B(b.position, b, *a);
+    }
+}
+
+test
+shared void advancedVariadic() {
+    /* FIXME: We get a more complete test if we remove the 'a' from the test
+     * string and remove the ATerm from the result and shift the last BTerm to
+     * position 2. We can implement this as soon as ceylon.language bug 607 is
+     * fixed.
+     */
+    value root = ParseTree(advancedVariadicGrammar, "bbab").ast;
+    value expect = S (0,
+                A(0,
+                    BTerm(0),
+                    ATermError(null, 1)
+                ),
+                B(1,
+                    BTerm(1),
+                    ATerm(2)
+                ),
+                BTerm(3)
             );
     assertEquals(root, expect);
 }
