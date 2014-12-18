@@ -1,6 +1,29 @@
 import ceylon.language.meta.model { Type }
 import ceylon.collection { HashMap, HashSet }
 
+"A type atom"
+shared class Atom(Type t) {
+    shared actual Integer hash = typeAtomCache.getAlias(t);
+
+    shared actual Boolean equals(Object other) {
+        if (is Atom other) {
+            return other.hash == hash;
+        }
+
+        return false;
+    }
+
+    shared Boolean subtypeOf(Atom other) {
+        return typeAtomCache.supertypeSet(hash).contains(other.hash);
+    }
+
+    shared Boolean supertypeOf(Atom other) => other.subtypeOf(this);
+
+    shared Type type => typeAtomCache.resolve(hash);
+
+    shared actual String string => type.string;
+}
+
 "We have to convert type objects to integers to pass them around, otherwise we
  encounter weird performance issues."
 object typeAtomCache {
@@ -63,4 +86,4 @@ object typeAtomCache {
 }
 
 "Type atom for the null type"
-Integer nullType = typeAtomCache.getAlias(`Null`);
+Atom nullAtom = Atom(`Null`);

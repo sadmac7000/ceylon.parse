@@ -46,26 +46,26 @@ class BadTokenConstructorException()
 
 shared class ProductionClause(shared Boolean variadic,
         shared Boolean once,
-        shared Integer|ProductionClause *values)
-        satisfies Iterable<Integer> {
+        shared Atom|ProductionClause *values)
+        satisfies Iterable<Atom> {
 
-    value localIntegers = {for (x in values) if (is Integer x) x};
+    value localAtoms = {for (x in values) if (is Atom x) x};
     value productionClauses = {for (x in values) if (is ProductionClause x) x};
-    value allIterables = productionClauses.chain({localIntegers});
-    value integerIterator = allIterables.reduce<{Integer *}>((x,y) => x.chain(y));
-    value allIntegers = HashSet{*integerIterator};
+    value allIterables = productionClauses.chain({localAtoms});
+    value atomIterator = allIterables.reduce<{Atom *}>((x,y) => x.chain(y));
+    value allAtoms = HashSet{*atomIterator};
 
     shared actual Boolean contains(Object type) {
-        return allIntegers.contains(type);
+        return allAtoms.contains(type);
     }
 
-    shared actual Iterator<Integer> iterator() => allIntegers.iterator();
+    shared actual Iterator<Atom> iterator() => allAtoms.iterator();
 }
 
 "A rule. Specifies produced and consumed symbols and a method to execute them"
 shared class Rule(shared Object(Object?*) consume,
         shared ProductionClause[] consumes,
-        shared Integer produces) {
+        shared Atom produces) {
     shared actual Integer hash = consumes.hash ^ 2 + produces.hash;
 
     shared actual Boolean equals(Object other) {
@@ -78,18 +78,18 @@ shared class Rule(shared Object(Object?*) consume,
 }
 
 "Break a type down into type atoms or aggregate producion clauses"
-ProductionClause|Integer makeTypeAtom(Type p, Boolean f, Boolean once) {
+ProductionClause|Atom makeTypeAtom(Type p, Boolean f, Boolean once) {
     if (is UnionType p) {
         return ProductionClause(f, once, *{for (t in p.caseTypes)
             makeTypeAtom(t, false, false)});
     } else {
-        return typeAtomCache.getAlias(p);
+        return Atom(p);
     }
 }
 
 "Turn a type into a production clause"
 ProductionClause makeProductionClause(Type p, FunctionOrValueDeclaration f) {
-    ProductionClause|Integer x;
+    ProductionClause|Atom x;
     Boolean once;
 
     if (f.variadic) {
@@ -102,7 +102,7 @@ ProductionClause makeProductionClause(Type p, FunctionOrValueDeclaration f) {
         x = makeTypeAtom(p, false, false);
     }
 
-    if (is Integer x) {
+    if (is Atom x) {
         return ProductionClause(f.variadic, once, x);
     } else {
         return x;
@@ -119,15 +119,15 @@ shared abstract class Grammar<out Root, Data>()
     shared variable Rule[] rules = [];
 
     "The result symbol we expect from this tree"
-    shared Integer result = typeAtomCache.getAlias(`Root`);
+    shared Atom result = Atom(`Root`);
 
     "Error constructors"
-    shared HashMap<Integer, Object(Object?, Object?)> errorConstructors =
-        HashMap<Integer, Object(Object?, Object?)>();
+    shared HashMap<Atom, Object(Object?, Object?)> errorConstructors =
+        HashMap<Atom, Object(Object?, Object?)>();
 
     "Tokenizers"
-    shared variable HashMap<Integer, Token?(Data, Object?)> tokenizers =
-    HashMap<Integer, Token?(Data, Object?)>();
+    shared variable HashMap<Atom, Token?(Data, Object?)> tokenizers =
+    HashMap<Atom, Token?(Data, Object?)>();
 
     variable Boolean populated = false;
 
@@ -158,19 +158,17 @@ shared abstract class Grammar<out Root, Data>()
             assert(typeArgs.size == 1);
             assert(exists type = typeArgs.first);
 
-            tokenizers.put(typeAtomCache.getAlias(type), tokenizer);
+            tokenizers.put(Atom(type), tokenizer);
         }
 
         for (c in errConMeths) {
-            value type = typeAtomCache.getAlias(c.type);
-
             Object construct(Object? o, Object? prev) {
                 assert(is Object ret = c.declaration.memberInvoke(this, [],
                             o, prev));
                 return ret;
             }
 
-            errorConstructors.put(type, construct);
+            errorConstructors.put(Atom(c.type), construct);
         }
 
         for (r in meths) {
@@ -182,7 +180,7 @@ shared abstract class Grammar<out Root, Data>()
             value params = zipPairs(r.parameterTypes,
                     r.declaration.parameterDeclarations);
             value consumes = [ for (p in params) makeProductionClause(*p) ];
-            value produces = typeAtomCache.getAlias(r.type);
+            value produces = Atom(r.type);
 
             value rule = Rule(consume, consumes, produces);
 

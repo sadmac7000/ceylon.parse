@@ -1,6 +1,5 @@
 import ceylon.language.meta { _type = type }
 import ceylon.language.meta.model { Type }
-import ceylon.collection { HashSet }
 
 "Exception thrown when we need an error constructor but one isn't defined"
 class ErrorConstructorException(Type token)
@@ -59,7 +58,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     shared Integer start;
 
     "Error constructors"
-    shared Map<Integer,Object(Object?, Object?)> errorConstructors;
+    shared Map<Atom,Object(Object?, Object?)> errorConstructors;
 
     "Tokens"
     shared [Symbol|EPState|Error?*] children;
@@ -200,7 +199,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
             value inscons = errorConstructors[next];
 
             if (! exists inscons) {
-                throw ErrorConstructorException(typeAtomCache.resolve(next));
+                throw ErrorConstructorException(next.type);
             }
 
             assert(exists inscons);
@@ -227,19 +226,16 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
         assert(exists want = rule.consumes[matchPos]);
 
         if (is Symbol other) {
-            value intersects = typeAtomCache.supertypeSet(other.type) &
-                HashSet{*want};
+            value intersects = want.select(other.type.subtypeOf);
             if (intersects.size == 0) { return null; }
 
             return derive(pos + other.length, other);
         } else if (! exists other){
-            if (! want.contains(nullType)) { return null; }
+            if (! want.contains(nullAtom)) { return null; }
 
             return derive(pos, null);
         } else {
-            value intersects =
-                typeAtomCache.supertypeSet(other.rule.produces) &
-                HashSet{*want};
+            value intersects = want.select(other.rule.produces.subtypeOf);
             if (intersects.size == 0) { return null; }
 
             return derive(other.pos, other);
@@ -251,8 +247,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
         {EPState *} predict = {
             for (other in rules)
                 if (exists c=rule.consumes[matchPos],
-                    (HashSet{*c} &
-                    typeAtomCache.supertypeSet(other.produces)).size > 0)
+                    (c.select(other.produces.subtypeOf)).size > 0)
                     EPState(pos, other, 0, pos, [], 0, errorConstructors,
                             tokensProcessed, lastToken)
         };
@@ -301,7 +296,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     }
 
     shared actual String string {
-        String produces = typeAtomCache.resolve(rule.produces).string;
+        String produces = rule.produces.string;
         variable value ret = "``pos``: ``produces`` =>";
         variable value loc = 0;
 
@@ -313,7 +308,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
 
             for (t in i) {
                 ret += sep;
-                ret += typeAtomCache.resolve(t).string;
+                ret += t.string;
                 sep = "|";
             }
         }

@@ -89,10 +89,10 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
     shared Rule[] rules = g.rules;
 
     "The result symbol we expect from this tree"
-    shared Integer result = g.result;
+    shared Atom result = g.result;
 
     "Error constructors"
-    shared Map<Integer, Object(Object?, Object?)> errorConstructors =
+    shared Map<Atom, Object(Object?, Object?)> errorConstructors =
         g.errorConstructors;
 
     "Tokenizers"
@@ -104,7 +104,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
     value stateQueue = StateQueue();
 
     for (rule in rules) {
-        if (! typeAtomCache.subtypeSet(result).contains(rule.produces)) { continue; }
+        if (! result.supertypeOf(rule.produces)) { continue; }
 
         value newState = EPState(0, rule, 0, 0, [], 0, errorConstructors, 0);
         stateQueue.offer(newState);
@@ -251,7 +251,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
 
         for (i in endsPair.item) {
             if (! i.complete) { continue; }
-            if (! typeAtomCache.subtypeSet(result).contains(i.rule.produces)) { continue; }
+            if (! result.supertypeOf(i.rule.produces)) { continue; }
 
             assert(is Root t = i.astNode.sym);
             resultNodes.add(t);
