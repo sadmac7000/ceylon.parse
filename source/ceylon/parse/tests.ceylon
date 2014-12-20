@@ -423,22 +423,16 @@ object advancedVariadicGrammar extends ABGrammar<S>() {
 
 test
 shared void advancedVariadic() {
-    /* FIXME: We get a more complete test if we remove the 'a' from the test
-     * string and remove the ATerm from the result and shift the last BTerm to
-     * position 2. We can implement this as soon as ceylon.language bug 607 is
-     * fixed.
-     */
-    value root = ParseTree(advancedVariadicGrammar, "bbab").ast;
+    value root = ParseTree(advancedVariadicGrammar, "bbb").ast;
     value expect = S (0,
                 A(0,
                     BTerm(0),
                     ATermError(null, 1)
                 ),
                 B(1,
-                    BTerm(1),
-                    ATerm(2)
+                    BTerm(1)
                 ),
-                BTerm(3)
+                BTerm(2)
             );
     assertEquals(root, expect);
 }
