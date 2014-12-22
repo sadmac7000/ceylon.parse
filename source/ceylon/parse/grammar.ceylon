@@ -26,7 +26,7 @@ shared annotation GrammarErrorConstructor errorConstructor() =>
         GrammarErrorConstructor();
 
 "A do-nothing annotation class for the `rule` annotation"
-shared final annotation class GrammarRule()
+shared final annotation class GrammarRule(shared Integer precedence = 0)
         satisfies OptionalAnnotation<GrammarRule, Annotated> {}
 
 "We annotate methods of a `ParseTree` object to indicate that those methods
@@ -65,7 +65,8 @@ shared class ProductionClause(shared Boolean variadic,
 "A rule. Specifies produced and consumed symbols and a method to execute them"
 shared class Rule(shared Object(Object?*) consume,
         shared ProductionClause[] consumes,
-        shared Atom produces) {
+        shared Atom produces,
+        shared Integer precedence) {
     shared actual Integer hash = consumes.hash ^ 2 + produces.hash;
 
     shared actual Boolean equals(Object other) {
@@ -182,7 +183,8 @@ shared abstract class Grammar<out Root, Data>()
             value consumes = [ for (p in params) makeProductionClause(*p) ];
             value produces = Atom(r.type);
 
-            value rule = Rule(consume, consumes, produces);
+            assert(exists ruleAnnotation = r.declaration.annotations<GrammarRule>()[0]);
+            value rule = Rule(consume, consumes, produces, ruleAnnotation.precedence);
 
             rules = rules.withTrailing(rule);
         }
