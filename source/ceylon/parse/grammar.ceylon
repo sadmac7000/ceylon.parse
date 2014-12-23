@@ -138,17 +138,20 @@ shared abstract class Grammar<out Root, Data>()
     shared Atom result = Atom(`Root`);
 
     "Error constructors"
-    shared HashMap<Atom, Object(Object?, Object?)> errorConstructors =
+    shared Map<Atom, Object(Object?, Object?)> errorConstructors =
         HashMap<Atom, Object(Object?, Object?)>();
 
     "Tokenizers"
-    shared variable HashMap<Atom, Token?(Data, Object?)> tokenizers =
+    shared Map<Atom, Token?(Data, Object?)> tokenizers =
     HashMap<Atom, Token?(Data, Object?)>();
 
     variable Boolean populated = false;
 
     "Set up the list of rules"
     shared void populateRules() {
+        assert(is HashMap<Atom, Token?(Data, Object?)> tokenizers);
+        assert(is HashMap<Atom, Object(Object?, Object?)> errorConstructors);
+
         if (populated) { return; }
         populated = true;
 
