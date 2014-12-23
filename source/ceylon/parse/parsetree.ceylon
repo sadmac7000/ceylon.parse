@@ -16,7 +16,14 @@ class StateQueue() {
     value queue = ArrayList<EPState>();
     value states = HashMap<Integer,HashSet<EPState>>();
 
-    shared <Integer->HashSet<EPState>>? latest => states.last;
+    shared <Integer->HashSet<EPState>>? latest {
+        Integer? key = max(states.keys);
+
+        if (! exists key) { return null; }
+        assert(exists key);
+        assert(exists val = states[key]);
+        return key->val;
+    }
 
     variable PriorityQueue<EPState>? recoveryQueue = null;
 
@@ -249,9 +256,21 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
 
         value resultNodes = ArrayList<Root>();
 
+        variable Integer? minLsd = null;
+
         for (i in endsPair.item) {
             if (! i.complete) { continue; }
             if (! result.supertypeOf(i.rule.produces)) { continue; }
+            if (i.start != 0) { continue; }
+
+            if (! exists k = minLsd) {
+                minLsd = i.lsd;
+            } else if (exists k = minLsd, i.lsd > k) {
+                continue;
+            } else if (exists k = minLsd, i.lsd < k) {
+                minLsd = i.lsd;
+                resultNodes.clear();
+            }
 
             assert(is Root t = i.astNode.sym);
             resultNodes.add(t);
