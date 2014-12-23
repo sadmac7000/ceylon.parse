@@ -237,6 +237,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
         } else {
             value intersects = want.select(other.rule.produces.subtypeOf);
             if (intersects.size == 0) { return null; }
+            if (rule.precedenceConflict(other.rule)) { return null; }
 
             return derive(other.pos, other);
         }

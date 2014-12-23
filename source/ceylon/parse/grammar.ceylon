@@ -26,12 +26,12 @@ shared annotation GrammarErrorConstructor errorConstructor() =>
         GrammarErrorConstructor();
 
 "A do-nothing annotation class for the `rule` annotation"
-shared final annotation class GrammarRule(shared Integer precedence = 0)
+shared final annotation class GrammarRule(shared Integer precedence)
         satisfies OptionalAnnotation<GrammarRule, Annotated> {}
 
 "We annotate methods of a `ParseTree` object to indicate that those methods
  correspond to production rules"
-shared annotation GrammarRule rule() => GrammarRule();
+shared annotation GrammarRule rule(Integer precedence = 0) => GrammarRule(precedence);
 
 "A do-nothing annotation class for the `tokenizer` annotation."
 shared final annotation class Tokenizer()
@@ -75,6 +75,21 @@ shared class Rule(shared Object(Object?*) consume,
         } else {
             return false;
         }
+    }
+
+    shared Boolean precedenceConflict(Rule other) {
+        if (precedence >= other.precedence) { return false; }
+        if (produces != other.produces) { return false; }
+        if (bracketed || other.bracketed) { return false; }
+        return true;
+    }
+
+    shared Boolean bracketed {
+        if (exists c = consumes.first,
+            c.contains(produces)) { return false; }
+        if (exists c = consumes.last,
+            c.contains(produces)) { return false; }
+        return true;
     }
 }
 

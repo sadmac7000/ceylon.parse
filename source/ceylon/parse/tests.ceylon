@@ -1,4 +1,4 @@
-import ceylon.test { test, assertEquals }
+import ceylon.test { test, assertEquals, assertThatException }
 
 "A base class for symbols in the test that defines a few handy features."
 class Sym(shared variable Integer position = 0, Sym* children) {
@@ -435,4 +435,294 @@ shared void advancedVariadic() {
                 BTerm(2)
             );
     assertEquals(root, expect);
+}
+
+/* Algebraic tests */
+
+class Expr(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
+
+class Var(String name, Integer pos = 0, shared actual Object? prevError = null)
+        extends Sym(pos) {
+    shared actual String shortName => super.shortName + " \"``name``\"";
+}
+class Plus(Integer pos = 0, shared actual Object? prevError = null) extends Sym(pos) {}
+class Minus(Integer pos = 0, shared actual Object? prevError = null) extends Sym(pos) {}
+class Mul(Integer pos = 0, shared actual Object? prevError = null) extends Sym(pos) {}
+class Div(Integer pos = 0, shared actual Object? prevError = null) extends Sym(pos) {}
+class LParen(Integer pos = 0, shared actual Object? prevError = null) extends Sym(pos) {}
+class RParen(Integer pos = 0, shared actual Object? prevError = null) extends Sym(pos) {}
+
+class AlgebraGrammar() extends Grammar<Expr, String>() {
+    tokenizer
+    shared Token<Var>? var(String input, Object? last) {
+        String varChars = "abcdefghijklmnopqrstuvwxyz";
+        Integer position;
+        Object? prevError;
+
+        assert(exists chr = input.first);
+
+        if (is Sym last) {
+            position = last.position + 1;
+            prevError = null;
+        } else if (is Crap last) {
+            position = last.position + last.data.size;
+            prevError = last;
+        } else {
+            position = 0;
+            prevError = null;
+        }
+
+        if (varChars.contains(chr)) {
+            return Token(Var(chr.string, position, prevError), 1);
+        } else {
+            return null;
+        }
+    }
+
+    tokenizer
+    shared Token<Plus>? plus(String input, Object? last) {
+        Integer position;
+        Object? prevError;
+
+        if (is Sym last) {
+            position = last.position + 1;
+            prevError = null;
+        } else if (is Crap last) {
+            position = last.position + last.data.size;
+            prevError = last;
+        } else {
+            position = 0;
+            prevError = null;
+        }
+
+        if (input.startsWith("+")) {
+            return Token(Plus(position, prevError), 1);
+        } else {
+            return null;
+        }
+    }
+
+    tokenizer
+    shared Token<Minus>? minus(String input, Object? last) {
+        Integer position;
+        Object? prevError;
+
+        if (is Sym last) {
+            position = last.position + 1;
+            prevError = null;
+        } else if (is Crap last) {
+            position = last.position + last.data.size;
+            prevError = last;
+        } else {
+            position = 0;
+            prevError = null;
+        }
+
+        if (input.startsWith("-")) {
+            return Token(Minus(position, prevError), 1);
+        } else {
+            return null;
+        }
+    }
+
+    tokenizer
+    shared Token<Mul>? mull(String input, Object? last) {
+        Integer position;
+        Object? prevError;
+
+        if (is Sym last) {
+            position = last.position + 1;
+            prevError = null;
+        } else if (is Crap last) {
+            position = last.position + last.data.size;
+            prevError = last;
+        } else {
+            position = 0;
+            prevError = null;
+        }
+
+        if (input.startsWith("*")) {
+            return Token(Mul(position, prevError), 1);
+        } else {
+            return null;
+        }
+    }
+
+    tokenizer
+    shared Token<Div>? div(String input, Object? last) {
+        Integer position;
+        Object? prevError;
+
+        if (is Sym last) {
+            position = last.position + 1;
+            prevError = null;
+        } else if (is Crap last) {
+            position = last.position + last.data.size;
+            prevError = last;
+        } else {
+            position = 0;
+            prevError = null;
+        }
+
+        if (input.startsWith("/")) {
+            return Token(Div(position, prevError), 1);
+        } else {
+            return null;
+        }
+    }
+
+    tokenizer
+    shared Token<LParen>? lparen(String input, Object? last) {
+        Integer position;
+        Object? prevError;
+
+        if (is Sym last) {
+            position = last.position + 1;
+            prevError = null;
+        } else if (is Crap last) {
+            position = last.position + last.data.size;
+            prevError = last;
+        } else {
+            position = 0;
+            prevError = null;
+        }
+
+        if (input.startsWith("(")) {
+            return Token(LParen(position, prevError), 1);
+        } else {
+            return null;
+        }
+    }
+
+    tokenizer
+    shared Token<RParen>? rparen(String input, Object? last) {
+        Integer position;
+        Object? prevError;
+
+        if (is Sym last) {
+            position = last.position + 1;
+            prevError = null;
+        } else if (is Crap last) {
+            position = last.position + last.data.size;
+            prevError = last;
+        } else {
+            position = 0;
+            prevError = null;
+        }
+
+        if (input.startsWith(")")) {
+            return Token(RParen(position, prevError), 1);
+        } else {
+            return null;
+        }
+    }
+
+    rule
+    shared Expr parenExpression(LParen l, Expr e, RParen r) => e;
+
+    rule
+    shared Expr varExpressionb(Var v) => Expr(v.position, v);
+
+    shared actual Crap badTokenConstructor(String data, Object? last) {
+        if (is Sym last) {
+            return Crap(data, last.position + 1);
+        } else if (is Crap last) {
+            return Crap(data, last.position + last.data.size);
+        } else {
+            return Crap(data);
+        }
+    }
+
+    errorConstructor
+    shared Mul error(Object? replaces, Object? last) {
+        return Mul(0);
+    }
+}
+
+object ambiguousAlgebraGrammar extends AlgebraGrammar() {
+    rule
+    shared Expr add(Expr a, Plus o, Expr b) => Expr(a.position, a, o, b);
+
+    rule
+    shared Expr mul(Expr a, Mul o, Expr b) => Expr(a.position, a, o, b);
+}
+
+test
+void verticalAmbiguity() {
+    value tree = ParseTree(ambiguousAlgebraGrammar, "a+b*c");
+
+    assertThatException(() => tree.ast).hasType(`AmbiguityException`);
+}
+
+test
+void horizontalAmbiguity() {
+    value tree = ParseTree(ambiguousAlgebraGrammar, "a+b+c");
+
+    assertThatException(() => tree.ast).hasType(`AmbiguityException`);
+}
+
+test
+void resolvedVerticalAmbiguity()
+{
+    value root = ParseTree(ambiguousAlgebraGrammar, "(a+b)*c").ast;
+    value expect = Expr (1,
+        Expr (1,
+            Expr(1, Var("a", 1)),
+            Plus(2),
+            Expr(3, Var("b", 3))
+            ),
+        Mul(5),
+        Expr(6, Var("c", 6))
+    );
+
+    assertEquals(root, expect);
+}
+
+test
+void resolvedHorizontalAmbiguity()
+{
+    value root = ParseTree(ambiguousAlgebraGrammar, "(a+b)+c").ast;
+    value expect = Expr (1,
+        Expr (1,
+            Expr(1, Var("a", 1)),
+            Plus(2),
+            Expr(3, Var("b", 3))
+            ),
+        Plus(5),
+        Expr(6, Var("c", 6))
+    );
+
+    assertEquals(root, expect);
+}
+
+object precedencedAlgebraGrammar extends AlgebraGrammar() {
+    rule(1)
+    shared Expr mul(Expr a, Mul o, Expr b) => Expr(a.position, a, o, b);
+
+    rule(2)
+    shared Expr add(Expr a, Plus o, Expr b) => Expr(a.position, a, o, b);
+}
+
+test
+void precedenceResolvedVerticalAmbiguity() {
+    value root = ParseTree(precedencedAlgebraGrammar, "a+b*c").ast;
+    value expect = Expr (0,
+        Expr(0, Var("a", 0)),
+        Plus(1),
+        Expr(2,
+            Expr(2, Var("b", 2)),
+            Mul(3),
+            Expr(4, Var("c", 4))
+        )
+    );
+
+    assertEquals(root, expect);
+}
+
+
+test
+void horizontalAmbiguityDespitePrecedence() {
+    value tree = ParseTree(precedencedAlgebraGrammar, "a+b+c");
+
+    assertThatException(() => tree.ast).hasType(`AmbiguityException`);
 }
