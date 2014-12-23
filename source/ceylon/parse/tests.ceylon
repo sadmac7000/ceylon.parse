@@ -442,7 +442,7 @@ shared void advancedVariadic() {
 class Expr(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
 
 class Var(String name, Integer pos = 0, shared actual Object? prevError = null)
-        extends Sym(pos) {
+        extends Expr(pos) {
     shared actual String shortName => super.shortName + " \"``name``\"";
 }
 class Plus(Integer pos = 0, shared actual Object? prevError = null) extends Sym(pos) {}
@@ -620,9 +620,6 @@ class AlgebraGrammar() extends Grammar<Expr, String>() {
     rule
     shared Expr parenExpression(LParen l, Expr e, RParen r) => e;
 
-    rule
-    shared Expr varExpressionb(Var v) => Expr(v.position, v);
-
     shared actual Crap badTokenConstructor(String data, Object? last) {
         if (is Sym last) {
             return Crap(data, last.position + 1);
@@ -667,12 +664,12 @@ void resolvedVerticalAmbiguity()
     value root = ParseTree(ambiguousAlgebraGrammar, "(a+b)*c").ast;
     value expect = Expr (1,
         Expr (1,
-            Expr(1, Var("a", 1)),
+            Var("a", 1),
             Plus(2),
-            Expr(3, Var("b", 3))
+            Var("b", 3)
             ),
         Mul(5),
-        Expr(6, Var("c", 6))
+        Var("c", 6)
     );
 
     assertEquals(root, expect);
@@ -684,12 +681,12 @@ void resolvedHorizontalAmbiguity()
     value root = ParseTree(ambiguousAlgebraGrammar, "(a+b)+c").ast;
     value expect = Expr (1,
         Expr (1,
-            Expr(1, Var("a", 1)),
+            Var("a", 1),
             Plus(2),
-            Expr(3, Var("b", 3))
+            Var("b", 3)
             ),
         Plus(5),
-        Expr(6, Var("c", 6))
+        Var("c", 6)
     );
 
     assertEquals(root, expect);
@@ -707,12 +704,12 @@ test
 void precedenceResolvedVerticalAmbiguity() {
     value root = ParseTree(precedencedAlgebraGrammar, "a+b*c").ast;
     value expect = Expr (0,
-        Expr(0, Var("a", 0)),
+        Var("a", 0),
         Plus(1),
         Expr(2,
-            Expr(2, Var("b", 2)),
+            Var("b", 2),
             Mul(3),
-            Expr(4, Var("c", 4))
+            Var("c", 4)
         )
     );
 
@@ -746,12 +743,12 @@ void associativityResolvedHorizontalAmbiguity()
     value root = ParseTree(fullAlgebraGrammar, "a+b+c").ast;
     value expect = Expr (0,
         Expr (0,
-            Expr(0, Var("a", 0)),
+            Var("a", 0),
             Plus(1),
-            Expr(2, Var("b", 2))
+            Var("b", 2)
             ),
         Plus(3),
-        Expr(4, Var("c", 4))
+        Var("c", 4)
     );
 
     assertEquals(root, expect);
@@ -763,12 +760,12 @@ void multipleOperatorAssociativity()
     value root = ParseTree(fullAlgebraGrammar, "a+b-c").ast;
     value expect = Expr (0,
         Expr (0,
-            Expr(0, Var("a", 0)),
+            Var("a", 0),
             Plus(1),
-            Expr(2, Var("b", 2))
+            Var("b", 2)
             ),
         Minus(3),
-        Expr(4, Var("c", 4))
+        Var("c", 4)
     );
 
     assertEquals(root, expect);

@@ -164,11 +164,13 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
         assert(exists wants = state.rule.consumes[state.matchPos]);
 
         for (want in wants ) {
-            if (exists t = tokenizers[want],
-                is Data tail = data[state.pos...],
-                exists sym = t(tail, state.lastToken),
-                exists s = state.feed(sym)) {
-                stateQueue.offer(s);
+            for (k->t in tokenizers) {
+                if (! k.subtypeOf(want)) { continue; }
+                if (is Data tail = data[state.pos...],
+                    exists sym = t(tail, state.lastToken),
+                    exists s = state.feed(sym)) {
+                    stateQueue.offer(s);
+                }
             }
         }
 
