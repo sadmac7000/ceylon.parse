@@ -5,14 +5,19 @@ import ceylon.language.meta.model {
     Generic,
     Type,
     UnionType,
-    ClassOrInterface
+    ClassOrInterface,
+    Method
 }
 import ceylon.language.meta.declaration {
-    FunctionOrValueDeclaration
+    FunctionOrValueDeclaration,
+    OpenClassOrInterfaceType,
+    FunctionDeclaration
 }
 import ceylon.collection {
     HashMap,
-    HashSet
+    HashSet,
+    MutableSet,
+    ArrayList
 }
 
 "A do-nothing annotation class for the `error` annotation"
@@ -187,6 +192,8 @@ shared abstract class Grammar<out Root, Data>()
             _type(this).getMethods<Nothing>(`GrammarErrorConstructor`);
         value tokenizerMeths = _type(this).getMethods<Nothing>(`Tokenizer`);
 
+        value haveSet = HashSet<Atom>();
+
         for (t in tokenizerMeths) {
             Token? tokenizer(Data s, Object? last) {
                 assert(is Token? ret = t.declaration.memberInvoke(this, [],
@@ -204,7 +211,9 @@ shared abstract class Grammar<out Root, Data>()
             assert(typeArgs.size == 1);
             assert(exists type = typeArgs.first);
 
-            tokenizers.put(Atom(type), tokenizer);
+            value atom = Atom(type);
+            tokenizers.put(atom, tokenizer);
+            haveSet.add(atom);
         }
 
         for (c in errConMeths) {
@@ -218,21 +227,57 @@ shared abstract class Grammar<out Root, Data>()
         }
 
         for (r in meths) {
-            Object consume(Object? *o) {
-                assert(is Object ret = r.declaration.memberInvoke(this, [], *o));
-                return ret;
+            addRule(r);
+            haveSet.add(Atom(r.type));
+        }
+
+        populateGenericRules(haveSet);
+    }
+
+    "Add a rule to the rule list"
+    void addRule(Method<Nothing> r, Type<Anything>[] typeArgs = []) {
+        Object consume(Object? *o) {
+            assert(is Object ret = r.declaration.memberInvoke(this, typeArgs, *o));
+            return ret;
+        }
+
+        value params = zipPairs(r.parameterTypes,
+                r.declaration.parameterDeclarations);
+        value consumes = [ for (p in params) makeProductionClause(*p) ];
+        value produces = Atom(r.type);
+
+        assert(exists ruleAnnotation = r.declaration.annotations<GrammarRule>()[0]);
+        value rule = Rule(consume, consumes, produces,
+                ruleAnnotation.precedence, ruleAnnotation.associativity);
+
+        rules = rules.withTrailing(rule);
+    }
+
+    "Populate the rules list with any versions of generic rules"
+    void populateGenericRules(MutableSet<Atom> haveSet) {
+        value meths =
+            _type(this).declaration.annotatedMemberDeclarations<FunctionDeclaration,GrammarRule>();
+
+        value queue = ArrayList<Atom>{*haveSet};
+
+        while (exists have = queue.accept()) {
+            for (meth in meths) {
+                if (meth.typeParameterDeclarations.empty) { continue; }
+                assert(is OpenClassOrInterfaceType cls = meth.openType);
+
+                value completeMeth = meth.memberApply<Nothing,
+                      Anything, Nothing>(_type(this), have.type);
+                addRule(completeMeth, [have.type]);
+
+                /*for (t in completeMeth.parameterTypes) {
+                    if (is Model t) {
+                        if (haveSet.contains(t)) { continue; }
+
+                        haveSet.add(t);
+                        queue.offer(t);
+                    }
+                }*/
             }
-
-            value params = zipPairs(r.parameterTypes,
-                    r.declaration.parameterDeclarations);
-            value consumes = [ for (p in params) makeProductionClause(*p) ];
-            value produces = Atom(r.type);
-
-            assert(exists ruleAnnotation = r.declaration.annotations<GrammarRule>()[0]);
-            value rule = Rule(consume, consumes, produces,
-                    ruleAnnotation.precedence, ruleAnnotation.associativity);
-
-            rules = rules.withTrailing(rule);
         }
     }
 
@@ -240,5 +285,12 @@ shared abstract class Grammar<out Root, Data>()
      exactly the contents of that region."
     shared default Object badTokenConstructor(Data data, Object? previous) {
         throw BadTokenConstructorException();
+    }
+
+    "A generic rule that parses iterables, thus handling iterables in argument
+     lists."
+    rule
+    shared {K+} iterables<K>(K+ k) {
+        return k;
     }
 }
