@@ -274,7 +274,7 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 2.3 of the specification"
     rule
     shared LIdentifier lidentEsc(Separator? ws, LIdentStart start,
-            LIdentText text) {
+            UIdentText text) {
         value ret = LIdentifier(text.text);
         ret.put(tokensKey, [*{ws, start, text}.coalesced]);
         return ret;
