@@ -244,7 +244,7 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     rule
     shared UIdentifier uidentEsc(Separator? ws, UIdentStart start,
             LIdentText text) {
-        value ret = UIdentifier(text.text);
+        value ret = UIdentifier{text.text; usePrefix = true;};
         ret.put(tokensKey, [*{ws, start, text}.coalesced]);
         return ret;
     }
@@ -262,7 +262,7 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     rule
     shared LIdentifier lidentEsc(Separator? ws, LIdentStart start,
             UIdentText text) {
-        value ret = LIdentifier(text.text);
+        value ret = LIdentifier{text.text; usePrefix = true;};
         ret.put(tokensKey, [*{ws, start, text}.coalesced]);
         return ret;
     }
