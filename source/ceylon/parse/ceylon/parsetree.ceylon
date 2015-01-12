@@ -2,8 +2,13 @@ import ceylon.parse { Grammar, Token, rule, tokenizer/*, errorConstructor*/ }
 import ceylon.ast.core {
     AnyCompilationUnit,
     LIdentifier,
-    UIdentifier
+    UIdentifier,
+    Key,
+    ScopedKey
 }
+
+shared Key<CeylonToken[]> tokensKey = ScopedKey<CeylonToken[]>(`package
+        ceylon.parse.ceylon`, "tokens");
 
 "Find the index of the first character in a string that isn't part of a
  comment"
@@ -48,33 +53,6 @@ String[] reservedWords = ["assembly", "module", "package", "import", "alias",
 Character[] whitespaceChars = [ ' ', '\{FORM FEED (FF)}',
        '\{LINE FEED (LF)}', '\{CHARACTER TABULATION}',
        '\{CARRIAGE RETURN (CR)}'];
-
-"Base class for Ceylon token objects."
-class CeylonToken(shared Integer line_start, shared Integer col_start, shared
-        Integer line_end, shared Integer col_end) {}
-
-class LineComment(Integer ls, Integer cs, Integer le, Integer ce)  extends
-    CeylonToken(ls, cs, le, ce) {}
-class Whitespace(Integer ls, Integer cs, Integer le, Integer ce)  extends
-    CeylonToken(ls, cs, le, ce) {}
-class CommentStart(Integer ls, Integer cs, Integer le, Integer ce)  extends
-    CeylonToken(ls, cs, le, ce) {}
-class CommentEnd(Integer ls, Integer cs, Integer le, Integer ce)  extends
-    CeylonToken(ls, cs, le, ce) {}
-class CommentBody(Integer ls, Integer cs, Integer le, Integer ce)  extends
-    CeylonToken(ls, cs, le, ce) {}
-class BlockComment(Integer ls, Integer cs, Integer le, Integer ce)  extends
-    CeylonToken(ls, cs, le, ce) {}
-class Separator(Integer ls, Integer cs, Integer le, Integer ce)  extends
-    CeylonToken(ls, cs, le, ce) {}
-class UIdentStart(Integer ls, Integer cs, Integer le, Integer ce)  extends
-    CeylonToken(ls, cs, le, ce) {}
-class LIdentStart(Integer ls, Integer cs, Integer le, Integer ce)  extends
-    CeylonToken(ls, cs, le, ce) {}
-class UIdentText(shared String text, Integer ls, Integer cs, Integer le, Integer ce)  extends
-    CeylonToken(ls, cs, le, ce) {}
-class LIdentText(shared String text, Integer ls, Integer cs, Integer le, Integer ce)  extends
-    CeylonToken(ls, cs, le, ce) {}
 
 "Extract the ending line and column from an object which is assumed to be a
  CeylonToken, for use as a starting position for the next token"
@@ -197,18 +175,14 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     rule
     shared BlockComment blockComment(CommentStart start,
             {CommentBody|BlockComment*} body, CommentEnd end) {
-        return BlockComment(start.line_start, start.col_start, end.line_end,
-                end.col_end);
+        return BlockComment(start, *(body.chain({end})));
     }
 
     "Section 2.2 of the specification"
     rule
     shared Separator separator({BlockComment|LineComment|Whitespace+}
             separator) {
-        value first = separator.first;
-        value last = separator.last;
-        return Separator(first.line_start, first.col_start, last.line_end,
-                last.col_end);
+        return Separator(*separator);
     }
 
     "Section 2.3 of the specification"
@@ -272,25 +246,37 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 2.3 of the specification"
     rule
-    shared UIdentifier uident(UIdentStart? start, UIdentText text) {
-        return UIdentifier(text.text);
+    shared UIdentifier uident(Separator? ws, UIdentStart? start,
+            UIdentText text) {
+        value ret = UIdentifier(text.text);
+        ret.put(tokensKey, [*{ws, start, text}.coalesced]);
+        return ret;
     }
 
     "Section 2.3 of the specification"
     rule
-    shared UIdentifier uident_esc(UIdentStart start, LIdentText text) {
-        return UIdentifier(text.text);
+    shared UIdentifier uidentEsc(Separator? ws, UIdentStart start,
+            LIdentText text) {
+        value ret = UIdentifier(text.text);
+        ret.put(tokensKey, [*{ws, start, text}.coalesced]);
+        return ret;
     }
 
     "Section 2.3 of the specification"
     rule
-    shared LIdentifier lident(LIdentStart? start, LIdentText text) {
-        return LIdentifier(text.text);
+    shared LIdentifier lident(Separator? ws, LIdentStart? start,
+            LIdentText text) {
+        value ret = LIdentifier(text.text);
+        ret.put(tokensKey, [*{ws, start, text}.coalesced]);
+        return ret;
     }
 
     "Section 2.3 of the specification"
     rule
-    shared LIdentifier lident_esc(LIdentStart start, LIdentText text) {
-        return LIdentifier(text.text);
+    shared LIdentifier lidentEsc(Separator? ws, LIdentStart start,
+            LIdentText text) {
+        value ret = LIdentifier(text.text);
+        ret.put(tokensKey, [*{ws, start, text}.coalesced]);
+        return ret;
     }
 }
