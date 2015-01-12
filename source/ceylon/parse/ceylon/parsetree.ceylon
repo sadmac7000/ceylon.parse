@@ -7,39 +7,9 @@ import ceylon.ast.core {
     ScopedKey
 }
 
+"AST Node key to attach individual tokens"
 shared Key<CeylonToken[]> tokensKey = ScopedKey<CeylonToken[]>(`package
         ceylon.parse.ceylon`, "tokens");
-
-"Find the index of the first character in a string that isn't part of a
- comment"
-Integer findCommentEnd(String source) {
-    variable value ret = 0;
-
-    if (source[ret...].startsWith("//") ||
-        source[ret...].startsWith("#!")) {
-        ret += 2;
-        while (! (source[ret...].startsWith("\{CARRIAGE RETURN (CR)}") ||
-                    source[ret...].startsWith("\{LINE FEED (LF)}"))) {
-            ret++;
-        }
-    } else if (source[ret...].startsWith("/*")) {
-        variable value count = 1;
-        ret += 2;
-
-        while (count > 0) {
-            ret++;
-            if (source[ret...].startsWith("/*")) {
-                count++;
-            } else if (source[ret...].startsWith("*/")) {
-                count--;
-            }
-        }
-
-        ret += 2;
-    }
-
-    return ret;
-}
 
 "List of reserved words"
 String[] reservedWords = ["assembly", "module", "package", "import", "alias",
