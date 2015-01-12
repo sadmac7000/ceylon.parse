@@ -1,4 +1,5 @@
 import ceylon.parse { Grammar, Token, rule, tokenizer/*, errorConstructor*/ }
+import ceylon.language.meta.model { Class }
 import ceylon.ast.core {
     AnyCompilationUnit,
     LIdentifier,
@@ -32,6 +33,22 @@ Character[] whitespaceChars = [ ' ', '\{FORM FEED (FF)}',
     }
 
     return [0, 0];
+}
+
+"Literal token"
+Token<Type>? literal<Type>(String want, String input, Object? prev)
+        given Type satisfies Object {
+    value [start_line, start_col] = extractStartPos(prev);
+    value t = `Type`;
+
+    assert(is Class<Type, [Integer, Integer, Integer, Integer]> t);
+
+    if (input.startsWith(want)) {
+        return Token(t(start_line, start_col, start_line,
+                    start_col + want.size), want.size);
+    }
+
+    return null;
 }
 
 "Calculate the ending line and column given the starting line and column and
