@@ -5,7 +5,8 @@ import ceylon.ast.core {
     LIdentifier,
     UIdentifier,
     Key,
-    ScopedKey
+    ScopedKey,
+    IntegerLiteral
 }
 
 "AST Node key to attach individual tokens"
@@ -264,6 +265,243 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             UIdentText text) {
         value ret = LIdentifier{text.text; usePrefix = true;};
         ret.put(tokensKey, [*{ws, start, text}.coalesced]);
+        return ret;
+    }
+
+    "Section 2.4.1 of the specification"
+    tokenizer
+    shared Token<HashMark>? hashMark(String input, Object? prev)
+            => literal("#", input, prev);
+
+    "Section 2.4.1 of the specification"
+    tokenizer
+    shared Token<DollarMark>? dollarMark(String input, Object? prev)
+            => literal("$", input, prev);
+
+    "Section 2.4.1 of the specification"
+    tokenizer
+    shared Token<Underscore>? underscore(String input, Object? prev)
+            => literal("_", input, prev);
+
+    "Section 2.4.1 of the specification"
+    tokenizer
+    shared Token<Digit>? digit(String input, Object? prev) {
+        value [start_line, start_col] = extractStartPos(prev);
+
+        if (exists c = input[0], c.digit) {
+            return Token(Digit(input[0:1], start_line, start_col,
+                        start_line, start_col + 1), 1);
+        }
+
+        return null;
+    }
+
+    "Section 2.4.1 of the specification"
+    tokenizer
+    shared Token<HexDigit>? hexDigit(String input, Object? prev) {
+        value [start_line, start_col] = extractStartPos(prev);
+
+        if (exists c = input[0],
+            c.digit || "abcdefABCDEF".contains(c)) {
+            return Token(HexDigit(input[0:1], start_line, start_col,
+                        start_line, start_col + 1), 1);
+        }
+
+        return null;
+    }
+
+    "Section 2.4.1 of the specification"
+    tokenizer
+    shared Token<BinDigit>? binDigit(String input, Object? prev) {
+        value [start_line, start_col] = extractStartPos(prev);
+
+        if (exists c = input[0], "01".contains(c)) {
+            return Token(BinDigit(input[0:1], start_line, start_col,
+                        start_line, start_col + 1), 1);
+        }
+
+        return null;
+    }
+
+    "Section 2.4.1 of the specification"
+    rule
+    shared Digits digits({Digit+} items) => Digits(*items);
+
+    "Section 2.4.1 of the specification"
+    rule
+    shared DigitCluster digitCluster(Underscore u, Digit a, Digit b,
+            Digit c) => DigitCluster(u,a,b,c);
+
+    "Section 2.4.1 of the specification"
+    rule
+    shared Digits clusteredDigits(Digit? a, Digit? b, Digit c,
+            {DigitCluster+} clusters) {
+        value toks = (clusters*.subtokens).reduce<{CeylonToken+}>((x,y) =>
+                x.chain(y));
+        value start = {a,b,c}.coalesced;
+
+        return Digits(*start.chain(toks));
+    }
+
+    "Section 2.4.1 of the specification"
+    rule
+    shared FracDigitCluster fracDigitCluster(Digit a, Digit b, Digit c,
+            Underscore u) => FracDigitCluster(a,b,c,u);
+
+    "Section 2.4.1 of the specification"
+    rule
+    shared FracDigits fracDigits({FracDigitCluster+} clusters,
+            Digit a, Digit? b, Digit? c) {
+        value toks = (clusters*.subtokens).reduce<{CeylonToken+}>((x,y) =>
+                x.chain(y));
+        value end = {a,b,c}.coalesced;
+
+        return FracDigits(*toks.chain(end));
+    }
+
+    "Section 2.4.1 of the specification"
+    rule
+    shared FracDigits unmarkedFracDigits({Digits+} digits) => FracDigits(*digits);
+
+
+    "Section 2.4.1 of the specification"
+    rule
+    shared HexDigitCluster hexFourCluster(Underscore u, HexDigit a, HexDigit b,
+            HexDigit c, HexDigit d) => HexDigitCluster(u,a,b,c,d);
+
+    "Section 2.4.1 of the specification"
+    rule
+    shared HexDigitTwoCluster hexTwoCluster(Underscore u, HexDigit a,
+            HexDigit b) => HexDigitTwoCluster(u,a,b);
+
+    "Section 2.4.1 of the specification"
+    rule
+    shared BinDigitCluster binCluster(Underscore u, BinDigit a, BinDigit b,
+            BinDigit c, BinDigit d) => BinDigitCluster(u,a,b,c,d);
+
+    "Section 2.4.1 of the specification"
+    rule
+    shared BinDigits binDigits({BinDigit+} digits) => BinDigits(*digits);
+
+    "Section 2.4.1 of the specification"
+    rule
+    shared BinDigits clusteredBinDigits(BinDigit? a, BinDigit? b, BinDigit? c,
+            BinDigit d, {BinDigitCluster+} clusters) {
+        value start = {a,b,c,d}.coalesced;
+        value toks = (clusters*.subtokens).reduce<{CeylonToken+}>((x,y) =>
+                x.chain(y));
+        return BinDigits(*start.chain(toks));
+    }
+
+    "Section 2.4.1 of the specification"
+    rule
+    shared HexDigits hexDigits({HexDigit+} digits) => HexDigits(*digits);
+
+    "Section 2.4.1 of the specification"
+    rule
+    shared HexDigits clusteredHexDigits(HexDigit? a, HexDigit? b, HexDigit? c,
+            HexDigit d, {HexDigitCluster+} clusters) {
+        value start = {a,b,c,d}.coalesced;
+        value toks = (clusters*.subtokens).reduce<{CeylonToken+}>((x,y) =>
+                x.chain(y));
+        return HexDigits(*start.chain(toks));
+    }
+
+    "Section 2.4.1 of the specification"
+    rule
+    shared HexDigits twoClusteredHexDigits(HexDigit? a, HexDigit b,
+            {HexDigitTwoCluster+} clusters) {
+        value start = {a,b}.coalesced;
+        value toks = (clusters*.subtokens).reduce<{CeylonToken+}>((x,y) =>
+                x.chain(y));
+        return HexDigits(*start.chain(toks));
+    }
+
+    "Section 2.4.1 of the specification"
+    rule
+    shared IntegerLiteral hexLiteral(Separator? s, HashMark h,
+            {HexDigits+} digits) {
+        value digit_tokens = { for (d in digits) for (t in d.subtokens) t };
+        value text_bits = { for (t in digit_tokens) if (is HexDigit t)
+            t.text };
+        value text = text_bits.reduce<String>((x,y) => x + y);
+        assert(exists text);
+        value ret = IntegerLiteral("#" + text);
+
+        if (exists s) {
+            ret.put(tokensKey, [s, h, *digit_tokens]);
+        } else {
+            ret.put(tokensKey, [h, *digit_tokens]);
+        }
+        return ret;
+    }
+
+    "Section 2.4.1 of the specification"
+    rule
+    shared IntegerLiteral binLiteral(Separator? s, DollarMark h,
+            {BinDigits+} digits) {
+        value digit_tokens = { for (d in digits) for (t in d.subtokens) t };
+        value text_bits = { for (t in digit_tokens) if (is BinDigit t)
+            t.text };
+        value text = text_bits.reduce<String>((x,y) => x + y);
+        assert(exists text);
+        value ret = IntegerLiteral("$" + text);
+
+        if (exists s) {
+            ret.put(tokensKey, [s, h, *digit_tokens]);
+        } else {
+            ret.put(tokensKey, [h, *digit_tokens]);
+        }
+        return ret;
+    }
+
+    "Section 2.4.1 of the specification"
+    tokenizer
+    shared Token<Magnitude>? magnitude(String input, Object? prev) {
+        value [start_line, start_col] = extractStartPos(prev);
+
+        if (exists c = input[0], "kMGTP".contains(c)) {
+            return Token(Magnitude(input[0:1], start_line, start_col,
+                        start_line, start_col + 1), 1);
+        }
+
+        return null;
+    }
+
+    "Section 2.4.1 of the specification"
+    tokenizer
+    shared Token<Minitude>? minitude(String input, Object? prev) {
+        value [start_line, start_col] = extractStartPos(prev);
+
+        if (exists c = input[0], "munpf".contains(c)) {
+            return Token(Minitude(input[0:1], start_line, start_col,
+                        start_line, start_col + 1), 1);
+        }
+
+        return null;
+    }
+
+    "Section 2.4.1 of the specification"
+    rule
+    shared IntegerLiteral decLiteral(Separator? s, {Digits+} digits,
+            Magnitude? m) {
+        value digit_tokens = { for (d in digits) for (t in d.subtokens) t };
+        value text_bits = { for (t in digit_tokens) if (is BinDigit t)
+            t.text };
+        value text = text_bits.reduce<String>((x,y) => x + y);
+        assert(exists text);
+
+        String end;
+
+        if (exists m) {
+            end = m.text;
+        } else {
+            end = "";
+        }
+
+        value ret = IntegerLiteral(text + end);
+
+        ret.put(tokensKey, [*{s, *digits}.chain({m}).coalesced]);
         return ret;
     }
 }

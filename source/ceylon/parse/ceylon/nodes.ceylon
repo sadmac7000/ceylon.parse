@@ -70,6 +70,16 @@ shared class BinDigit(shared String text, Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken(ls, cs, le, ce) {}
 
+"A binary digit"
+shared class Magnitude(shared String text, Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken(ls, cs, le, ce) {}
+
+"A binary digit"
+shared class Minitude(shared String text, Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken(ls, cs, le, ce) {}
+
 "A 'token' that may contain other tokens"
 shared class CeylonMetaToken(shared CeylonToken+ subtokens)
         extends CeylonToken(subtokens.first.line_start,
@@ -104,6 +114,18 @@ shared class FracDigitCluster(CeylonToken+ tokens)
 shared class HexDigits(CeylonToken+ tokens)
         extends CeylonMetaToken(*tokens) {}
 
+"A string of four hexadecimal digits"
+shared class HexDigitCluster(CeylonToken+ tokens)
+        extends CeylonMetaToken(*tokens) {}
+
+"A string of two hexadecimal digits"
+shared class HexDigitTwoCluster(CeylonToken+ tokens)
+        extends CeylonMetaToken(*tokens) {}
+
 "A string of binary digits"
 shared class BinDigits(CeylonToken+ tokens)
+        extends CeylonMetaToken(*tokens) {}
+
+"A string of four binary digits"
+shared class BinDigitCluster(CeylonToken+ tokens)
         extends CeylonMetaToken(*tokens) {}
