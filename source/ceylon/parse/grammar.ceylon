@@ -30,29 +30,27 @@ shared final annotation class GrammarErrorConstructor()
 shared annotation GrammarErrorConstructor errorConstructor() =>
         GrammarErrorConstructor();
 
-/* Waiting on bug ceylon.language issue 610
 "Associativity of a rule"
 shared interface Associativity of lassoc|rassoc|nonassoc {}
 
 "Left Associativity"
-object lassoc satisfies Associativity {}
+shared object lassoc satisfies Associativity {}
 
 "Right Associativity"
-object rassoc satisfies Associativity {}
+shared object rassoc satisfies Associativity {}
 
 "Non-Associativity"
-object nonassoc satisfies Associativity {}
-*/
+shared object nonassoc satisfies Associativity {}
 
 "A do-nothing annotation class for the `rule` annotation"
 shared final annotation class GrammarRule(shared Integer precedence,
-        shared String associativity)
+        shared Associativity associativity)
         satisfies OptionalAnnotation<GrammarRule, Annotated> {}
 
 "We annotate methods of a `ParseTree` object to indicate that those methods
  correspond to production rules"
-shared annotation GrammarRule rule(Integer precedence = 0, String associativity
-        = "nonassoc") => GrammarRule(precedence, associativity);
+shared annotation GrammarRule rule(Integer precedence = 0, Associativity associativity
+        = nonassoc) => GrammarRule(precedence, associativity);
 
 "A do-nothing annotation class for the `tokenizer` annotation."
 shared final annotation class Tokenizer()
@@ -88,7 +86,7 @@ shared class Rule(shared Object(Object?*) consume,
         shared ProductionClause[] consumes,
         shared Atom produces,
         shared Integer precedence,
-        shared String associativity) {
+        shared Associativity associativity) {
     shared actual Integer hash = consumes.hash ^ 2 + produces.hash;
 
     shared actual Boolean equals(Object other) {
@@ -119,8 +117,8 @@ shared class Rule(shared Object(Object?*) consume,
         if (other.associativity != associativity) { return null; }
         if (other.produces != produces) { return null; }
 
-        if (associativity == "rassoc") { return 0; }
-        if (associativity == "lassoc") { return consumes.size - 1; }
+        if (associativity == rassoc) { return 0; }
+        if (associativity == lassoc) { return consumes.size - 1; }
         return null;
     }
 }

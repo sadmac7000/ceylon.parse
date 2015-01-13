@@ -724,16 +724,16 @@ void horizontalAmbiguityDespitePrecedence() {
 }
 
 object fullAlgebraGrammar extends AlgebraGrammar() {
-    rule(1, "lassoc")
+    rule(1, lassoc)
     shared Expr mul(Expr a, Mul o, Expr b) => Expr(a.position, a, o, b);
 
-    rule(1, "lassoc")
+    rule(1, lassoc)
     shared Expr div(Expr a, Div o, Expr b) => Expr(a.position, a, o, b);
 
-    rule(2, "lassoc")
+    rule(2, lassoc)
     shared Expr add(Expr a, Plus o, Expr b) => Expr(a.position, a, o, b);
 
-    rule(2, "lassoc")
+    rule(2, lassoc)
     shared Expr sub(Expr a, Minus o, Expr b) => Expr(a.position, a, o, b);
 }
 
