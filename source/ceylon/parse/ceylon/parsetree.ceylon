@@ -588,11 +588,12 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared FloatLiteral shortcutFloatLiteral(Separator? s, {Digits+} digits,
             Minitude m) {
         value digit_tokens = { for (d in digits) for (t in d.subtokens) t };
-        value text_bits = { for (t in digit_tokens) if (is Digit t)
-            t.text }.chain({"."}).chain({ for (t in frac_tokens) if (is Digit
-                        t) t.text });
+        value text_bits = { for (t in digit_tokens) if (is Digit t) t.text };
         value text = text_bits.reduce<String>((x,y) => x + y);
+        assert(exists text);
 
         value ret = FloatLiteral(text + m.text);
+        ret.put(tokensKey, [*{s, *digits}.chain({m}).coalesced]);
+        return ret;
     }
 }
