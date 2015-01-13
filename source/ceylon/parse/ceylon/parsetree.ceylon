@@ -6,7 +6,8 @@ import ceylon.ast.core {
     UIdentifier,
     Key,
     ScopedKey,
-    IntegerLiteral
+    IntegerLiteral,
+    FloatLiteral
 }
 
 "AST Node key to attach individual tokens"
@@ -486,7 +487,7 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared IntegerLiteral decLiteral(Separator? s, {Digits+} digits,
             Magnitude? m) {
         value digit_tokens = { for (d in digits) for (t in d.subtokens) t };
-        value text_bits = { for (t in digit_tokens) if (is BinDigit t)
+        value text_bits = { for (t in digit_tokens) if (is Digit t)
             t.text };
         value text = text_bits.reduce<String>((x,y) => x + y);
         assert(exists text);
@@ -503,5 +504,95 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
         ret.put(tokensKey, [*{s, *digits}.chain({m}).coalesced]);
         return ret;
+    }
+
+    "Section 2.4.1 of the specification"
+    tokenizer
+    shared Token<ExpMarker>? expMarker(String input, Object? prev) {
+        value [start_line, start_col] = extractStartPos(prev);
+
+        if (exists c = input[0], "eE".contains(c)) {
+            return Token(ExpMarker(start_line, start_col,
+                        start_line, start_col + 1), 1);
+        }
+
+        return null;
+    }
+
+    "Section 2.4.1 of the specification"
+    tokenizer
+    shared Token<Plus>? plus(String input, Object? prev)
+            => literal("+", input, prev);
+
+    "Section 2.4.1 of the specification"
+    tokenizer
+    shared Token<Minus>? minus(String input, Object? prev)
+            => literal("-", input, prev);
+
+    "Section 2.4.1 of the specification"
+    tokenizer
+    shared Token<Dot>? dot(String input, Object? prev)
+            => literal(".", input, prev);
+
+    "Section 2.4.1 of the specification"
+    rule
+    shared Exponent exponent(ExpMarker e, Plus|Minus? s, {Digit+} digits)
+            => Exponent(e, *{s, *digits}.coalesced);
+
+    "Section 2.4.1 of the specification"
+    rule
+    shared FloatLiteral floatLiteral(Separator? s, {Digits+} digits, Dot dot,
+            {FracDigits+} fracs, Magnitude|Minitude|Exponent? m) {
+        value digit_tokens = { for (d in digits) for (t in d.subtokens) t };
+        value frac_tokens = { for (d in fracs) for (t in d.subtokens) t };
+        value text_bits = { for (t in digit_tokens) if (is Digit t)
+            t.text }.chain({"."}).chain({ for (t in frac_tokens) if (is Digit
+                        t) t.text });
+        value text = text_bits.reduce<String>((x,y) => x + y);
+
+        String end;
+
+        if (is Magnitude|Minitude m) {
+            end = m.text;
+        } else if (is Exponent m) {
+            value etext_bits = { for (t in m.subtokens) if (is CeylonTextToken
+                    t) t.text };
+            assert(exists e = etext_bits.reduce<String>((x,y) => x + y));
+
+            variable Boolean neg = false;
+
+            for (t in m.subtokens) {
+                if (is Minus t) {
+                    neg = true;
+                    break;
+                }
+            }
+
+            if (neg) {
+                end = "e-" + e;
+            } else {
+                end = "e" + e;
+            }
+        } else {
+            end = "";
+        }
+
+        value ret = FloatLiteral(text + end);
+
+        ret.put(tokensKey, [*{s, *digits}.chain({dot, *fracs}).chain({m}).coalesced]);
+        return ret;
+    }
+
+    "Section 2.4.1 of the specification"
+    rule
+    shared FloatLiteral shortcutFloatLiteral(Separator? s, {Digits+} digits,
+            Minitude m) {
+        value digit_tokens = { for (d in digits) for (t in d.subtokens) t };
+        value text_bits = { for (t in digit_tokens) if (is Digit t)
+            t.text }.chain({"."}).chain({ for (t in frac_tokens) if (is Digit
+                        t) t.text });
+        value text = text_bits.reduce<String>((x,y) => x + y);
+
+        value ret = FloatLiteral(text + m.text);
     }
 }

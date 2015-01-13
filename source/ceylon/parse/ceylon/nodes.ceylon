@@ -30,53 +30,78 @@ shared class UIdentStart(Integer ls, Integer cs, Integer le, Integer ce)
 shared class LIdentStart(Integer ls, Integer cs, Integer le, Integer ce)
         extends CeylonToken(ls, cs, le, ce) {}
 
-"Text of a UIdentifier"
-shared class UIdentText(shared String text, Integer ls, Integer cs,
+"A token that we need to store the text of for processing"
+shared class CeylonTextToken(shared String text, Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken(ls, cs, le, ce) {}
+
+"Text of a UIdentifier"
+shared class UIdentText(String text, Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonTextToken(text, ls, cs, le, ce) {}
+
+"A +"
+shared class Plus(String text, Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonTextToken(text, ls, cs, le, ce) {}
+
+"A -"
+shared class Minus(String text, Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonTextToken(text, ls, cs, le, ce) {}
 
 "A #"
-shared class HashMark(shared String text, Integer ls, Integer cs,
+shared class HashMark(String text, Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken(ls, cs, le, ce) {}
+        extends CeylonTextToken(text, ls, cs, le, ce) {}
 
 "A $"
-shared class DollarMark(shared String text, Integer ls, Integer cs,
+shared class DollarMark(String text, Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken(ls, cs, le, ce) {}
+        extends CeylonTextToken(text, ls, cs, le, ce) {}
 
 "A _"
-shared class Underscore(shared String text, Integer ls, Integer cs,
+shared class Underscore(String text, Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken(ls, cs, le, ce) {}
+        extends CeylonTextToken(text, ls, cs, le, ce) {}
+
+"A ."
+shared class Dot(String text, Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonTextToken(text, ls, cs, le, ce) {}
 
 "Text of an LIdentifier"
-shared class LIdentText(shared String text, Integer ls, Integer cs,
+shared class LIdentText(String text, Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken(ls, cs, le, ce) {}
+        extends CeylonTextToken(text, ls, cs, le, ce) {}
 
 "A decimal digit"
-shared class Digit(shared String text, Integer ls, Integer cs,
+shared class Digit(String text, Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken(ls, cs, le, ce) {}
+        extends CeylonTextToken(text, ls, cs, le, ce) {}
 
 "A hexadecimal digit"
-shared class HexDigit(shared String text, Integer ls, Integer cs,
+shared class HexDigit(String text, Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken(ls, cs, le, ce) {}
+        extends CeylonTextToken(text, ls, cs, le, ce) {}
 
 "A binary digit"
-shared class BinDigit(shared String text, Integer ls, Integer cs,
+shared class BinDigit(String text, Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken(ls, cs, le, ce) {}
+        extends CeylonTextToken(text, ls, cs, le, ce) {}
 
 "A binary digit"
-shared class Magnitude(shared String text, Integer ls, Integer cs,
+shared class Magnitude(String text, Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken(ls, cs, le, ce) {}
+        extends CeylonTextToken(text, ls, cs, le, ce) {}
 
 "A binary digit"
-shared class Minitude(shared String text, Integer ls, Integer cs,
+shared class Minitude(String text, Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonTextToken(text, ls, cs, le, ce) {}
+
+"A binary digit"
+shared class ExpMarker(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken(ls, cs, le, ce) {}
 
@@ -128,4 +153,8 @@ shared class BinDigits(CeylonToken+ tokens)
 
 "A string of four binary digits"
 shared class BinDigitCluster(CeylonToken+ tokens)
+        extends CeylonMetaToken(*tokens) {}
+
+"An exponent postfix to a float"
+shared class Exponent(CeylonToken+ tokens)
         extends CeylonMetaToken(*tokens) {}
