@@ -1,4 +1,4 @@
-import ceylon.parse { Grammar, Token, rule, tokenizer/*, errorConstructor*/ }
+import ceylon.parse { Grammar, Token, rule, tokenizer, lassoc }
 import ceylon.language.meta.model { Class }
 import ceylon.ast.core {
     AnyCompilationUnit,
@@ -9,6 +9,10 @@ import ceylon.ast.core {
     IntegerLiteral,
     CharacterLiteral,
     StringLiteral,
+    UnionType,
+    MainType,
+    IntersectionType,
+    PrimaryType,
     FloatLiteral
 }
 
@@ -672,6 +676,52 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             StringLiteralTok t, DoubleQuote b) {
         value ret = StringLiteral(t.text);
         ret.put(tokensKey, [*{s, a, t, b}.coalesced]);
+        return ret;
+    }
+
+    "Section 3.2.3 of the specification"
+    tokenizer
+    shared Token<Pipe>? pipe(String input, Object? prev)
+            => literal("|", input, prev);
+
+    "Section 3.2.3 of the specification"
+    rule(0, lassoc)
+    shared UnionType unionType(MainType a, Pipe p, MainType b) {
+        [IntersectionType|PrimaryType+] left_children;
+        [IntersectionType|PrimaryType+] right_children;
+
+        if (is UnionType a) {
+            left_children = a.children;
+        } else {
+            left_children = [a];
+        }
+
+        if (is UnionType b) {
+            right_children = b.children;
+        } else {
+            right_children = [b];
+        }
+
+        value ret = UnionType(left_children.append(right_children));
+        value left_toks = a.get(tokensKey);
+        value right_toks = b.get(tokensKey);
+
+        [CeylonToken*] a_toks;
+        [CeylonToken*] b_toks;
+
+        if (exists left_toks) {
+            a_toks = left_toks;
+        } else {
+            a_toks = [];
+        }
+
+        if (exists right_toks) {
+            b_toks = right_toks;
+        } else {
+            b_toks = [];
+        }
+
+        ret.put(tokensKey, a_toks.withTrailing(p).append(b_toks));
         return ret;
     }
 }

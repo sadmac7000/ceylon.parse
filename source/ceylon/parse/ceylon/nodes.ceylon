@@ -70,6 +70,11 @@ shared class Dot(String text, Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonTextToken(text, ls, cs, le, ce) {}
 
+"A |"
+shared class Pipe(String text, Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonTextToken(text, ls, cs, le, ce) {}
+
 "A '"
 shared class Quote(String text, Integer ls, Integer cs,
         Integer le, Integer ce)
