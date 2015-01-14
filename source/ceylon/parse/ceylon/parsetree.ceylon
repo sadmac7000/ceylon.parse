@@ -7,6 +7,8 @@ import ceylon.ast.core {
     Key,
     ScopedKey,
     IntegerLiteral,
+    CharacterLiteral,
+    StringLiteral,
     FloatLiteral
 }
 
@@ -594,6 +596,82 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
         value ret = FloatLiteral(text + m.text);
         ret.put(tokensKey, [*{s, *digits}.chain({m}).coalesced]);
+        return ret;
+    }
+
+    "Section 2.4.2 of the specification"
+    tokenizer
+    shared Token<Quote>? quote(String input, Object? prev)
+            => literal("'", input, prev);
+
+    "Section 2.4.2 of the specification"
+    tokenizer
+    shared Token<CharacterLiteralTok>? characterLiteralTok(String input, Object? prev) {
+        value [start_line, start_col] = extractStartPos(prev);
+
+        if (! input[0] exists) { return null; }
+
+        variable value i = 0;
+        variable value skip = false;
+
+        while (exists c = input[0], c != "'" || skip) {
+            skip = c == '\\' && !skip;
+            i++;
+        }
+
+        if (! input[i] exists) { return null; }
+        if (exists c = input[i], c != "'") { return null; }
+
+        value [end_line, end_col] = calculateStopPos(start_line, start_col,
+                input[0:i]);
+        return Token(CharacterLiteralTok(input[0:i], start_line, start_col,
+                    end_line, end_col), i);
+    }
+
+    "Section 2.4.2 of the specification"
+    rule
+    shared CharacterLiteral characterLiteral(Separator? s, Quote a,
+            CharacterLiteralTok t, Quote b) {
+        value ret = CharacterLiteral(t.text);
+        ret.put(tokensKey, [*{s, a, t, b}.coalesced]);
+        return ret;
+    }
+
+    "Section 2.4.3 of the specification"
+    tokenizer
+    shared Token<DoubleQuote>? doubleQuote(String input, Object? prev)
+            => literal("\"", input, prev);
+
+    "Section 2.4.3 of the specification"
+    tokenizer
+    shared Token<StringLiteralTok>? stringLiteralTok(String input, Object? prev) {
+        value [start_line, start_col] = extractStartPos(prev);
+
+        if (! input[0] exists) { return null; }
+
+        variable value i = 0;
+        variable value skip = false;
+
+        while (exists c = input[0], c != "\"" || skip) {
+            skip = c == '\\' && !skip;
+            i++;
+        }
+
+        if (! input[i] exists) { return null; }
+        if (exists c = input[i], c != "\"") { return null; }
+
+        value [end_line, end_col] = calculateStopPos(start_line, start_col,
+                input[0:i]);
+        return Token(StringLiteralTok(input[0:i], start_line, start_col,
+                    end_line, end_col), i);
+    }
+
+    "Section 2.4.2 of the specification"
+    rule
+    shared StringLiteral stringLiteral(Separator? s, DoubleQuote a,
+            StringLiteralTok t, DoubleQuote b) {
+        value ret = StringLiteral(t.text);
+        ret.put(tokensKey, [*{s, a, t, b}.coalesced]);
         return ret;
     }
 }

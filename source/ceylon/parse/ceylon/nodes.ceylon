@@ -70,6 +70,16 @@ shared class Dot(String text, Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonTextToken(text, ls, cs, le, ce) {}
 
+"A '"
+shared class Quote(String text, Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonTextToken(text, ls, cs, le, ce) {}
+
+"A \""
+shared class DoubleQuote(String text, Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonTextToken(text, ls, cs, le, ce) {}
+
 "Text of an LIdentifier"
 shared class LIdentText(String text, Integer ls, Integer cs,
         Integer le, Integer ce)
@@ -104,6 +114,16 @@ shared class Minitude(String text, Integer ls, Integer cs,
 shared class ExpMarker(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken(ls, cs, le, ce) {}
+
+"A character literal"
+shared class CharacterLiteralTok(String text, Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonTextToken(text, ls, cs, le, ce) {}
+
+"A string literal"
+shared class StringLiteralTok(String text, Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonTextToken(text, ls, cs, le, ce) {}
 
 "A 'token' that may contain other tokens"
 shared class CeylonMetaToken(shared CeylonToken+ subtokens)
