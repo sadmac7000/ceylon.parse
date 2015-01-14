@@ -723,7 +723,7 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             => literal("&", input, prev);
 
     "Section 3.2.4 of the specification"
-    rule(0, lassoc)
+    rule(1, lassoc)
     shared IntersectionType intersectionType(UnionableType a, Ampersand p,
             UnionableType b) {
         [PrimaryType+] left_children;
