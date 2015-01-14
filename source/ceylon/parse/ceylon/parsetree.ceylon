@@ -176,10 +176,11 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 2.2 of the specification"
     rule
-    shared Separator separator({BlockComment|LineComment|Whitespace+}
-            separator) {
-        return Separator(*separator);
-    }
+    shared AnySym separator<AnySym>(
+            {BlockComment|LineComment|Whitespace*} before,
+            AnySym sym,
+            {BlockComment|LineComment|Whitespace*} after)
+            => sym;
 
     "Section 2.3 of the specification"
     tokenizer
@@ -242,37 +243,37 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 2.3 of the specification"
     rule
-    shared UIdentifier uident(Separator? ws, UIdentStart? start,
+    shared UIdentifier uident(UIdentStart? start,
             UIdentText text) {
         value ret = UIdentifier(text.text);
-        ret.put(tokensKey, [*{ws, start, text}.coalesced]);
+        ret.put(tokensKey, [*{start, text}.coalesced]);
         return ret;
     }
 
     "Section 2.3 of the specification"
     rule
-    shared UIdentifier uidentEsc(Separator? ws, UIdentStart start,
+    shared UIdentifier uidentEsc(UIdentStart start,
             LIdentText text) {
         value ret = UIdentifier{text.text; usePrefix = true;};
-        ret.put(tokensKey, [*{ws, start, text}.coalesced]);
+        ret.put(tokensKey, [start, text]);
         return ret;
     }
 
     "Section 2.3 of the specification"
     rule
-    shared LIdentifier lident(Separator? ws, LIdentStart? start,
+    shared LIdentifier lident(LIdentStart? start,
             LIdentText text) {
         value ret = LIdentifier(text.text);
-        ret.put(tokensKey, [*{ws, start, text}.coalesced]);
+        ret.put(tokensKey, [*{start, text}.coalesced]);
         return ret;
     }
 
     "Section 2.3 of the specification"
     rule
-    shared LIdentifier lidentEsc(Separator? ws, LIdentStart start,
+    shared LIdentifier lidentEsc(LIdentStart start,
             UIdentText text) {
         value ret = LIdentifier{text.text; usePrefix = true;};
-        ret.put(tokensKey, [*{ws, start, text}.coalesced]);
+        ret.put(tokensKey, [start, text]);
         return ret;
     }
 
@@ -427,7 +428,7 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 2.4.1 of the specification"
     rule
-    shared IntegerLiteral hexLiteral(Separator? s, HashMark h,
+    shared IntegerLiteral hexLiteral(HashMark h,
             {HexDigits+} digits) {
         value digit_tokens = { for (d in digits) for (t in d.subtokens) t };
         value text_bits = { for (t in digit_tokens) if (is HexDigit t)
@@ -436,17 +437,13 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
         assert(exists text);
         value ret = IntegerLiteral("#" + text);
 
-        if (exists s) {
-            ret.put(tokensKey, [s, h, *digit_tokens]);
-        } else {
-            ret.put(tokensKey, [h, *digit_tokens]);
-        }
+        ret.put(tokensKey, [h, *digit_tokens]);
         return ret;
     }
 
     "Section 2.4.1 of the specification"
     rule
-    shared IntegerLiteral binLiteral(Separator? s, DollarMark h,
+    shared IntegerLiteral binLiteral(DollarMark h,
             {BinDigits+} digits) {
         value digit_tokens = { for (d in digits) for (t in d.subtokens) t };
         value text_bits = { for (t in digit_tokens) if (is BinDigit t)
@@ -455,11 +452,7 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
         assert(exists text);
         value ret = IntegerLiteral("$" + text);
 
-        if (exists s) {
-            ret.put(tokensKey, [s, h, *digit_tokens]);
-        } else {
-            ret.put(tokensKey, [h, *digit_tokens]);
-        }
+        ret.put(tokensKey, [h, *digit_tokens]);
         return ret;
     }
 
@@ -491,7 +484,7 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 2.4.1 of the specification"
     rule
-    shared IntegerLiteral decLiteral(Separator? s, {Digits+} digits,
+    shared IntegerLiteral decLiteral({Digits+} digits,
             Magnitude? m) {
         value digit_tokens = { for (d in digits) for (t in d.subtokens) t };
         value text_bits = { for (t in digit_tokens) if (is Digit t)
@@ -509,7 +502,7 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
         value ret = IntegerLiteral(text + end);
 
-        ret.put(tokensKey, [*{s, *digits}.chain({m}).coalesced]);
+        ret.put(tokensKey, [*digits.chain({m}).coalesced]);
         return ret;
     }
 
@@ -548,7 +541,7 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 2.4.1 of the specification"
     rule
-    shared FloatLiteral floatLiteral(Separator? s, {Digits+} digits, Dot dot,
+    shared FloatLiteral floatLiteral({Digits+} digits, Dot dot,
             {FracDigits+} fracs, Magnitude|Minitude|Exponent? m) {
         value digit_tokens = { for (d in digits) for (t in d.subtokens) t };
         value frac_tokens = { for (d in fracs) for (t in d.subtokens) t };
@@ -586,13 +579,13 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
         value ret = FloatLiteral(text + end);
 
-        ret.put(tokensKey, [*{s, *digits}.chain({dot, *fracs}).chain({m}).coalesced]);
+        ret.put(tokensKey, [*digits.chain({dot, *fracs}).chain({m}).coalesced]);
         return ret;
     }
 
     "Section 2.4.1 of the specification"
     rule
-    shared FloatLiteral shortcutFloatLiteral(Separator? s, {Digits+} digits,
+    shared FloatLiteral shortcutFloatLiteral({Digits+} digits,
             Minitude m) {
         value digit_tokens = { for (d in digits) for (t in d.subtokens) t };
         value text_bits = { for (t in digit_tokens) if (is Digit t) t.text };
@@ -600,7 +593,7 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
         assert(exists text);
 
         value ret = FloatLiteral(text + m.text);
-        ret.put(tokensKey, [*{s, *digits}.chain({m}).coalesced]);
+        ret.put(tokensKey, [*digits.chain({m}).coalesced]);
         return ret;
     }
 
@@ -635,10 +628,10 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 2.4.2 of the specification"
     rule
-    shared CharacterLiteral characterLiteral(Separator? s, Quote a,
+    shared CharacterLiteral characterLiteral(Quote a,
             CharacterLiteralTok t, Quote b) {
         value ret = CharacterLiteral(t.text);
-        ret.put(tokensKey, [*{s, a, t, b}.coalesced]);
+        ret.put(tokensKey, [a, t, b]);
         return ret;
     }
 
@@ -673,10 +666,10 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 2.4.2 of the specification"
     rule
-    shared StringLiteral stringLiteral(Separator? s, DoubleQuote a,
+    shared StringLiteral stringLiteral(DoubleQuote a,
             StringLiteralTok t, DoubleQuote b) {
         value ret = StringLiteral(t.text);
-        ret.put(tokensKey, [*{s, a, t, b}.coalesced]);
+        ret.put(tokensKey, [a, t, b]);
         return ret;
     }
 
