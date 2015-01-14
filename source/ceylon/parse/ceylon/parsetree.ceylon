@@ -704,20 +704,18 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
         }
 
         value ret = UnionType(left_children.append(right_children));
-        value left_toks = a.get(tokensKey);
-        value right_toks = b.get(tokensKey);
 
         [CeylonToken*] a_toks;
         [CeylonToken*] b_toks;
 
-        if (exists left_toks) {
-            a_toks = left_toks;
+        if (exists t = a.get(tokensKey)) {
+            a_toks = t;
         } else {
             a_toks = [];
         }
 
-        if (exists right_toks) {
-            b_toks = right_toks;
+        if (exists t = b.get(tokensKey)) {
+            b_toks = t;
         } else {
             b_toks = [];
         }
@@ -751,20 +749,18 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
         }
 
         value ret = IntersectionType(left_children.append(right_children));
-        value left_toks = a.get(tokensKey);
-        value right_toks = b.get(tokensKey);
 
         [CeylonToken*] a_toks;
         [CeylonToken*] b_toks;
 
-        if (exists left_toks) {
-            a_toks = left_toks;
+        if (exists t = a.get(tokensKey)) {
+            a_toks = t;
         } else {
             a_toks = [];
         }
 
-        if (exists right_toks) {
-            b_toks = right_toks;
+        if (exists t = b.get(tokensKey)) {
+            b_toks = t;
         } else {
             b_toks = [];
         }
