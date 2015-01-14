@@ -10,6 +10,7 @@ import ceylon.ast.core {
     CharacterLiteral,
     StringLiteral,
     UnionType,
+    UnionableType,
     MainType,
     IntersectionType,
     PrimaryType,
@@ -703,6 +704,53 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
         }
 
         value ret = UnionType(left_children.append(right_children));
+        value left_toks = a.get(tokensKey);
+        value right_toks = b.get(tokensKey);
+
+        [CeylonToken*] a_toks;
+        [CeylonToken*] b_toks;
+
+        if (exists left_toks) {
+            a_toks = left_toks;
+        } else {
+            a_toks = [];
+        }
+
+        if (exists right_toks) {
+            b_toks = right_toks;
+        } else {
+            b_toks = [];
+        }
+
+        ret.put(tokensKey, a_toks.withTrailing(p).append(b_toks));
+        return ret;
+    }
+
+    "Section 3.2.4 of the specification"
+    tokenizer
+    shared Token<Ampersand>? ampersand(String input, Object? prev)
+            => literal("&", input, prev);
+
+    "Section 3.2.4 of the specification"
+    rule(0, lassoc)
+    shared IntersectionType intersectionType(UnionableType a, Ampersand p,
+            UnionableType b) {
+        [PrimaryType+] left_children;
+        [PrimaryType+] right_children;
+
+        if (is IntersectionType a) {
+            left_children = a.children;
+        } else {
+            left_children = [a];
+        }
+
+        if (is IntersectionType b) {
+            right_children = b.children;
+        } else {
+            right_children = [b];
+        }
+
+        value ret = IntersectionType(left_children.append(right_children));
         value left_toks = a.get(tokensKey);
         value right_toks = b.get(tokensKey);
 
