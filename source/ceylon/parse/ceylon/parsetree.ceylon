@@ -2,6 +2,7 @@ import ceylon.parse { Grammar, Token, rule, tokenizer, lassoc }
 import ceylon.language.meta.model { Class }
 import ceylon.ast.core {
     AnyCompilationUnit,
+    Node,
     LIdentifier,
     UIdentifier,
     Key,
@@ -45,19 +46,125 @@ Character[] whitespaceChars = [ ' ', '\{FORM FEED (FF)}',
 }
 
 "Literal token"
-Token<Type>? literal<Type>(String want, String input, Object? prev)
+Token<Type>? literal<Type>(Class<Type, [Integer,Integer,Integer,Integer]> t,
+        String input, Object? prev, String+ wants)
         given Type satisfies Object {
     value [start_line, start_col] = extractStartPos(prev);
-    value t = `Type`;
 
-    assert(is Class<Type, [Integer, Integer, Integer, Integer]> t);
-
-    if (input.startsWith(want)) {
-        return Token(t(start_line, start_col, start_line,
-                    start_col + want.size), want.size);
+    for (want in wants) {
+        if (input.startsWith(want)) {
+            return Token(t(start_line, start_col, start_line,
+                        start_col + want.size), want.size);
+        }
     }
 
     return null;
+}
+
+"Parse a single-character token"
+Token<Type>? takeCharToken<Type>(Class<Type, [Integer, Integer, Integer,
+        Integer]>|Class<Type, [String, Integer, Integer, Integer,
+        Integer]> t, String input, Object? prev, Boolean(Character) test)
+        given Type satisfies Object {
+    value [start_line, start_col] = extractStartPos(prev);
+    value char = input[0];
+
+    if (! exists char) { return null; }
+    assert(exists char);
+
+    if (! test(char)) { return null; }
+
+    if (is Class<Type, [Integer, Integer, Integer, Integer]> t) {
+        return Token(t(start_line, start_col, start_line, start_col + 1), 1);
+    } else {
+        return Token(t(input[0:1], start_line, start_col, start_line, start_col
+                    + 1), 1);
+    }
+}
+
+"Parse a token that consists of all characters at the head of the string for
+ which the test function returns true."
+Token<Type>? takeTokenWhile<Type>(Class<Type, [Integer, Integer, Integer,
+        Integer]>|Class<Type, [String, Integer, Integer, Integer,
+        Integer]> t, String input, Object? prev, Boolean(String)|Boolean(Character) test)
+        given Type satisfies Object {
+    value [start_line, start_col] = extractStartPos(prev);
+
+    variable value length = 0;
+
+    if (is Boolean(String) test) {
+        while (test(input[length...])) { length++; }
+    } else {
+        while (exists c = input[length], test(c)) { length++; }
+    }
+
+    value [end_line, end_col] = calculateStopPos(start_line, start_col,
+            input[0:length]);
+
+    if (length == 0) { return null; }
+
+    if (is Class<Type, [Integer, Integer, Integer, Integer]> t) {
+        return Token(t(start_line, start_col, end_line, end_col), length);
+    } else {
+        return Token(t(input[0:length], start_line, start_col, end_line,
+                    end_col), length);
+    }
+}
+
+"Meta token"
+Type meta<Type>(Class<Type, [CeylonToken+]> t,
+        CeylonToken|{CeylonToken|Node*}|Node?* children) {
+
+    assert( is [CeylonToken+] toks = tokenStream(*children));
+
+    return t(*toks);
+}
+
+"AST Node"
+NodeType astNode<NodeType, Arguments>(Class<NodeType, Arguments> t,
+        Arguments args, CeylonToken|{CeylonToken|Node*}|Node?* children)
+        given NodeType satisfies Node
+        given Arguments satisfies [Anything*] {
+    value ret = t(*args);
+    ret.put(tokensKey, tokenStream(*children));
+    return ret;
+}
+
+"AST Text Node"
+NodeType astTextNode<NodeType>(Class<NodeType, [String]> t,
+        CeylonToken|{CeylonToken|Node*}|Node?* children)
+        given NodeType satisfies Node {
+    assert(is [CeylonToken+]tstream = tokenStream(*children));
+    value ret = t(tokenText(*tstream));
+    ret.put(tokensKey, tstream);
+    return ret;
+}
+
+"Text from a stream of tokens"
+String tokenText(CeylonToken+ token) {
+    return (token*.text).fold("")((x,y)=>x+y);
+}
+
+"Extract all tokens from a series of arguments to a production"
+CeylonToken[] tokenStream(CeylonToken|{CeylonToken|Node*}|Node?* args) {
+    variable CeylonToken[] ret = [];
+
+    for (arg in args) {
+        if (! exists arg) {
+            continue;
+        } else if (is CeylonMetaToken arg) {
+            ret = ret.append(tokenStream(*arg.subtokens));
+        } else if (is CeylonToken arg) {
+            ret = ret.withTrailing(arg);
+        } else if (is {CeylonToken|Node*} arg) {
+            ret = ret.append(tokenStream(*arg));
+        } else {
+            assert(exists k = arg.get(tokensKey));
+            ret.append(k);
+        }
+    }
+
+    return ret;
 }
 
 "Calculate the ending line and column given the starting line and column and
@@ -92,21 +199,9 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 2.2 of the specification"
     tokenizer
-    shared Token<Whitespace>? whitespace(String input, Object? prev) {
-        value [start_line, start_col] = extractStartPos(prev);
-        variable value i = 0;
-
-        while (exists c = input[i],
-                whitespaceChars.contains(c)) {
-            i++;
-        }
-
-        if (i == 0) { return null; }
-        value [end_line, end_col] = calculateStopPos(start_line, start_col,
-                string[0:i]);
-
-        return Token(Whitespace(start_line, start_col, end_line, end_col), i);
-    }
+    shared Token<Whitespace>? whitespace(String input, Object? prev)
+            => takeTokenWhile(`Whitespace`, input, prev,
+                    whitespaceChars.contains);
 
     "Section 2.2 of the specification"
     tokenizer
@@ -126,53 +221,26 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 2.2 of the specification"
     tokenizer
-    shared Token<CommentStart>? commentStart(String input, Object? prev) {
-        value [start_line, start_col] = extractStartPos(prev);
-        if (input.startsWith("/*")) {
-            return Token(CommentStart(start_line, start_col, start_line, start_col
-                        + 2), 2);
-        }
-
-        return null;
-    }
+    shared Token<CommentStart>? commentStart(String input, Object? prev)
+            => literal(`CommentStart`, input, prev, "/*");
 
     "Section 2.2 of the specification"
     tokenizer
-    shared Token<CommentEnd>? commentEnd(String input, Object? prev) {
-        value [start_line, start_col] = extractStartPos(prev);
-        if (input.startsWith("*/")) {
-            return Token(CommentEnd(start_line, start_col, start_line, start_col
-                        + 2), 2);
-        }
-
-        return null;
-    }
+    shared Token<CommentEnd>? commentEnd(String input, Object? prev)
+            => literal(`CommentEnd`, input, prev, "*/");
 
     "Section 2.2 of the specification"
     tokenizer
-    shared Token<CommentBody>? commentBody(String input, Object? prev) {
-        value [start_line, start_col] = extractStartPos(prev);
-        variable value i = 0;
-
-        while (i < input.size) {
-            if (input[i...].startsWith("/*")) { break; }
-            if (input[i...].startsWith("*/")) { break; }
-            i++;
-        }
-
-        if (i == 0) { return null; }
-        value [end_line, end_col] = calculateStopPos(start_line, start_col,
-                string[0:i]);
-
-        return Token(CommentBody(start_line, start_col, end_line, end_col), i);
-    }
+    shared Token<CommentBody>? commentBody(String input, Object? prev)
+            => takeTokenWhile(`CommentBody`, input, prev,
+                    (String x) => ! (x.startsWith("/*") || x.startsWith(
+                            "*/")));
 
     "Section 2.2 of the specification"
     rule
     shared BlockComment blockComment(CommentStart start,
-            {CommentBody|BlockComment*} body, CommentEnd end) {
-        return BlockComment(start, *(body.chain({end})));
-    }
+            {CommentBody|BlockComment*} body, CommentEnd end)
+            => meta(`BlockComment`, start, body, end);
 
     "Section 2.2 of the specification"
     rule
@@ -184,27 +252,13 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 2.3 of the specification"
     tokenizer
-    shared Token<UIdentStart>? uIdentStart(String input, Object? prev) {
-        value [start_line, start_col] = extractStartPos(prev);
-        if (input.startsWith("\\I")) {
-            return Token(UIdentStart(start_line, start_col, start_line, start_col +
-                        2), 2);
-        }
-
-        return null;
-    }
+    shared Token<UIdentStart>? uIdentStart(String input, Object? prev)
+            => literal(`UIdentStart`, input, prev, "\\I");
 
     "Section 2.3 of the specification"
     tokenizer
-    shared Token<LIdentStart>? lIdentStart(String input, Object? prev) {
-        value [start_line, start_col] = extractStartPos(prev);
-        if (input.startsWith("\\i")) {
-            return Token(LIdentStart(start_line, start_col, start_line, start_col +
-                        2), 2);
-        }
-
-        return null;
-    }
+    shared Token<LIdentStart>? lIdentStart(String input, Object? prev)
+            => literal(`LIdentStart`, input, prev, "\\i");
 
     "Section 2.3 of the specification"
     tokenizer
@@ -243,94 +297,55 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 2.3 of the specification"
     rule
-    shared UIdentifier uident(UIdentStart? start,
-            UIdentText text) {
-        value ret = UIdentifier(text.text);
-        ret.put(tokensKey, [*{start, text}.coalesced]);
-        return ret;
-    }
+    shared UIdentifier uident(UIdentStart? start, UIdentText text)
+            => astNode(`UIdentifier`, [text.text], start, text);
 
     "Section 2.3 of the specification"
     rule
-    shared UIdentifier uidentEsc(UIdentStart start,
-            LIdentText text) {
-        value ret = UIdentifier{text.text; usePrefix = true;};
-        ret.put(tokensKey, [start, text]);
-        return ret;
-    }
+    shared UIdentifier uidentEsc(UIdentStart start, LIdentText text)
+            => astNode(`UIdentifier`, [text.text, true], start, text);
 
     "Section 2.3 of the specification"
     rule
-    shared LIdentifier lident(LIdentStart? start,
-            LIdentText text) {
-        value ret = LIdentifier(text.text);
-        ret.put(tokensKey, [*{start, text}.coalesced]);
-        return ret;
-    }
+    shared LIdentifier lident(LIdentStart? start, LIdentText text)
+            => astNode(`LIdentifier`, [text.text], start, text);
 
     "Section 2.3 of the specification"
     rule
     shared LIdentifier lidentEsc(LIdentStart start,
-            UIdentText text) {
-        value ret = LIdentifier{text.text; usePrefix = true;};
-        ret.put(tokensKey, [start, text]);
-        return ret;
-    }
+            UIdentText text)
+            => astNode(`LIdentifier`, [text.text, true], start, text);
 
     "Section 2.4.1 of the specification"
     tokenizer
     shared Token<HashMark>? hashMark(String input, Object? prev)
-            => literal("#", input, prev);
+            => literal(`HashMark`, input, prev, "#");
 
     "Section 2.4.1 of the specification"
     tokenizer
     shared Token<DollarMark>? dollarMark(String input, Object? prev)
-            => literal("$", input, prev);
+            => literal(`DollarMark`, input, prev, "$");
 
     "Section 2.4.1 of the specification"
     tokenizer
     shared Token<Underscore>? underscore(String input, Object? prev)
-            => literal("_", input, prev);
+            => literal(`Underscore`, input, prev, "_");
 
     "Section 2.4.1 of the specification"
     tokenizer
-    shared Token<Digit>? digit(String input, Object? prev) {
-        value [start_line, start_col] = extractStartPos(prev);
-
-        if (exists c = input[0], c.digit) {
-            return Token(Digit(input[0:1], start_line, start_col,
-                        start_line, start_col + 1), 1);
-        }
-
-        return null;
-    }
+    shared Token<Digit>? digit(String input, Object? prev)
+            => takeCharToken(`Digit`, input, prev, (Character x) => x.digit);
 
     "Section 2.4.1 of the specification"
     tokenizer
-    shared Token<HexDigit>? hexDigit(String input, Object? prev) {
-        value [start_line, start_col] = extractStartPos(prev);
-
-        if (exists c = input[0],
-            c.digit || "abcdefABCDEF".contains(c)) {
-            return Token(HexDigit(input[0:1], start_line, start_col,
-                        start_line, start_col + 1), 1);
-        }
-
-        return null;
-    }
+    shared Token<HexDigit>? hexDigit(String input, Object? prev)
+            => takeCharToken(`HexDigit`, input, prev, (x) => x.digit ||
+                    "abcdefABCDEF".contains(x));
 
     "Section 2.4.1 of the specification"
     tokenizer
-    shared Token<BinDigit>? binDigit(String input, Object? prev) {
-        value [start_line, start_col] = extractStartPos(prev);
-
-        if (exists c = input[0], "01".contains(c)) {
-            return Token(BinDigit(input[0:1], start_line, start_col,
-                        start_line, start_col + 1), 1);
-        }
-
-        return null;
-    }
+    shared Token<BinDigit>? binDigit(String input, Object? prev)
+            => takeCharToken(`BinDigit`, input, prev, "01".contains);
 
     "Section 2.4.1 of the specification"
     rule
@@ -344,13 +359,8 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 2.4.1 of the specification"
     rule
     shared Digits clusteredDigits(Digit? a, Digit? b, Digit c,
-            {DigitCluster+} clusters) {
-        value toks = (clusters*.subtokens).reduce<{CeylonToken+}>((x,y) =>
-                x.chain(y));
-        value start = {a,b,c}.coalesced;
-
-        return Digits(*start.chain(toks));
-    }
+            {DigitCluster+} clusters)
+            => meta(`Digits`, a, b, c, clusters);
 
     "Section 2.4.1 of the specification"
     rule
@@ -360,13 +370,8 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 2.4.1 of the specification"
     rule
     shared FracDigits fracDigits({FracDigitCluster+} clusters,
-            Digit a, Digit? b, Digit? c) {
-        value toks = (clusters*.subtokens).reduce<{CeylonToken+}>((x,y) =>
-                x.chain(y));
-        value end = {a,b,c}.coalesced;
-
-        return FracDigits(*toks.chain(end));
-    }
+            Digit a, Digit? b, Digit? c)
+            => meta(`FracDigits`, clusters, a, b, c);
 
     "Section 2.4.1 of the specification"
     rule
@@ -395,12 +400,8 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 2.4.1 of the specification"
     rule
     shared BinDigits clusteredBinDigits(BinDigit? a, BinDigit? b, BinDigit? c,
-            BinDigit d, {BinDigitCluster+} clusters) {
-        value start = {a,b,c,d}.coalesced;
-        value toks = (clusters*.subtokens).reduce<{CeylonToken+}>((x,y) =>
-                x.chain(y));
-        return BinDigits(*start.chain(toks));
-    }
+            BinDigit d, {BinDigitCluster+} clusters)
+            => meta(`BinDigits`, a, b, c, d, clusters);
 
     "Section 2.4.1 of the specification"
     rule
@@ -409,198 +410,81 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 2.4.1 of the specification"
     rule
     shared HexDigits clusteredHexDigits(HexDigit? a, HexDigit? b, HexDigit? c,
-            HexDigit d, {HexDigitCluster+} clusters) {
-        value start = {a,b,c,d}.coalesced;
-        value toks = (clusters*.subtokens).reduce<{CeylonToken+}>((x,y) =>
-                x.chain(y));
-        return HexDigits(*start.chain(toks));
-    }
+            HexDigit d, {HexDigitCluster+} clusters)
+            => meta(`HexDigits`, a, b, c, d, clusters);
 
     "Section 2.4.1 of the specification"
     rule
     shared HexDigits twoClusteredHexDigits(HexDigit? a, HexDigit b,
-            {HexDigitTwoCluster+} clusters) {
-        value start = {a,b}.coalesced;
-        value toks = (clusters*.subtokens).reduce<{CeylonToken+}>((x,y) =>
-                x.chain(y));
-        return HexDigits(*start.chain(toks));
-    }
+            {HexDigitTwoCluster+} clusters)
+            => meta(`HexDigits`, a, b, clusters);
 
     "Section 2.4.1 of the specification"
     rule
-    shared IntegerLiteral hexLiteral(HashMark h,
-            {HexDigits+} digits) {
-        value digit_tokens = { for (d in digits) for (t in d.subtokens) t };
-        value text_bits = { for (t in digit_tokens) if (is HexDigit t)
-            t.text };
-        value text = text_bits.reduce<String>((x,y) => x + y);
-        assert(exists text);
-        value ret = IntegerLiteral("#" + text);
-
-        ret.put(tokensKey, [h, *digit_tokens]);
-        return ret;
-    }
+    shared IntegerLiteral hexLiteral(HashMark h, {HexDigits+} digits)
+            => astTextNode(`IntegerLiteral`, h, digits);
 
     "Section 2.4.1 of the specification"
     rule
-    shared IntegerLiteral binLiteral(DollarMark h,
-            {BinDigits+} digits) {
-        value digit_tokens = { for (d in digits) for (t in d.subtokens) t };
-        value text_bits = { for (t in digit_tokens) if (is BinDigit t)
-            t.text };
-        value text = text_bits.reduce<String>((x,y) => x + y);
-        assert(exists text);
-        value ret = IntegerLiteral("$" + text);
-
-        ret.put(tokensKey, [h, *digit_tokens]);
-        return ret;
-    }
+    shared IntegerLiteral binLiteral(DollarMark h, {BinDigits+} digits)
+            => astTextNode(`IntegerLiteral`, h, digits);
 
     "Section 2.4.1 of the specification"
     tokenizer
-    shared Token<Magnitude>? magnitude(String input, Object? prev) {
-        value [start_line, start_col] = extractStartPos(prev);
-
-        if (exists c = input[0], "kMGTP".contains(c)) {
-            return Token(Magnitude(input[0:1], start_line, start_col,
-                        start_line, start_col + 1), 1);
-        }
-
-        return null;
-    }
+    shared Token<Magnitude>? magnitude(String input, Object? prev)
+            => takeCharToken(`Magnitude`, input, prev, "kMGTP".contains);
 
     "Section 2.4.1 of the specification"
     tokenizer
-    shared Token<Minitude>? minitude(String input, Object? prev) {
-        value [start_line, start_col] = extractStartPos(prev);
-
-        if (exists c = input[0], "munpf".contains(c)) {
-            return Token(Minitude(input[0:1], start_line, start_col,
-                        start_line, start_col + 1), 1);
-        }
-
-        return null;
-    }
+    shared Token<Minitude>? minitude(String input, Object? prev)
+            => takeCharToken(`Minitude`, input, prev, "munpf".contains);
 
     "Section 2.4.1 of the specification"
     rule
     shared IntegerLiteral decLiteral({Digits+} digits,
-            Magnitude? m) {
-        value digit_tokens = { for (d in digits) for (t in d.subtokens) t };
-        value text_bits = { for (t in digit_tokens) if (is Digit t)
-            t.text };
-        value text = text_bits.reduce<String>((x,y) => x + y);
-        assert(exists text);
-
-        String end;
-
-        if (exists m) {
-            end = m.text;
-        } else {
-            end = "";
-        }
-
-        value ret = IntegerLiteral(text + end);
-
-        ret.put(tokensKey, [*digits.chain({m}).coalesced]);
-        return ret;
-    }
+            Magnitude? m)
+            => astTextNode(`IntegerLiteral`, digits, m);
 
     "Section 2.4.1 of the specification"
     tokenizer
-    shared Token<ExpMarker>? expMarker(String input, Object? prev) {
-        value [start_line, start_col] = extractStartPos(prev);
-
-        if (exists c = input[0], "eE".contains(c)) {
-            return Token(ExpMarker(start_line, start_col,
-                        start_line, start_col + 1), 1);
-        }
-
-        return null;
-    }
+    shared Token<ExpMarker>? expMarker(String input, Object? prev)
+            => takeCharToken(`ExpMarker`, input, prev, "eE".contains);
 
     "Section 2.4.1 of the specification"
     tokenizer
     shared Token<Plus>? plus(String input, Object? prev)
-            => literal("+", input, prev);
+            => literal(`Plus`, input, prev, "+");
 
     "Section 2.4.1 of the specification"
     tokenizer
     shared Token<Minus>? minus(String input, Object? prev)
-            => literal("-", input, prev);
+            => literal(`Minus`, input, prev, "-");
 
     "Section 2.4.1 of the specification"
     tokenizer
     shared Token<Dot>? dot(String input, Object? prev)
-            => literal(".", input, prev);
+            => literal(`Dot`, input, prev, ".");
 
     "Section 2.4.1 of the specification"
     rule
     shared Exponent exponent(ExpMarker e, Plus|Minus? s, {Digit+} digits)
-            => Exponent(e, *{s, *digits}.coalesced);
+            => meta(`Exponent`, e, s, digits);
 
     "Section 2.4.1 of the specification"
     rule
     shared FloatLiteral floatLiteral({Digits+} digits, Dot dot,
-            {FracDigits+} fracs, Magnitude|Minitude|Exponent? m) {
-        value digit_tokens = { for (d in digits) for (t in d.subtokens) t };
-        value frac_tokens = { for (d in fracs) for (t in d.subtokens) t };
-        value text_bits = { for (t in digit_tokens) if (is Digit t)
-            t.text }.chain({"."}).chain({ for (t in frac_tokens) if (is Digit
-                        t) t.text });
-        value text = text_bits.reduce<String>((x,y) => x + y);
-
-        String end;
-
-        if (is Magnitude|Minitude m) {
-            end = m.text;
-        } else if (is Exponent m) {
-            value etext_bits = { for (t in m.subtokens) if (is CeylonTextToken
-                    t) t.text };
-            assert(exists e = etext_bits.reduce<String>((x,y) => x + y));
-
-            variable Boolean neg = false;
-
-            for (t in m.subtokens) {
-                if (is Minus t) {
-                    neg = true;
-                    break;
-                }
-            }
-
-            if (neg) {
-                end = "e-" + e;
-            } else {
-                end = "e" + e;
-            }
-        } else {
-            end = "";
-        }
-
-        value ret = FloatLiteral(text + end);
-
-        ret.put(tokensKey, [*digits.chain({dot, *fracs}).chain({m}).coalesced]);
-        return ret;
-    }
+            {FracDigits+} fracs, Magnitude|Minitude|Exponent? m)
+            => astTextNode(`FloatLiteral`, digits, dot, fracs, m);
 
     "Section 2.4.1 of the specification"
     rule
-    shared FloatLiteral shortcutFloatLiteral({Digits+} digits,
-            Minitude m) {
-        value digit_tokens = { for (d in digits) for (t in d.subtokens) t };
-        value text_bits = { for (t in digit_tokens) if (is Digit t) t.text };
-        value text = text_bits.reduce<String>((x,y) => x + y);
-        assert(exists text);
-
-        value ret = FloatLiteral(text + m.text);
-        ret.put(tokensKey, [*digits.chain({m}).coalesced]);
-        return ret;
-    }
+    shared FloatLiteral shortcutFloatLiteral({Digits+} digits, Minitude m)
+            => astTextNode(`FloatLiteral`, digits, m);
 
     "Section 2.4.2 of the specification"
     tokenizer
     shared Token<Quote>? quote(String input, Object? prev)
-            => literal("'", input, prev);
+            => literal(`Quote`, input, prev, "'");
 
     "Section 2.4.2 of the specification"
     tokenizer
@@ -629,16 +513,13 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 2.4.2 of the specification"
     rule
     shared CharacterLiteral characterLiteral(Quote a,
-            CharacterLiteralTok t, Quote b) {
-        value ret = CharacterLiteral(t.text);
-        ret.put(tokensKey, [a, t, b]);
-        return ret;
-    }
+            CharacterLiteralTok t, Quote b)
+            => astNode(`CharacterLiteral`, [t.text], a, t, b);
 
     "Section 2.4.3 of the specification"
     tokenizer
     shared Token<DoubleQuote>? doubleQuote(String input, Object? prev)
-            => literal("\"", input, prev);
+            => literal(`DoubleQuote`, input, prev, "\"");
 
     "Section 2.4.3 of the specification"
     tokenizer
@@ -667,16 +548,13 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 2.4.2 of the specification"
     rule
     shared StringLiteral stringLiteral(DoubleQuote a,
-            StringLiteralTok t, DoubleQuote b) {
-        value ret = StringLiteral(t.text);
-        ret.put(tokensKey, [a, t, b]);
-        return ret;
-    }
+            StringLiteralTok t, DoubleQuote b)
+            => astNode(`StringLiteral`, [t.text], a, t, b);
 
     "Section 3.2.3 of the specification"
     tokenizer
     shared Token<Pipe>? pipe(String input, Object? prev)
-            => literal("|", input, prev);
+            => literal(`Pipe`, input, prev, "|");
 
     "Section 3.2.3 of the specification"
     rule(0, lassoc)
@@ -696,31 +574,13 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             right_children = [b];
         }
 
-        value ret = UnionType(left_children.append(right_children));
-
-        [CeylonToken*] a_toks;
-        [CeylonToken*] b_toks;
-
-        if (exists t = a.get(tokensKey)) {
-            a_toks = t;
-        } else {
-            a_toks = [];
-        }
-
-        if (exists t = b.get(tokensKey)) {
-            b_toks = t;
-        } else {
-            b_toks = [];
-        }
-
-        ret.put(tokensKey, a_toks.withTrailing(p).append(b_toks));
-        return ret;
+        return astNode(`UnionType`, [left_children.append(right_children)], a, p, b);
     }
 
     "Section 3.2.4 of the specification"
     tokenizer
     shared Token<Ampersand>? ampersand(String input, Object? prev)
-            => literal("&", input, prev);
+            => literal(`Ampersand`, input, prev, "&");
 
     "Section 3.2.4 of the specification"
     rule(1, lassoc)
@@ -741,24 +601,6 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             right_children = [b];
         }
 
-        value ret = IntersectionType(left_children.append(right_children));
-
-        [CeylonToken*] a_toks;
-        [CeylonToken*] b_toks;
-
-        if (exists t = a.get(tokensKey)) {
-            a_toks = t;
-        } else {
-            a_toks = [];
-        }
-
-        if (exists t = b.get(tokensKey)) {
-            b_toks = t;
-        } else {
-            b_toks = [];
-        }
-
-        ret.put(tokensKey, a_toks.withTrailing(p).append(b_toks));
-        return ret;
+        return astNode(`IntersectionType`, [left_children.append(right_children)], a, p, b);
     }
 }
