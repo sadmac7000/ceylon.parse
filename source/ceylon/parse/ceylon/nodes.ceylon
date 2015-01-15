@@ -105,12 +105,12 @@ shared class BinDigit(String text, Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken(text, ls, cs, le, ce) {}
 
-"A binary digit"
+"A magnitude suffix"
 shared class Magnitude(String text, Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken(text, ls, cs, le, ce) {}
 
-"A binary digit"
+"A fractional magnitude suffix"
 shared class Minitude(String text, Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken(text, ls, cs, le, ce) {}
