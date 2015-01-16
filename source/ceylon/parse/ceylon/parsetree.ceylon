@@ -11,10 +11,27 @@ import ceylon.ast.core {
     CharacterLiteral,
     StringLiteral,
     UnionType,
+    IterableType,
     UnionableType,
     MainType,
+    Type,
+    TypeName,
+    TypeArguments,
+    TypeNameWithTypeArguments,
+    TupleType,
+    SimpleType,
+    BaseType,
+    GroupedType,
+    OptionalType,
+    SequentialType,
+    QualifiedType,
+    VariadicType,
+    CallableType,
+    TypeList,
+    DefaultedType,
     IntersectionType,
     PrimaryType,
+    EntryType,
     FloatLiteral
 }
 
@@ -603,4 +620,166 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
         return astNode(`IntersectionType`, [left_children.append(right_children)], a, p, b);
     }
+
+    "Section 3.2.7 of the specification"
+    tokenizer
+    shared Token<LT>? lessThan(String input, Object? prev)
+            => literal(`LT`, input, prev, "<");
+
+    "Section 3.2.7 of the specification"
+    tokenizer
+    shared Token<GT>? greaterThan(String input, Object? prev)
+            => literal(`GT`, input, prev, "<");
+
+    "Section 3.2.7 of the specification"
+    rule
+    shared GroupedType groupedType(LT a, Type t, GT b)
+            => astNode(`GroupedType`, [t], a, t, b);
+
+    "Section 3.2.7 of the specification"
+    rule
+    shared TypeNameWithTypeArguments typeNameWithArguments(TypeName name,
+            TypeArguments? args)
+            => astNode(`TypeNameWithTypeArguments`, [name, args], name, args);
+
+    "Section 3.2.7 of the specification"
+    rule
+    shared BaseType baseType(TypeNameWithTypeArguments type)
+            => astNode(`BaseType`, [type], type);
+
+    "Section 3.2.7 of the specification"
+    rule
+    shared QualifiedType qualifiedType(SimpleType|GroupedType base,
+            TypeNameWithTypeArguments type)
+            => astNode(`QualifiedType`, [base, type], base, type);
+
+    "Section 3.2.8 of the specification"
+    tokenizer
+    shared Token<Question>? question(String input, Object? prev)
+            => literal(`Question`, input, prev, "?");
+
+    "Section 3.2.8 of the specification"
+    rule
+    shared OptionalType optionalType(PrimaryType type, Question q)
+            => astNode(`OptionalType`, [type], type, q);
+
+    "Section 3.2.8 of the specification"
+    tokenizer
+    shared Token<SqOpen>? sqOpen(String input, Object? prev)
+            => literal(`SqOpen`, input, prev, "[");
+
+    "Section 3.2.8 of the specification"
+    tokenizer
+    shared Token<SqClose>? sqClose(String input, Object? prev)
+            => literal(`SqClose`, input, prev, "]");
+
+    "Section 3.2.8 of the specification"
+    tokenizer
+    shared Token<ParOpen>? parOpen(String input, Object? prev)
+            => literal(`ParOpen`, input, prev, "(");
+
+    "Section 3.2.8 of the specification"
+    tokenizer
+    shared Token<ParClose>? parClose(String input, Object? prev)
+            => literal(`ParClose`, input, prev, ")");
+
+    "Section 3.2.8 of the specification"
+    tokenizer
+    shared Token<Comma>? comma(String input, Object? prev)
+            => literal(`Comma`, input, prev, ",");
+
+    "Section 3.2.8 of the specification"
+    rule
+    shared SequentialType sequentialType(PrimaryType type,
+            SqOpen a, SqClose b) => astNode(`SequentialType`, [type], a, b);
+
+    "Section 3.2.8 of the specification"
+    rule
+    shared CommaSepList<ItemType> commaSepList<ItemType>(ItemType t)
+            given ItemType satisfies Node {
+            assert(is [CeylonToken+] ts = tokenStream(t));
+            return CommaSepList<ItemType>([t], *ts);
+    }
+
+    "Section 3.2.8 of the specification"
+    rule
+    shared CommaSepList<ItemType>
+    commaSepListMulti<ItemType>(CommaSepList<ItemType> prior, Comma c, ItemType t)
+            given ItemType satisfies Node
+            => CommaSepList<ItemType>([*prior.nodes.chain({t})],
+                    *prior.tokens.chain({c}).chain(tokenStream(t)));
+
+    "Section 3.2.8 of the specification"
+    rule
+    shared TypeList typeList(CommaSepList<Type|DefaultedType> items)
+            => astNode(`TypeList`, [items.nodes, null], *items.nodes);
+
+    "Section 3.2.8 of the specification"
+    rule
+    shared TypeList typeListVar(CommaSepList<Type|DefaultedType> items,
+            Comma c, VariadicType v)
+            => astNode(`TypeList`, [items.nodes, v], *items.nodes.chain({c, v}));
+
+    "Section 3.2.8 of the specification"
+    rule
+    shared TypeList emptyTypeList()
+            => astNode(`TypeList`, [[], null]);
+
+    "Section 3.2.8 of the specification"
+    rule
+    shared CallableType callableType(PrimaryType ret, ParOpen a,
+            TypeList types, ParClose b)
+            => astNode(`CallableType`, [ret, types], ret, a, types, b);
+
+    "Section 3.2.8 of the specification"
+    tokenizer
+    shared Token<CurlOpen>? curlOpen(String input, Object? prev)
+            => literal(`CurlOpen`, input, prev, "{");
+
+    "Section 3.2.8 of the specification"
+    tokenizer
+    shared Token<CurlClose>? curlClose(String input, Object? prev)
+            => literal(`CurlClose`, input, prev, "}");
+
+    "Section 3.2.8 of the specification"
+    tokenizer
+    shared Token<Star>? star(String input, Object? prev)
+            => literal(`Star`, input, prev, "*");
+
+    "Section 3.2.8 of the specification"
+    rule
+    shared IterableType iterableType(CurlOpen a, VariadicType? type,
+            CurlClose b)
+            => astNode(`IterableType`, [type], a, type, b);
+
+    "Section 3.2.8 of the specification"
+    rule
+    shared TupleType tupleType(SqOpen a, TypeList types, SqClose b)
+            => astNode(`TupleType`, [types], a, types, b);
+
+    "Section 3.2.8 of the specification"
+    rule
+    shared VariadicType variadicType(MainType type, Plus|Star quality)
+            => astNode(`VariadicType`, [type, quality is Plus], type, quality);
+
+    "Section 3.2.8 of the specification"
+    tokenizer
+    shared Token<Eq>? eq(String input, Object? prev)
+            => literal(`Eq`, input, prev, "=");
+
+    "Section 3.2.8 of the specification"
+    rule
+    shared DefaultedType defaultedType(Type type, Eq e)
+            => astNode(`DefaultedType`, [type], type, e);
+
+    "Section 3.2.8 of the specification"
+    tokenizer
+    shared Token<Arrow>? arrow(String input, Object? prev)
+            => literal(`Arrow`, input, prev, "->");
+
+    "Section 3.2.8 of the specification"
+    rule
+    shared EntryType entryType(MainType key, Arrow a, MainType item)
+            => astNode(`EntryType`, [key, item], key, a, item);
+
 }

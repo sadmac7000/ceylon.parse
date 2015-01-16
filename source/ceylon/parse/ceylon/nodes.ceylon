@@ -1,3 +1,5 @@
+import ceylon.ast.core { Node }
+
 "Base class for Ceylon token objects."
 shared class CeylonToken(shared default String text, shared Integer line_start, shared
         Integer col_start, shared Integer line_end, shared Integer col_end) {}
@@ -84,6 +86,71 @@ shared class Quote(Integer ls, Integer cs,
 shared class DoubleQuote(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken("\"", ls, cs, le, ce) {}
+
+"A <"
+shared class LT(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("<", ls, cs, le, ce) {}
+
+"A >"
+shared class GT(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken(">", ls, cs, le, ce) {}
+
+"A ?"
+shared class Question(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("?", ls, cs, le, ce) {}
+
+"A ["
+shared class SqOpen(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("[", ls, cs, le, ce) {}
+
+"A ]"
+shared class SqClose(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("]", ls, cs, le, ce) {}
+
+"A ("
+shared class ParOpen(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("(", ls, cs, le, ce) {}
+
+"A )"
+shared class ParClose(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken(")", ls, cs, le, ce) {}
+
+"A ,"
+shared class Comma(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken(",", ls, cs, le, ce) {}
+
+"A {"
+shared class CurlOpen(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("{", ls, cs, le, ce) {}
+
+"A }"
+shared class CurlClose(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("}", ls, cs, le, ce) {}
+
+"A *"
+shared class Star(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("*", ls, cs, le, ce) {}
+
+"A ="
+shared class Eq(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("=", ls, cs, le, ce) {}
+
+"The -> operator"
+shared class Arrow(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("->", ls, cs, le, ce) {}
 
 "Text of an LIdentifier"
 shared class LIdentText(String text, Integer ls, Integer cs,
@@ -185,3 +252,17 @@ shared class BinDigitCluster(CeylonToken+ tokens)
 "An exponent postfix to a float"
 shared class Exponent(CeylonToken+ tokens)
         extends CeylonMetaToken(*tokens) {}
+
+"A . followed by a base type"
+shared class QualifiedTypeSuffix(CeylonToken+ tokens)
+        extends CeylonMetaToken(*tokens) {}
+
+"A node that isn't part of the AST but simplifies rules"
+shared class MetaNode<NodeType>(shared [NodeType+] nodes,
+        shared CeylonToken+ tokens)
+        given NodeType satisfies Node {}
+
+"A comma-separated list"
+shared class CommaSepList<NodeType>([NodeType+] nodes, CeylonToken+ tokens)
+        extends MetaNode<NodeType>(nodes, *tokens)
+        given NodeType satisfies Node {}
