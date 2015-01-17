@@ -147,6 +147,16 @@ shared class Eq(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken("=", ls, cs, le, ce) {}
 
+"'super'"
+shared class Super(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("super", ls, cs, le, ce) {}
+
+"'extends'"
+shared class Extends(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("extends", ls, cs, le, ce) {}
+
 "The -> operator"
 shared class Arrow(Integer ls, Integer cs,
         Integer le, Integer ce)
@@ -255,6 +265,10 @@ shared class Exponent(CeylonToken+ tokens)
 
 "A . followed by a base type"
 shared class QualifiedTypeSuffix(CeylonToken+ tokens)
+        extends CeylonMetaToken(*tokens) {}
+
+"A 'super' followed by a '.'"
+shared class SuperDot(CeylonToken+ tokens)
         extends CeylonMetaToken(*tokens) {}
 
 "A node that isn't part of the AST but simplifies rules"

@@ -32,6 +32,10 @@ import ceylon.ast.core {
     IntersectionType,
     PrimaryType,
     EntryType,
+    PositionalArguments,
+    ExtendedType,
+    ASTSuper = Super,
+    ClassInstantiation,
     FloatLiteral
 }
 
@@ -782,4 +786,30 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared EntryType entryType(MainType key, Arrow a, MainType item)
             => astNode(`EntryType`, [key, item], key, a, item);
 
+    "Section 3.3.2 of the specification"
+    tokenizer
+    shared Token<Extends>? extends_(String input, Object? prev)
+            => literal(`Extends`, input, prev, "extends");
+
+    "Section 3.3.2 of the specification"
+    tokenizer
+    shared Token<Super>? super_(String input, Object? prev)
+            => literal(`Super`, input, prev, "super");
+
+    "Section 3.3.2 of the specification"
+    rule
+    shared SuperDot superDot(Super s, Dot d)
+            => meta(`SuperDot`, s, d);
+
+    "Section 3.3.2 of the specification"
+    rule 
+    shared ClassInstantiation classInstantiation(SuperDot? sup,
+            TypeNameWithTypeArguments type, PositionalArguments args)
+            => astNode(`ClassInstantiation`, [type, args, if (exists sup) then
+            ASTSuper() else null], sup, type, args);
+
+    "Section 3.3.2 of the specification"
+    rule
+    shared ExtendedType extendedType(Extends e, ClassInstantiation inst)
+            => astNode(`ExtendedType`, [inst], e, inst);
 }
