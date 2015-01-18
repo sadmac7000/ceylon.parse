@@ -36,6 +36,7 @@ import ceylon.ast.core {
     ExtendedType,
     ASTSuper = Super,
     ClassInstantiation,
+    SatisfiedTypes,
     FloatLiteral
 }
 
@@ -812,4 +813,20 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     rule
     shared ExtendedType extendedType(Extends e, ClassInstantiation inst)
             => astNode(`ExtendedType`, [inst], e, inst);
+
+    "Section 3.3.3 of the specification"
+    tokenizer
+    shared Token<Satisfies>? satisfies_(String input, Object? prev)
+            => literal(`Satisfies`, input, prev, "satisfies");
+
+    "Section 3.3.3 of the specification"
+    rule
+    shared AmpersandPrimary ampersandPrimary(Ampersand and, PrimaryType p)
+            => AmpersandPrimary(p, and, *tokenStream(p));
+
+    "Section 3.3.3 of the specification"
+    rule
+    shared SatisfiedTypes satisfiedTypes(PrimaryType p,
+            [AmpersandPrimary*] list)
+            => astNode(`SatisfiedTypes`, [[p, *list*.type]], p, *list*.tokens);
 }
