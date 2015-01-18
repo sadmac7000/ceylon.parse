@@ -31,6 +31,8 @@ import ceylon.ast.core {
     DefaultedType,
     IntersectionType,
     PrimaryType,
+    MemberName,
+    CaseTypes,
     EntryType,
     PositionalArguments,
     ExtendedType,
@@ -827,6 +829,23 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 3.3.3 of the specification"
     rule
     shared SatisfiedTypes satisfiedTypes(PrimaryType p,
-            [AmpersandPrimary*] list)
-            => astNode(`SatisfiedTypes`, [[p, *list*.type]], p, *list*.tokens);
+            [AmpersandPrimary*] more)
+            => astNode(`SatisfiedTypes`, [[p, *more*.type]], p, *more*.tokens);
+
+    "Section 3.4.2 of the specification"
+    rule
+    shared PipePrimaryOrMember pipePrimaryOrMember(Ampersand and,
+            PrimaryType|MemberName p)
+            => PipePrimaryOrMember(p, and, *tokenStream(p));
+
+    "Section 3.4.2 of the specification"
+    tokenizer
+    shared Token<Of>? of_(String input, Object? prev)
+            => literal(`Of`, input, prev, "of");
+
+    "Section 3.4.2 of the specification"
+    rule
+    shared CaseTypes caseTypes(Of o, PrimaryType|MemberName p,
+            [PipePrimaryOrMember *] more)
+            => astNode(`CaseTypes`, [[p, *more*.type]], p, *more*.tokens);
 }

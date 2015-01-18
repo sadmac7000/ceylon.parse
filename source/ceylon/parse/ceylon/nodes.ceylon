@@ -1,4 +1,4 @@
-import ceylon.ast.core { Node, PrimaryType }
+import ceylon.ast.core { Node, PrimaryType, MemberName }
 
 "Base class for Ceylon token objects."
 shared class CeylonToken(shared default String text, shared Integer line_start, shared
@@ -162,6 +162,11 @@ shared class Satisfies(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken("satisfies", ls, cs, le, ce) {}
 
+"'of'"
+shared class Of(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("of", ls, cs, le, ce) {}
+
 "The -> operator"
 shared class Arrow(Integer ls, Integer cs,
         Integer le, Integer ce)
@@ -285,6 +290,11 @@ shared class MetaNode<NodeType>(shared [NodeType+] nodes,
 "A '&' followed by a primary type"
 shared class AmpersandPrimary(shared PrimaryType type, CeylonToken+ tokens)
         extends MetaNode<PrimaryType>([type], *tokens) {}
+
+"A '|' followed by a primary type or member name"
+shared class PipePrimaryOrMember(shared PrimaryType|MemberName type,
+        CeylonToken+ tokens)
+        extends MetaNode<PrimaryType|MemberName>([type], *tokens) {}
 
 "A comma-separated list"
 shared class CommaSepList<NodeType>([NodeType+] nodes, CeylonToken+ tokens)
