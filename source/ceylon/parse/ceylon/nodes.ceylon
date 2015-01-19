@@ -332,3 +332,8 @@ shared class PipePrimaryOrMember(shared PrimaryType|MemberName type,
 shared class CommaSepList<NodeType>([NodeType+] nodes, CeylonToken+ tokens)
         extends MetaNode<NodeType>(nodes, *tokens)
         given NodeType satisfies Node {}
+
+"The bad token. Used to box up unparseable input"
+shared class Crap(String contents, Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken(contents, ls, cs, le, ce) {}

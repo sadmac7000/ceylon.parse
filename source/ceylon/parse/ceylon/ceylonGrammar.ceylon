@@ -180,6 +180,13 @@ CeylonToken[] tokenStream(CeylonToken|{CeylonToken|Node*}|Node?* args) {
 "A parse tree for the Ceylon language"
 by("Casey Dahlin")
 object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
+    shared actual Crap badTokenConstructor(String data, Object? prev) {
+        value [start_line, start_col] = extractStartPos(prev);
+        value [end_line, end_col] = calculateStopPos(start_line, start_col,
+                data);
+
+        return Crap(data, start_line, start_col, end_line, end_col);
+    }
 
     "Section 2.2 of the specification"
     tokenizer
