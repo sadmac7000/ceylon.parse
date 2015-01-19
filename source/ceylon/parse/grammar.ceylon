@@ -6,7 +6,8 @@ import ceylon.language.meta.model {
     Type,
     UnionType,
     ClassOrInterface,
-    Method
+    Method,
+    TypeApplicationException
 }
 import ceylon.language.meta.declaration {
     FunctionOrValueDeclaration,
@@ -261,9 +262,13 @@ shared abstract class Grammar<out Root, Data>()
             for (meth in meths) {
                 if (meth.typeParameterDeclarations.empty) { continue; }
 
-                value completeMeth = meth.memberApply<Nothing,
-                      Anything, Nothing>(_type(this), have.type);
-                addRule(completeMeth, [have.type]);
+                try {
+                    value completeMeth = meth.memberApply<Nothing, Anything,
+                          Nothing>(_type(this), have.type);
+                    addRule(completeMeth, [have.type]);
+                } catch(TypeApplicationException t) {
+                    /* Skip */
+                }
 
                 /*for (t in completeMeth.parameterTypes) {
                     if (is Model t) {
