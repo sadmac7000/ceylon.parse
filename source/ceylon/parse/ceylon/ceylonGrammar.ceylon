@@ -955,5 +955,5 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 4.2.4 of the specification"
     rule
     shared ImportWildcard importWildcard(Ellipsis e)
-        => astNode(`ImportWildcard`, [e], e);
+        => astNode(`ImportWildcard`, [], e);
 }
