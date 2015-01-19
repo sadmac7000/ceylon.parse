@@ -147,6 +147,11 @@ shared class Eq(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken("=", ls, cs, le, ce) {}
 
+"An ellipsis"
+shared class Ellipsis(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("...", ls, cs, le, ce) {}
+
 "'super'"
 shared class Super(Integer ls, Integer cs,
         Integer le, Integer ce)
@@ -181,6 +186,11 @@ shared class Of(Integer ls, Integer cs,
 shared class Given(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken("given", ls, cs, le, ce) {}
+
+"'import'"
+shared class ImportTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("import", ls, cs, le, ce) {}
 
 "The -> operator"
 shared class Arrow(Integer ls, Integer cs,

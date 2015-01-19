@@ -1,62 +1,6 @@
 import ceylon.parse { Grammar, Token, rule, tokenizer, lassoc }
 import ceylon.language.meta.model { Class }
-import ceylon.ast.core {
-    AnyCompilationUnit,
-    CompilationUnit,
-    ModuleCompilationUnit,
-    PackageCompilationUnit,
-    ModuleDescriptor,
-    PackageDescriptor,
-    Declaration,
-    Import,
-    Node,
-    LIdentifier,
-    UIdentifier,
-    Key,
-    ScopedKey,
-    IntegerLiteral,
-    CharacterLiteral,
-    StringLiteral,
-    UnionType,
-    IterableType,
-    UnionableType,
-    MainType,
-    Type,
-    TypeName,
-    TypeArguments,
-    TypeNameWithTypeArguments,
-    TupleType,
-    SimpleType,
-    BaseType,
-    GroupedType,
-    OptionalType,
-    SequentialType,
-    QualifiedType,
-    VariadicType,
-    CallableType,
-    TypeList,
-    DefaultedType,
-    IntersectionType,
-    PrimaryType,
-    MemberName,
-    CaseTypes,
-    EntryType,
-    PositionalArguments,
-    ExtendedType,
-    ASTSuper = Super,
-    ClassInstantiation,
-    SatisfiedTypes,
-    TypeParameters,
-    TypeParameter,
-    Variance,
-    InModifier,
-    OutModifier,
-    FullPackageName,
-    PackageName,
-    TypeConstraint,
-    TypeArgument,
-    FloatLiteral
-}
+import ceylon.ast.core { ASTSuper = Super, ... }
 
 "AST Node key to attach individual tokens"
 shared Key<CeylonToken[]> tokensKey = ScopedKey<CeylonToken[]>(`package
@@ -957,4 +901,59 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared FullPackageName fullPackageName(PackageName name, {PackageDotName*} subNames)
             => astNode(`FullPackageName`, [[name, *subNames*.name]], name,
                     *subNames*.tokens);
+
+    "Section 4.2 of the specification"
+    tokenizer
+    shared Token<ImportTok>? importTok(String input, Object? prev)
+            => literal(`ImportTok`, input, prev, "import");
+
+    "Section 4.2 of the specification"
+    rule
+    shared Import import_(Import imp, FullPackageName name, 
+            ImportElements elements)
+            => astNode(`Import`, [name, elements], imp, name, elements);
+
+    "Section 4.2 of the specification"
+    rule
+    shared ImportElements importElements(CurlOpen a,
+            CommaSepList<ImportElement> elements, ImportWildcard? wild,
+            CurlClose b)
+            => astNode(`ImportElements`, [elements.nodes, wild], a,
+                    elements.nodes, wild, b);
+
+    "Section 4.2.1 of the specification"
+    rule
+    shared ImportTypeElement importTypeElement(ImportTypeAlias? alias_,
+            TypeName name, ImportElements? nested)
+            => astNode(`ImportTypeElement`, [name, alias_, nested], alias_,
+                    name, nested);
+
+    "Section 4.2.2 of the specification"
+    rule
+    shared ImportFunctionValueElement
+    importFunctionValueElement(ImportFunctionValueAlias? alias_,
+            MemberName name)
+            => astNode(`ImportFunctionValueElement`, [name, alias_], alias_,
+                    name);
+
+    "Section 4.2.3 of the specification"
+    rule
+    shared ImportTypeAlias importTypeAlias(TypeName type, Eq e)
+        => astNode(`ImportTypeAlias`, [type], type, e);
+
+    "Section 4.2.3 of the specification"
+    rule
+    shared ImportFunctionValueAlias importFunctionValueAlias(MemberName m,
+            Eq e)
+        => astNode(`ImportFunctionValueAlias`, [m], m, e);
+
+    "Section 4.2.4 of the specification"
+    tokenizer
+    shared Token<Ellipsis>? ellipsis(String input, Object? prev)
+            => literal(`Ellipsis`, input, prev, "...");
+
+    "Section 4.2.4 of the specification"
+    rule
+    shared ImportWildcard importWildcard(Ellipsis e)
+        => astNode(`ImportWildcard`, [e], e);
 }
