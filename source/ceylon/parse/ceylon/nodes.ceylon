@@ -1,4 +1,4 @@
-import ceylon.ast.core { Node, PrimaryType, MemberName, Type }
+import ceylon.ast.core { Node, PrimaryType, MemberName, Type, PackageName }
 
 "Base class for Ceylon token objects."
 shared class CeylonToken(shared default String text, shared Integer line_start, shared
@@ -296,11 +296,14 @@ shared class QualifiedTypeSuffix(CeylonToken+ tokens)
 shared class SuperDot(CeylonToken+ tokens)
         extends CeylonMetaToken(*tokens) {}
 
-
 "A node that isn't part of the AST but simplifies rules"
 shared class MetaNode<NodeType>(shared [NodeType+] nodes,
         shared CeylonToken+ tokens)
         given NodeType satisfies Node {}
+
+"A member name followed by a '.'"
+shared class PackageDotName(shared PackageName name, CeylonToken+ tokens)
+        extends MetaNode<PackageName>([name], *tokens) {}
 
 "A '&' followed by a primary type"
 shared class AmpersandPrimary(shared PrimaryType type, CeylonToken+ tokens)

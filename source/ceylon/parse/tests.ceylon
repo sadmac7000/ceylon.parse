@@ -738,7 +738,7 @@ object fullAlgebraGrammar extends AlgebraGrammar() {
 }
 
 test
-void associativityResolvedHorizontalAmbiguity()
+shared void associativityResolvedHorizontalAmbiguity()
 {
     value root = ParseTree(fullAlgebraGrammar, "a+b+c").ast;
     value expect = Expr (0,

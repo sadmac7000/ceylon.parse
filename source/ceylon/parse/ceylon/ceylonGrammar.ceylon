@@ -2,6 +2,13 @@ import ceylon.parse { Grammar, Token, rule, tokenizer, lassoc }
 import ceylon.language.meta.model { Class }
 import ceylon.ast.core {
     AnyCompilationUnit,
+    CompilationUnit,
+    ModuleCompilationUnit,
+    PackageCompilationUnit,
+    ModuleDescriptor,
+    PackageDescriptor,
+    Declaration,
+    Import,
     Node,
     LIdentifier,
     UIdentifier,
@@ -44,6 +51,8 @@ import ceylon.ast.core {
     Variance,
     InModifier,
     OutModifier,
+    FullPackageName,
+    PackageName,
     TypeConstraint,
     TypeArgument,
     FloatLiteral
@@ -918,4 +927,34 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     rule
     shared TypeArgument typeArgument(Variance? var, Type type)
             => astNode(`TypeArgument`, [type, var], var, type);
+
+    "Section 4.1 of the specification"
+    rule
+    shared CompilationUnit compilationUnit([Import *] imports,
+            [Declaration *] declarations)
+            => astNode(`CompilationUnit`, [declarations, imports], imports,
+                    declarations);
+
+    "Section 4.1 of the specification"
+    rule
+    shared ModuleCompilationUnit moduleCompilationUnit([Import *] imports,
+            ModuleDescriptor m)
+            => astNode(`ModuleCompilationUnit`, [m, imports], imports, m);
+
+    "Section 4.1 of the specification"
+    rule
+    shared PackageCompilationUnit packageCompilationUnit([Import *] imports,
+            PackageDescriptor m)
+            => astNode(`PackageCompilationUnit`, [m, imports], imports, m);
+
+    "Section 4.1.2 of the specification"
+    rule
+    shared PackageDotName packageDotName(Dot d, PackageName p)
+            => PackageDotName(p, *{d}.chain(tokenStream(p)));
+
+    "Section 4.1.2 of the specification"
+    rule
+    shared FullPackageName fullPackageName(PackageName name, {PackageDotName*} subNames)
+            => astNode(`FullPackageName`, [[name, *subNames*.name]], name,
+                    *subNames*.tokens);
 }
