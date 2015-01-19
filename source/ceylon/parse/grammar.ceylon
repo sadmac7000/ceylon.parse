@@ -10,7 +10,6 @@ import ceylon.language.meta.model {
 }
 import ceylon.language.meta.declaration {
     FunctionOrValueDeclaration,
-    OpenClassOrInterfaceType,
     FunctionDeclaration
 }
 import ceylon.collection {
@@ -261,7 +260,6 @@ shared abstract class Grammar<out Root, Data>()
         while (exists have = queue.accept()) {
             for (meth in meths) {
                 if (meth.typeParameterDeclarations.empty) { continue; }
-                assert(is OpenClassOrInterfaceType cls = meth.openType);
 
                 value completeMeth = meth.memberApply<Nothing,
                       Anything, Nothing>(_type(this), have.type);
