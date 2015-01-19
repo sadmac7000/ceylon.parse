@@ -39,6 +39,13 @@ import ceylon.ast.core {
     ASTSuper = Super,
     ClassInstantiation,
     SatisfiedTypes,
+    TypeParameters,
+    TypeParameter,
+    Variance,
+    InModifier,
+    OutModifier,
+    TypeConstraint,
+    TypeArgument,
     FloatLiteral
 }
 
@@ -848,4 +855,67 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared CaseTypes caseTypes(Of o, PrimaryType|MemberName p,
             [PipePrimaryOrMember *] more)
             => astNode(`CaseTypes`, [[p, *more*.type]], p, *more*.tokens);
+
+    "Section 3.5 of the specification"
+    rule
+    shared TypeParameters typeParameters(LT a, CommaSepList<TypeParameter>
+            list, GT b)
+            => astNode(`TypeParameters`, [list.nodes], a, list.tokens, b);
+
+    "Section 3.5.1 of the specification"
+    rule
+    shared EqualsType equalsType(Eq eq, Type type)
+            => EqualsType(type, eq, *tokenStream(type));
+
+    "Section 3.5.1 of the specification"
+    rule
+    shared TypeParameter typeParameter(Variance? var, TypeName name,
+            EqualsType? eq)
+            => astNode(`TypeParameter`, [name, var, if (exists eq) then
+                    eq.type else null], var, name, if (exists eq) then
+                    eq.tokens else null);
+
+    "Section 3.5.1 of the specification"
+    tokenizer
+    shared Token<In>? in_(String input, Object? prev)
+            => literal(`In`, input, prev, "in");
+
+    "Section 3.5.1 of the specification"
+    tokenizer
+    shared Token<Out>? out_(String input, Object? prev)
+            => literal(`Out`, input, prev, "out");
+
+    "Section 3.5.1 of the specification"
+    rule
+    shared InModifier inModifier(In t)
+            => astNode(`InModifier`, [], t);
+
+    "Section 3.5.1 of the specification"
+    rule
+    shared OutModifier outModifier(Out t)
+            => astNode(`OutModifier`, [], t);
+
+    "Section 3.5.3 of the specification"
+    tokenizer
+    shared Token<Given>? given_(String input, Object? prev)
+            => literal(`Given`, input, prev, "given");
+
+    "Section 3.5.3 of the specification"
+    rule
+    shared TypeConstraint typeConstraint(Given g, TypeName name,
+            CaseTypes? cases, SatisfiedTypes? satisfieds)
+            => astNode(`TypeConstraint`, [name, cases, satisfieds], g, name,
+                    cases, satisfieds);
+
+    "Section 3.6 of the specification"
+    rule
+    shared TypeArguments typeArguments(LT a, CommaSepList<TypeArgument> types,
+            GT b)
+            => astNode(`TypeArguments`, [types.nodes], a,
+                    *types.tokens.chain({b}));
+
+    "Section 3.6 of the specification"
+    rule
+    shared TypeArgument typeArgument(Variance? var, Type type)
+            => astNode(`TypeArgument`, [type, var], var, type);
 }

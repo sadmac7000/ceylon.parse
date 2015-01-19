@@ -1,4 +1,4 @@
-import ceylon.ast.core { Node, PrimaryType, MemberName }
+import ceylon.ast.core { Node, PrimaryType, MemberName, Type }
 
 "Base class for Ceylon token objects."
 shared class CeylonToken(shared default String text, shared Integer line_start, shared
@@ -152,6 +152,16 @@ shared class Super(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken("super", ls, cs, le, ce) {}
 
+"'in'"
+shared class In(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("in", ls, cs, le, ce) {}
+
+"'out'"
+shared class Out(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("out", ls, cs, le, ce) {}
+
 "'extends'"
 shared class Extends(Integer ls, Integer cs,
         Integer le, Integer ce)
@@ -166,6 +176,11 @@ shared class Satisfies(Integer ls, Integer cs,
 shared class Of(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken("of", ls, cs, le, ce) {}
+
+"'given'"
+shared class Given(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("given", ls, cs, le, ce) {}
 
 "The -> operator"
 shared class Arrow(Integer ls, Integer cs,
@@ -290,6 +305,10 @@ shared class MetaNode<NodeType>(shared [NodeType+] nodes,
 "A '&' followed by a primary type"
 shared class AmpersandPrimary(shared PrimaryType type, CeylonToken+ tokens)
         extends MetaNode<PrimaryType>([type], *tokens) {}
+
+"A '=' followed by a type"
+shared class EqualsType(shared Type type, CeylonToken+ tokens)
+        extends MetaNode<Type>([type], *tokens) {}
 
 "A '|' followed by a primary type or member name"
 shared class PipePrimaryOrMember(shared PrimaryType|MemberName type,
