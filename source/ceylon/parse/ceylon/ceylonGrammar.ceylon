@@ -218,7 +218,7 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared Token<CommentBody>? commentBody(String input, Object? prev)
             => takeTokenWhile(`CommentBody`, input, prev,
                     (String x) => ! (x.startsWith("/*") || x.startsWith(
-                            "*/")));
+                            "*/") || x == ""));
 
     "Section 2.2 of the specification"
     rule
@@ -480,7 +480,7 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
         variable value i = 0;
         variable value skip = false;
 
-        while (exists c = input[0], c != "'" || skip) {
+        while (exists c = input[i], c != "'" || skip) {
             skip = c == '\\' && !skip;
             i++;
         }
@@ -515,7 +515,7 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
         variable value i = 0;
         variable value skip = false;
 
-        while (exists c = input[0], c != "\"" || skip) {
+        while (exists c = input[i], c != "\"" || skip) {
             skip = c == '\\' && !skip;
             i++;
         }
