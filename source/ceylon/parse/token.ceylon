@@ -1,5 +1,3 @@
-import ceylon.language.meta { _type = type }
-
 "A single token result returned by a tokenizer"
 shared class Token<out SymType = Object>(SymType sym, Integer length)
         extends Symbol(Atom(`SymType`), sym, length)
@@ -13,7 +11,7 @@ shared class Symbol(shared Atom type, shared Object sym, shared Integer length) 
         if (! is Symbol that) {
             return false;
         } else {
-            if (_type(this) != _type(that)) { return false; }
+            if (type != that.type) { return false; }
 
             return this.length == that.length;
         }
