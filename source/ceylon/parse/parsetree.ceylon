@@ -16,6 +16,8 @@ class StateQueue() {
     value queue = ArrayList<EPState>();
     value states = HashMap<Integer,HashSet<EPState>>();
 
+    shared Integer size => queue.size;
+
     shared <Integer->HashSet<EPState>>? latest {
         Integer? key = max(states.keys);
 
