@@ -307,7 +307,7 @@ shared class SuperDot(CeylonToken+ tokens)
         extends CeylonMetaToken(*tokens) {}
 
 "A node that isn't part of the AST but simplifies rules"
-shared class MetaNode<NodeType>(shared [NodeType+] nodes,
+shared class MetaNode<out NodeType>(shared [NodeType+] nodes,
         shared CeylonToken+ tokens)
         given NodeType satisfies Node {}
 
@@ -329,7 +329,7 @@ shared class PipePrimaryOrMember(shared PrimaryType|MemberName type,
         extends MetaNode<PrimaryType|MemberName>([type], *tokens) {}
 
 "A comma-separated list"
-shared class CommaSepList<NodeType>([NodeType+] nodes, CeylonToken+ tokens)
+shared class CommaSepList<out NodeType>([NodeType+] nodes, CeylonToken+ tokens)
         extends MetaNode<NodeType>(nodes, *tokens)
         given NodeType satisfies Node {}
 
