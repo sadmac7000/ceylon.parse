@@ -916,7 +916,7 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 4.2 of the specification"
     rule
-    shared Import import_(Import imp, FullPackageName name, 
+    shared Import import_(ImportTok imp, FullPackageName name,
             ImportElements elements)
             => astNode(`Import`, [name, elements], imp, name, elements);
 
