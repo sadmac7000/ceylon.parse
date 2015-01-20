@@ -197,7 +197,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
         if (badToken) {
             variable value i = state.pos + 1;
 
-            while (getTokens(i, state.lastToken).size == 0) { i++; }
+            while (i <= data.size && getTokens(i, state.lastToken).size == 0) { i++; }
 
             assert(is Data tokenData = data[state.pos..(i - 1)]);
             value tok = constructBadToken(tokenData, state.lastToken);
@@ -214,6 +214,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
 
             for (i in (state.pos + 1)..(maxPos - 1)) {
                 if (posSet.contains(i)) { continue; }
+                if (i > data.size) { break; }
 
                 value toks = getTokens(i, state.lastToken);
 
