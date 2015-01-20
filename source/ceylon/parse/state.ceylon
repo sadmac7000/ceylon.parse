@@ -270,7 +270,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
             if (other.rule != rule) { return false; }
             if (other.matchPos != matchPos) { return false; }
 
-            if (other.children.size != children.size) { return false;  }
+            if (other.children.size != children.size) { return false; }
 
             for (e in zipPairs(other.children, children)) {
                 if (exists a = e[0],
