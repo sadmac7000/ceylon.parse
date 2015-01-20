@@ -153,7 +153,12 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
             newMatchPos = matchPos;
             once = false;
         } else if (currentConsumes.variadic) {
-            newMatchPos = matchPos;
+            if (newPos != pos) {
+                newMatchPos = matchPos;
+            } else {
+                newMatchPos = matchPos + 1;
+            }
+
             once = true;
         } else {
             newMatchPos = matchPos + 1;
