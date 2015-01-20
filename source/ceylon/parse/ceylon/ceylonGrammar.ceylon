@@ -30,9 +30,9 @@ Character[] whitespaceChars = [ ' ', '\{FORM FEED (FF)}',
 }
 
 "Literal token"
-Token<Type>? literal<Type>(Class<Type, [Integer,Integer,Integer,Integer]> t,
+Token<TypeArg>? literal<TypeArg>(Class<TypeArg, [Integer,Integer,Integer,Integer]> t,
         String input, Object? prev, String+ wants)
-        given Type satisfies Object {
+        given TypeArg satisfies Object {
     value [start_line, start_col] = extractStartPos(prev);
 
     for (want in wants) {
@@ -46,10 +46,10 @@ Token<Type>? literal<Type>(Class<Type, [Integer,Integer,Integer,Integer]> t,
 }
 
 "Parse a single-character token"
-Token<Type>? takeCharToken<Type>(Class<Type, [Integer, Integer, Integer,
-        Integer]>|Class<Type, [String, Integer, Integer, Integer,
+Token<TypeArg>? takeCharToken<TypeArg>(Class<TypeArg, [Integer, Integer, Integer,
+        Integer]>|Class<TypeArg, [String, Integer, Integer, Integer,
         Integer]> t, String input, Object? prev, Boolean(Character) test)
-        given Type satisfies Object {
+        given TypeArg satisfies Object {
     value [start_line, start_col] = extractStartPos(prev);
     value char = input[0];
 
@@ -58,7 +58,7 @@ Token<Type>? takeCharToken<Type>(Class<Type, [Integer, Integer, Integer,
 
     if (! test(char)) { return null; }
 
-    if (is Class<Type, [Integer, Integer, Integer, Integer]> t) {
+    if (is Class<TypeArg, [Integer, Integer, Integer, Integer]> t) {
         return Token(t(start_line, start_col, start_line, start_col + 1), 1);
     } else {
         return Token(t(input[0:1], start_line, start_col, start_line, start_col
@@ -68,10 +68,10 @@ Token<Type>? takeCharToken<Type>(Class<Type, [Integer, Integer, Integer,
 
 "Parse a token that consists of all characters at the head of the string for
  which the test function returns true."
-Token<Type>? takeTokenWhile<Type>(Class<Type, [Integer, Integer, Integer,
-        Integer]>|Class<Type, [String, Integer, Integer, Integer,
+Token<TypeArg>? takeTokenWhile<TypeArg>(Class<TypeArg, [Integer, Integer,
+        Integer, Integer]>|Class<TypeArg, [String, Integer, Integer, Integer,
         Integer]> t, String input, Object? prev, Boolean(String)|Boolean(Character) test)
-        given Type satisfies Object {
+        given TypeArg satisfies Object {
     value [start_line, start_col] = extractStartPos(prev);
 
     variable value length = 0;
@@ -87,7 +87,7 @@ Token<Type>? takeTokenWhile<Type>(Class<Type, [Integer, Integer, Integer,
 
     if (length == 0) { return null; }
 
-    if (is Class<Type, [Integer, Integer, Integer, Integer]> t) {
+    if (is Class<TypeArg, [Integer, Integer, Integer, Integer]> t) {
         return Token(t(start_line, start_col, end_line, end_col), length);
     } else {
         return Token(t(input[0:length], start_line, start_col, end_line,
@@ -96,7 +96,7 @@ Token<Type>? takeTokenWhile<Type>(Class<Type, [Integer, Integer, Integer,
 }
 
 "Meta token"
-Type meta<Type>(Class<Type, [CeylonToken+]> t,
+TypeArg meta<TypeArg>(Class<TypeArg, [CeylonToken+]> t,
         CeylonToken|{CeylonToken|Node*}|Node?* children) {
 
     assert( is [CeylonToken+] toks = tokenStream(*children));
