@@ -292,6 +292,6 @@ shared abstract class Grammar<out Root, Data>()
      lists."
     rule
     shared [K+] iterables<K>(K+ k) {
-        return [*k];
+        return k;
     }
 }
