@@ -68,10 +68,11 @@ Token<TypeArg>? takeCharToken<TypeArg>(Class<TypeArg, [Integer, Integer, Integer
 
 "Parse a token that consists of all characters at the head of the string for
  which the test function returns true."
-Token<TypeArg>? takeTokenWhile<TypeArg>(Class<TypeArg, [Integer, Integer,
+Token<TypeArg>? takeTokenWhile<TypeArg,ScanClass>(Class<TypeArg, [Integer, Integer,
         Integer, Integer]>|Class<TypeArg, [String, Integer, Integer, Integer,
-        Integer]> t, String input, Object? prev, Boolean(String)|Boolean(Character) test)
-        given TypeArg satisfies Object {
+        Integer]> t, String input, Object? prev, Boolean(ScanClass) test)
+        given TypeArg satisfies Object
+        given ScanClass of String|Character {
     value [start_line, start_col] = extractStartPos(prev);
 
     variable value length = 0;
@@ -79,6 +80,7 @@ Token<TypeArg>? takeTokenWhile<TypeArg>(Class<TypeArg, [Integer, Integer,
     if (is Boolean(String) test) {
         while (test(input[length...])) { length++; }
     } else {
+        assert(is Boolean(Character) test);
         while (exists c = input[length], test(c)) { length++; }
     }
 
@@ -192,7 +194,7 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     tokenizer
     shared Token<Whitespace>? whitespace(String input, Object? prev)
             => takeTokenWhile(`Whitespace`, input, prev,
-                    whitespaceChars.contains);
+                    (Character x) => whitespaceChars.contains(x));
 
     "Section 2.2 of the specification"
     tokenizer
