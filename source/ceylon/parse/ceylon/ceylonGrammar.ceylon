@@ -238,10 +238,15 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 2.2 of the specification"
     rule
     shared AnySym separator<AnySym>(
-            {BlockComment|LineComment|Whitespace*} before,
-            AnySym sym,
-            {BlockComment|LineComment|Whitespace*} after)
+            {BlockComment|LineComment|Whitespace+} before,
+            AnySym sym)
             => sym;
+
+    "Section 2.2 of the specification"
+    rule
+    shared AnyCompilationUnit trailingWs(AnyCompilationUnit ret,
+            {BlockComment|LineComment|Whitespace+} after)
+            => ret;
 
     "Section 2.3 of the specification"
     tokenizer
