@@ -1,8 +1,20 @@
 import ceylon.ast.core { Node, PrimaryType, MemberName, Type, PackageName }
+import ceylon.language.meta { type }
 
 "Base class for Ceylon token objects."
-shared class CeylonToken(shared default String text, shared Integer line_start, shared
-        Integer col_start, shared Integer line_end, shared Integer col_end) {}
+shared class CeylonToken(shared String text, shared Integer line_start, shared
+        Integer col_start, shared Integer line_end, shared Integer col_end) {
+
+    shared actual Integer hash = text.hash * line_start ^ 2 * col_start ^ 3;
+
+    shared actual Boolean equals(Object other) {
+        if (type(other) != type(this)) { return false; }
+        assert(is CeylonToken other);
+
+        return text == other.text && line_start == other.line_start && line_end
+            == other.line_end;
+    }
+}
 
 "A single-line comment"
 shared class LineComment(Integer ls, Integer cs, Integer le, Integer ce)
@@ -244,11 +256,9 @@ shared class StringLiteralTok(String text, Integer ls, Integer cs,
 
 "A 'token' that may contain other tokens"
 shared class CeylonMetaToken(shared CeylonToken+ subtokens)
-        extends CeylonToken("", subtokens.first.line_start,
+        extends CeylonToken(subtokens*.text.fold("")((x,y) => x + y), subtokens.first.line_start,
                         subtokens.first.col_start, subtokens.last.line_start,
-                        subtokens.last.col_start) {
-    shared actual String text => subtokens*.text.fold("")((x,y) => x + y);
-}
+                        subtokens.last.col_start) {}
 
 "A block comment"
 shared class BlockComment(CeylonToken+ tokens)
@@ -309,7 +319,16 @@ shared class SuperDot(CeylonToken+ tokens)
 "A node that isn't part of the AST but simplifies rules"
 shared class MetaNode<out NodeType>(shared [NodeType+] nodes,
         shared CeylonToken+ tokens)
-        given NodeType satisfies Node {}
+        given NodeType satisfies Node {
+    shared actual Integer hash = nodes.hash ^ 2 + tokens.hash;
+
+    shared actual Boolean equals(Object other) {
+        if (type(other) != type(this)) { return false; }
+        assert(is MetaNode<NodeType> other);
+
+        return other.nodes == nodes && other.tokens == tokens;
+    }
+}
 
 "A member name followed by a '.'"
 shared class PackageDotName(shared PackageName name, CeylonToken+ tokens)
