@@ -200,6 +200,8 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
 
         variable value ret = delete;
 
+        if (nextSet.variadic && (!nextSet.once || matchedOnce)) { return ret; }
+
         for (next in nextSet) {
             value inscons = errorConstructors[next];
 
