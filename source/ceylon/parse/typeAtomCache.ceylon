@@ -21,7 +21,38 @@ shared class Atom(Type t) {
 
     shared Type type => typeAtomCache.resolve(hash);
 
-    shared actual String string => type.string;
+    shared actual String string {
+        return filterTypes(type.string);
+    }
+
+}
+
+"Remove noise from type names"
+String filterTypes(String typeName) {
+    value dcolon = typeName.firstInclusion("::");
+
+    if (! exists dcolon) { return typeName; }
+    assert(exists dcolon);
+
+    value postfix = typeName[(dcolon + 2) ...];
+    value prefix = typeName[0:dcolon];
+
+    value bracket = prefix.firstInclusion("<");
+
+    if (! exists bracket) { return filterTypes(postfix); }
+    assert(exists bracket);
+
+    value comma = prefix.firstInclusion(",");
+
+    Integer stop;
+
+    if (exists comma) {
+        stop = comma + 1;
+    } else {
+        stop = bracket + 1;
+    }
+
+    return filterTypes(prefix[0:stop] + postfix);
 }
 
 "We have to convert type objects to integers to pass them around, otherwise we
