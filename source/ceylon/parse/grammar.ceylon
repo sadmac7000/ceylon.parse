@@ -291,7 +291,9 @@ shared abstract class Grammar<out Root, Data>()
     "A generic rule that parses iterables, thus handling iterables in argument
      lists."
     rule
-    shared [K+] iterables<K>(K+ k) {
-        return k;
-    }
+    shared [K+] iterables<K>(K+ k) => k;
+
+    "A generic rule to match empty iterables"
+    rule
+    shared [K*] emptyIterable<K>() => [];
 }
