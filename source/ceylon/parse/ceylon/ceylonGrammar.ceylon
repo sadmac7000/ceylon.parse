@@ -678,10 +678,8 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 3.2.8 of the specification"
     rule
     shared CommaSepList<ItemType> commaSepList<ItemType>(ItemType t)
-            given ItemType satisfies Node {
-            assert(is [CeylonToken+] ts = tokenStream(t));
-            return CommaSepList<ItemType>([t], *ts);
-    }
+            given ItemType satisfies Node
+            => CommaSepList<ItemType>([t], *tokenStream(t));
 
     "Section 3.2.8 of the specification"
     rule
