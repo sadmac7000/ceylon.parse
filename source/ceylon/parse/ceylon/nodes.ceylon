@@ -318,7 +318,7 @@ shared class SuperDot(CeylonToken+ tokens)
 
 "A node that isn't part of the AST but simplifies rules"
 shared class MetaNode<out NodeType>(shared [NodeType+] nodes,
-        shared CeylonToken+ tokens)
+        shared CeylonToken* tokens)
         given NodeType satisfies Node {
     shared actual Integer hash = nodes.hash ^ 2 + tokens.hash;
 
@@ -348,7 +348,7 @@ shared class PipePrimaryOrMember(shared PrimaryType|MemberName type,
         extends MetaNode<PrimaryType|MemberName>([type], *tokens) {}
 
 "A comma-separated list"
-shared class CommaSepList<out NodeType>([NodeType+] nodes, CeylonToken+ tokens)
+shared class CommaSepList<out NodeType>([NodeType+] nodes, CeylonToken* tokens)
         extends MetaNode<NodeType>(nodes, *tokens)
         given NodeType satisfies Node {}
 
