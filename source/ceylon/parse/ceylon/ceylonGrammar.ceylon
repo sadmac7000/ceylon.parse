@@ -945,9 +945,9 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     rule
     shared ImportFunctionValueElement
     importFunctionValueElement(ImportFunctionValueAlias? alias_,
-            MemberName name)
-            => astNode(`ImportFunctionValueElement`, [name, alias_], alias_,
-                    name);
+            MemberName name, ImportElements? nested)
+            => astNode(`ImportFunctionValueElement`, [name, alias_, nested],
+                    alias_, name);
 
     "Section 4.2.3 of the specification"
     rule
