@@ -5,12 +5,6 @@ import ceylon.collection {
     PriorityQueue
 }
 
-"Exception thrown when a [[ParseTree]] is ambiguous. [[ParseTree]] subtypes
- which override [[ParseTree.resolveAmbiguity]] may choose not to throw this
- exception."
-class AmbiguityException()
-        extends Exception("Parser generated ambiguous results") {}
-
 "A queue of states"
 class StateQueue() {
     value queue = ArrayList<EPState>();
@@ -281,17 +275,17 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
             resultNodes.add(t);
         }
 
-        if (resultNodes.size == 1) {
-            assert(exists ret = resultNodes[0]);
-            return ret;
+        if (resultNodes.size == 0) {
+            recoverError();
+            return null;
         }
 
-        if (resultNodes.size > 1) {
-            return resolveAmbiguity(resultNodes);
+        if (resultNodes.size > 1, exists m = minLsd, m == 0) {
+            return g.resolveAmbiguity(resultNodes);
         }
 
-        recoverError();
-        return null;
+        assert(exists ret = resultNodes[0]);
+        return ret;
     }
 
     "The root node of the parse tree"
@@ -309,13 +303,5 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
 
     Token constructBadToken(Data data, Object? previous) {
         return Token(g.badTokenConstructor(data, previous), data.size);
-    }
-
-    "Method to resolve parse ambiguities. The default implementation simply
-     throws [[AmbiguityException]]. Child classes may override this behavior.
-     If the child class would like to recover the error, it should return
-     a single root node which will be used as the resolved root."
-    shared default Root resolveAmbiguity({Object *} roots) {
-        throw AmbiguityException();
     }
 }

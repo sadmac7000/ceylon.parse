@@ -155,6 +155,11 @@ ProductionClause makeProductionClause(Type p, FunctionOrValueDeclaration f) {
     }
 }
 
+"Exception thrown when a grammar is ambiguous. [[Grammar]] subtypes which
+ override [[Grammar.resolveAmbiguity]] may choose not to throw this exception."
+class AmbiguityException()
+        extends Exception("Parser generated ambiguous results") {}
+
 "A [[Grammar]] is defined by a series of BNF-style production rules. The rules
  are specifed by defining methods with the `rule` annotation.  The parser will
  create an appropriate production rule and call the annotated method in order
@@ -296,4 +301,12 @@ shared abstract class Grammar<out Root, Data>()
     "A generic rule to match empty iterables"
     rule
     shared [K*] emptyIterable<K>() => [];
+
+    "Method to resolve parse ambiguities. The default implementation simply
+     throws [[AmbiguityException]]. Child classes may override this behavior.
+     If the child class would like to recover the error, it should return
+     a single root node which will be used as the resolved root."
+    shared default Root resolveAmbiguity({Object *} roots) {
+        throw AmbiguityException();
+    }
 }
