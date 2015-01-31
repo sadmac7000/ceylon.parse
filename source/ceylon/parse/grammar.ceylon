@@ -255,13 +255,13 @@ shared abstract class Grammar<out Root, Data>()
     void populateGenericRules(MutableSet<Atom> haveSet) {
         value meths =
             _type(this).declaration.annotatedMemberDeclarations<FunctionDeclaration,GrammarRule>();
+        value genericMeths =
+            meths.select((x) => !x.typeParameterDeclarations.empty);
 
         value queue = ArrayList<Atom>{*haveSet};
 
         while (exists have = queue.accept()) {
-            for (meth in meths) {
-                if (meth.typeParameterDeclarations.empty) { continue; }
-
+            for (meth in genericMeths) {
                 try {
                     value completeMeth = meth.memberApply<Nothing, Anything,
                           Nothing>(_type(this), have.type);
