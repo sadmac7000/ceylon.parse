@@ -123,7 +123,7 @@ shared class Rule(shared Object(Object?*) consume,
     }
 }
 
-"Break a type down into type atoms or aggregate producion clauses"
+"Break a type down into type atoms or aggregate production clauses"
 ProductionClause|Atom makeTypeAtom(Type p, Boolean f, Boolean once) {
     if (is UnionType p) {
         return ProductionClause(f, once, *{for (t in p.caseTypes)
