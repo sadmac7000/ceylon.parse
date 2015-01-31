@@ -165,6 +165,7 @@ class AmbiguityException()
  create an appropriate production rule and call the annotated method in order
  to reduce the value."
 shared abstract class Grammar<out Root, Data>()
+        given Data satisfies List<Object>
         given Root satisfies Object {
     "A list of rules for this grammar"
     shared variable Rule[] rules = [];
@@ -309,4 +310,7 @@ shared abstract class Grammar<out Root, Data>()
     shared default Root resolveAmbiguity({Object *} roots) {
         throw AmbiguityException();
     }
+
+    "Parse a stream"
+    shared Root parse(Data data) => ParseTree(this, data).ast;
 }

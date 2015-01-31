@@ -155,7 +155,7 @@ object simpleGrammar extends ABGrammar<S>() {
 
 test
 shared void simple_word1() {
-    value root = ParseTree(simpleGrammar, "baab").ast;
+    value root = simpleGrammar.parse("baab");
     value expect = S (0,
         BTerm(0),
         A (1,
@@ -170,7 +170,7 @@ shared void simple_word1() {
 
 test
 shared void simple_word2() {
-    value root = ParseTree(simpleGrammar, "bab").ast;
+    value root = simpleGrammar.parse("bab");
     value expect = S (0,
         BTerm(0),
         A (1,
@@ -184,7 +184,7 @@ shared void simple_word2() {
 
 test
 shared void simple_word3() {
-    value root = ParseTree(simpleGrammar, "aaa").ast;
+    value root = simpleGrammar.parse("aaa");
     value expect = S (0,
         ATerm(0),
         A (1,
@@ -198,7 +198,7 @@ shared void simple_word3() {
 
 test
 shared void simple_word4() {
-    value root = ParseTree(simpleGrammar, "aaaa").ast;
+    value root = simpleGrammar.parse("aaaa");
     value expect = S (0,
         ATerm(0),
         A (1,
@@ -213,7 +213,7 @@ shared void simple_word4() {
 
 test
 shared void simple_word4_bad() {
-    value root = ParseTree(simpleGrammar, "aaqaa").ast;
+    value root = simpleGrammar.parse("aaqaa");
     value expect = S (0,
         ATerm(0),
         A (1,
@@ -228,7 +228,7 @@ shared void simple_word4_bad() {
 
 test
 shared void simple_word2_bad() {
-    value root = ParseTree(simpleGrammar, "bqb").ast;
+    value root = simpleGrammar.parse("bqb");
     value expect = S (0,
         BTerm(0),
         A (1,
@@ -242,7 +242,7 @@ shared void simple_word2_bad() {
 
 test
 shared void simple_word2_bad2() {
-    value root = ParseTree(simpleGrammar, "bb").ast;
+    value root = simpleGrammar.parse("bb");
     value expect = S (0,
         BTerm(0),
         A (1,
@@ -268,7 +268,7 @@ object choiceGrammar extends ABGrammar<S>() {
 
 test
 shared void choice1() {
-    value root = ParseTree(choiceGrammar, "abababab").ast;
+    value root = choiceGrammar.parse("abababab");
     value expect = S (0,
         S (0,
             S(0,
@@ -292,7 +292,7 @@ shared void choice1() {
 
 test
 shared void choice2() {
-    value root = ParseTree(choiceGrammar, "abbbabbb").ast;
+    value root = choiceGrammar.parse("abbbabbb");
     value expect = S (0,
         S (0,
             S(0,
@@ -334,7 +334,7 @@ object optionGrammar extends ABGrammar<S>() {
 
 test
 shared void option() {
-    value root = ParseTree(optionGrammar, "abababaa").ast;
+    value root = optionGrammar.parse("abababaa");
     value expect = S (0,
         S (0,
             S(0,
@@ -359,7 +359,7 @@ object variadicGrammar extends ABGrammar<S>() {
 
 test
 shared void variadic() {
-    value root = ParseTree(variadicGrammar, "abababaa").ast;
+    value root = variadicGrammar.parse("abababaa");
     value expect = S (0,
                 ATerm(0),
                 BTerm(1),
@@ -391,7 +391,7 @@ object inheritingGrammar extends ABGrammar<S>() {
 
 test
 shared void inheritance() {
-    value root = ParseTree(inheritingGrammar, "aaaaa").ast;
+    value root = inheritingGrammar.parse("aaaaa");
     value expect = S (0,
                 ASubtype(0, ATerm(0)),
                 ASubtype(1, ATerm(1)),
@@ -423,7 +423,7 @@ object advancedVariadicGrammar extends ABGrammar<S>() {
 
 test
 shared void advancedVariadic() {
-    value root = ParseTree(advancedVariadicGrammar, "bbb").ast;
+    value root = advancedVariadicGrammar.parse("bbb");
     value expect = S (0,
                 A(0,
                     BTerm(0),
@@ -646,22 +646,22 @@ object ambiguousAlgebraGrammar extends AlgebraGrammar() {
 
 test
 void verticalAmbiguity() {
-    value tree = ParseTree(ambiguousAlgebraGrammar, "a+b*c");
-
-    assertThatException(() => tree.ast).hasType(`AmbiguityException`);
+    assertThatException(() =>
+            ambiguousAlgebraGrammar.parse("a+b*c"))
+        .hasType(`AmbiguityException`);
 }
 
 test
 void horizontalAmbiguity() {
-    value tree = ParseTree(ambiguousAlgebraGrammar, "a+b+c");
-
-    assertThatException(() => tree.ast).hasType(`AmbiguityException`);
+    assertThatException(() =>
+            ambiguousAlgebraGrammar.parse("a+b+c"))
+        .hasType(`AmbiguityException`);
 }
 
 test
 void resolvedVerticalAmbiguity()
 {
-    value root = ParseTree(ambiguousAlgebraGrammar, "(a+b)*c").ast;
+    value root = ambiguousAlgebraGrammar.parse("(a+b)*c");
     value expect = Expr (1,
         Expr (1,
             Var("a", 1),
@@ -678,7 +678,7 @@ void resolvedVerticalAmbiguity()
 test
 void resolvedHorizontalAmbiguity()
 {
-    value root = ParseTree(ambiguousAlgebraGrammar, "(a+b)+c").ast;
+    value root = ambiguousAlgebraGrammar.parse("(a+b)+c");
     value expect = Expr (1,
         Expr (1,
             Var("a", 1),
@@ -702,7 +702,7 @@ object precedencedAlgebraGrammar extends AlgebraGrammar() {
 
 test
 void precedenceResolvedVerticalAmbiguity() {
-    value root = ParseTree(precedencedAlgebraGrammar, "a+b*c").ast;
+    value root = precedencedAlgebraGrammar.parse("a+b*c");
     value expect = Expr (0,
         Var("a", 0),
         Plus(1),
@@ -718,9 +718,9 @@ void precedenceResolvedVerticalAmbiguity() {
 
 test
 void horizontalAmbiguityDespitePrecedence() {
-    value tree = ParseTree(precedencedAlgebraGrammar, "a+b+c");
-
-    assertThatException(() => tree.ast).hasType(`AmbiguityException`);
+    assertThatException(() =>
+            precedencedAlgebraGrammar.parse("a+b+c"))
+        .hasType(`AmbiguityException`);
 }
 
 object fullAlgebraGrammar extends AlgebraGrammar() {
@@ -740,7 +740,7 @@ object fullAlgebraGrammar extends AlgebraGrammar() {
 test
 shared void associativityResolvedHorizontalAmbiguity()
 {
-    value root = ParseTree(fullAlgebraGrammar, "a+b+c").ast;
+    value root = fullAlgebraGrammar.parse("a+b+c");
     value expect = Expr (0,
         Expr (0,
             Var("a", 0),
@@ -757,7 +757,7 @@ shared void associativityResolvedHorizontalAmbiguity()
 test
 void multipleOperatorAssociativity()
 {
-    value root = ParseTree(fullAlgebraGrammar, "a+b-c").ast;
+    value root = fullAlgebraGrammar.parse("a+b-c");
     value expect = Expr (0,
         Expr (0,
             Var("a", 0),
@@ -782,7 +782,7 @@ object sequenceGrammar extends ABGrammar<S>() {
 
 test
 shared void sequence() {
-    value root = ParseTree(sequenceGrammar, "aaabbb").ast;
+    value root = sequenceGrammar.parse("aaabbb");
     value expect = S (0,
                 ATerm(0),
                 ATerm(1),
@@ -915,7 +915,7 @@ object broadGenericGrammar extends ABGrammar<[S*]>() {
 test
 void broadGenericTest() {
     value text = "a a*a ( a ) a a*a ( a ) a a*a ( a )";
-    value root = ParseTree(broadGenericGrammar, text).ast;
+    value root = broadGenericGrammar.parse(text);
     value expect = [S(0,
             ATerm(0),
             MMulA(2,
