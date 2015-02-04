@@ -331,30 +331,6 @@ shared class QualifiedTypeSuffix(CeylonToken+ tokens)
 shared class SuperDot(CeylonToken+ tokens)
         extends CeylonMetaToken(*tokens) {}
 
-"A node that isn't part of the AST but simplifies rules"
-shared class MetaNode<out NodeType>(shared [NodeType+] nodes,
-        shared CeylonToken* tokens)
-        given NodeType satisfies Node {
-    shared actual Integer hash = nodes.hash ^ 2 + tokens.hash;
-
-    shared actual Boolean equals(Object other) {
-        if (type(other) != type(this)) { return false; }
-        assert(is MetaNode<NodeType> other);
-
-        return other.nodes == nodes && other.tokens == tokens;
-    }
-}
-
-"A '|' followed by a primary type or member name"
-shared class PipePrimaryOrMember(shared PrimaryType|MemberName type,
-        CeylonToken+ tokens)
-        extends MetaNode<PrimaryType|MemberName>([type], *tokens) {}
-
-"A comma-separated list"
-shared class CommaSepList<out NodeType>([NodeType+] nodes, CeylonToken* tokens)
-        extends MetaNode<NodeType>(nodes, *tokens)
-        given NodeType satisfies Node {}
-
 "The bad token. Used to box up unparseable input"
 shared class Crap(String contents, Integer ls, Integer cs,
         Integer le, Integer ce)
