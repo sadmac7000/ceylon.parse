@@ -79,15 +79,75 @@ shared class ProductionClause(shared Boolean variadic,
     }
 
     shared actual Iterator<Atom> iterator() => allAtoms.iterator();
+
+    shared Rule? tupleRule =
+            if (values.size == 1,
+                is Atom a = values.first,
+                is Type<Tuple<Anything,Anything,Anything[]>> t = a.type)
+                then Rule.TupleRule(t)
+                else null;
 }
 
+"Turn a tuple type into predicates"
+ProductionClause[] clausesFromTupleType(Type<[Anything*]>&Generic clauses) {
+    if (is Type<Tuple<Anything,Anything,Anything[]>> clauses) {
+        assert(exists firstParam = `class Tuple`.typeParameterDeclarations[1]);
+        assert(exists restParam = `class Tuple`.typeParameterDeclarations[2]);
+        assert(exists first = clauses.typeArguments[firstParam]);
+        assert(is Type<[Anything*]>&Generic rest = clauses.typeArguments[restParam]);
+
+        value rawAtom = makeTypeAtom(first, false, false);
+        value prodClause = if (is ProductionClause rawAtom) then rawAtom else
+            ProductionClause(false, false, rawAtom);
+
+        return [*{prodClause}.chain(clausesFromTupleType(rest))];
+    }
+
+    if (is Type<[]> clauses) { return []; }
+
+    value once = clauses is Type<[Anything+]>;
+    assert(exists param = `interface Sequential`.typeParameterDeclarations[0]);
+    assert(exists unitType = clauses.typeArguments[param]);
+    value typeAtom = makeTypeAtom(unitType, true, once);
+    return if (is ProductionClause typeAtom) then [typeAtom] else
+        [ProductionClause(true, once, typeAtom)];
+}
+
+"Give the arguments list back as a sequence"
+[Anything*] argsToSequence(Anything* ret) => ret;
+
 "A rule. Specifies produced and consumed symbols and a method to execute them"
-shared class Rule(shared Object(Object?*) consume,
-        shared ProductionClause[] consumes,
-        shared Atom produces,
-        shared Integer precedence,
-        shared Associativity associativity) {
-    shared actual Integer hash = consumes.hash ^ 2 + produces.hash;
+shared class Rule {
+    shared Object(Object?*) consume;
+    shared ProductionClause[] consumes;
+    shared Atom produces;
+    shared Integer precedence;
+    shared Associativity associativity;
+    shared actual Integer hash;
+
+    shared new Rule(Object(Object?*) consume,
+            ProductionClause[] consumes,
+            Atom produces,
+            Integer precedence,
+            Associativity associativity) {
+        this.consume = consume;
+        this.consumes = consumes;
+        this.produces = produces;
+        this.precedence = precedence;
+        this.associativity = associativity;
+        this.hash = consumes.hash ^ 2 + produces.hash;
+    }
+
+    shared new TupleRule(Type<Tuple<Anything,Anything,Anything[]>> tuple) {
+        this.produces = Atom(tuple);
+        this.consume = argsToSequence;
+        this.precedence = 0;
+        this.associativity = nonassoc;
+
+        assert(is Type<Anything[]>&Generic tuple);
+        this.consumes = clausesFromTupleType(tuple);
+        this.hash = consumes.hash ^ 2 + produces.hash;
+    }
 
     shared actual Boolean equals(Object other) {
         if (is Rule other) {
