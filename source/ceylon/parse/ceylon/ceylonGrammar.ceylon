@@ -685,13 +685,13 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 3.2.8 of the specification"
     rule
     shared TypeList typeList(CommaSepList<Type|DefaultedType> items)
-            => astNode(`TypeList`, [items.nodes, null], *items.nodes);
+            => astNode(`TypeList`, [items.nodes, null], *items.tokens);
 
     "Section 3.2.8 of the specification"
     rule
     shared TypeList typeListVar(CommaSepList<Type|DefaultedType> items,
             Comma c, VariadicType v)
-            => astNode(`TypeList`, [items.nodes, v], *items.nodes.chain({c, v}));
+            => astNode(`TypeList`, [items.nodes, v], *items.tokens.chain({c, v}));
 
     "Section 3.2.8 of the specification"
     rule
@@ -905,7 +905,7 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             CommaSepList<ImportElement> elements, ImportWildcard? wild,
             CurlClose b)
             => astNode(`ImportElements`, [elements.nodes, wild], a,
-                    elements.nodes, wild, b);
+                    elements.tokens, wild, b);
 
     "Section 4.2.1 of the specification"
     rule
@@ -925,21 +925,101 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 4.2.3 of the specification"
     rule
     shared ImportTypeAlias importTypeAlias(TypeName type, Eq e)
-        => astNode(`ImportTypeAlias`, [type], type, e);
+            => astNode(`ImportTypeAlias`, [type], type, e);
 
     "Section 4.2.3 of the specification"
     rule
     shared ImportFunctionValueAlias importFunctionValueAlias(MemberName m,
             Eq e)
-        => astNode(`ImportFunctionValueAlias`, [m], m, e);
+            => astNode(`ImportFunctionValueAlias`, [m], m, e);
 
     "Section 4.2.4 of the specification"
     tokenizer
     shared Token<Ellipsis>? ellipsis(String input, Object? prev)
             => literal(`Ellipsis`, input, prev, "...");
 
-    "Section 4.2.4 of the specification"
+    "Section 4.2.5 of the specification"
     rule
     shared ImportWildcard importWildcard(Ellipsis e)
-        => astNode(`ImportWildcard`, [], e);
+            => astNode(`ImportWildcard`, [], e);
+
+    "Section 4.3.1 of the specification"
+    rule
+    shared Parameters parameters(CommaSepList<Parameter> p)
+            => astNode(`Parameters`, [p.nodes], p.tokens);
+
+    "Section 4.3.3 of the specification"
+    rule
+    shared DefaultedValueParameter defaultedValue(ValueParameter v,
+            Specifier p)
+            => astNode(`DefaultedValueParameter`, [v, p], v, p);
+
+    "Section 4.3.3 of the specification"
+    rule
+    shared DefaultedCallableParameter defaultedCallable(CallableParameter v,
+            LazySpecifier p)
+            => astNode(`DefaultedCallableParameter`, [v, p], v, p);
+
+    "Section 4.3.3 of the specification"
+    rule
+    shared DefaultedParameterReference defaultedParameter(ParameterReference v,
+            Specifier p)
+            => astNode(`DefaultedParameterReference`, [v, p], v, p);
+
+    "Section 4.3.3 of the specification"
+    rule
+    shared ParameterReference parameterReference(MemberName m)
+            => astNode(`ParameterReference`, [m], m);
+
+    "Section 4.3.3 of the specification"
+    rule
+    shared Specifier specifier(Eq e, Expression expr)
+            => astNode(`Specifier`, [expr], e, expr);
+
+    "Section 4.3.3 of the specification"
+    tokenizer
+    shared Token<DArrow>? dArrow(String input, Object? prev)
+            => literal(`DArrow`, input, prev, "=>");
+
+    "Section 4.3.3 of the specification"
+    rule
+    shared LazySpecifier lazySpecifier(DArrow d, Expression e)
+            => astNode(`LazySpecifier`, [e], d, e);
+
+    "Section 4.3.4 of the specification"
+    tokenizer
+    shared Token<Dynamic>? dynamic_(String input, Object? prev)
+            => literal(`Dynamic`, input, prev, "dynamic");
+
+    "Section 4.3.4 of the specification"
+    rule
+    shared DynamicModifier dynamicModifier(Dynamic d)
+            => astNode(`DynamicModifier`, [], d);
+
+    "Section 4.3.4 of the specification"
+    rule
+    shared ValueParameter valueParameter(Annotations a, Type|DynamicModifier d,
+            MemberName m)
+            => astNode(`ValueParameter`, [d, m, a], a, d, m);
+
+    "Section 4.3.5 of the specification"
+    tokenizer
+    shared Token<Void>? void_(String input, Object? prev)
+            => literal(`Void`, input, prev, "void");
+
+    "Section 4.3.5 of the specification"
+    rule
+    shared VoidModifier voidModifier(Void d)
+            => astNode(`VoidModifier`, [], d);
+
+    "Section 4.3.5 of the specification"
+    rule
+    shared CallableParameter callableParameter(Annotations a,
+            Type|VoidModifier v, MemberName m, Parameters+ p)
+            => astNode(`CallableParameter`, [v, m, p, a], a, v, m, p);
+
+    "Section 4.3.6 of the specification"
+    rule
+    shared VariadicParameter variadicParameter(Annotations a, VariadicType t, MemberName m)
+            => astNode(`VariadicParameter`, [t, m, a], a, t, m);
 }
