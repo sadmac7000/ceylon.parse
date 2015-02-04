@@ -1,4 +1,4 @@
-import ceylon.ast.core { Node, PrimaryType, MemberName, Type, PackageName }
+import ceylon.ast.core { Node, PrimaryType, MemberName }
 import ceylon.language.meta { type }
 
 "Base class for Ceylon token objects."
@@ -329,18 +329,6 @@ shared class MetaNode<out NodeType>(shared [NodeType+] nodes,
         return other.nodes == nodes && other.tokens == tokens;
     }
 }
-
-"A member name followed by a '.'"
-shared class PackageDotName(shared PackageName name, CeylonToken+ tokens)
-        extends MetaNode<PackageName>([name], *tokens) {}
-
-"A '&' followed by a primary type"
-shared class AmpersandPrimary(shared PrimaryType type, CeylonToken+ tokens)
-        extends MetaNode<PrimaryType>([type], *tokens) {}
-
-"A '=' followed by a type"
-shared class EqualsType(shared Type type, CeylonToken+ tokens)
-        extends MetaNode<Type>([type], *tokens) {}
 
 "A '|' followed by a primary type or member name"
 shared class PipePrimaryOrMember(shared PrimaryType|MemberName type,

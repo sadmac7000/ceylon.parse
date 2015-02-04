@@ -677,17 +677,10 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 3.2.8 of the specification"
     rule
-    shared CommaSepList<ItemType> commaSepList<ItemType>(ItemType t)
+    shared CommaSepList<ItemType> commaSepList<ItemType>(ItemType t,
+            [Comma, ItemType]* subsequent)
             given ItemType satisfies Node
-            => CommaSepList<ItemType>([t], *tokenStream(t));
-
-    "Section 3.2.8 of the specification"
-    rule
-    shared CommaSepList<ItemType>
-    commaSepListMulti<ItemType>(CommaSepList<ItemType> prior, Comma c, ItemType t)
-            given ItemType satisfies Node
-            => CommaSepList<ItemType>([*prior.nodes.chain({t})],
-                    *prior.tokens.chain({c}).chain(tokenStream(t)));
+            => CommaSepList<ItemType>([t], *tokenStream(*subsequent));
 
     "Section 3.2.8 of the specification"
     rule
@@ -796,20 +789,10 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 3.3.3 of the specification"
     rule
-    shared AmpersandPrimary ampersandPrimary(Ampersand and, PrimaryType p)
-            => AmpersandPrimary(p, and, *tokenStream(p));
-
-    "Section 3.3.3 of the specification"
-    rule
     shared SatisfiedTypes satisfiedTypes(PrimaryType p,
-            [AmpersandPrimary*] more)
-            => astNode(`SatisfiedTypes`, [[p, *more*.type]], p, *more*.tokens);
-
-    "Section 3.4.2 of the specification"
-    rule
-    shared PipePrimaryOrMember pipePrimaryOrMember(Ampersand and,
-            PrimaryType|MemberName p)
-            => PipePrimaryOrMember(p, and, *tokenStream(p));
+            [Ampersand,PrimaryType]* more)
+            => astNode(`SatisfiedTypes`, [[p, *more.map((x) => x[1])]], p,
+                    *more);
 
     "Section 3.4.2 of the specification"
     tokenizer
@@ -819,8 +802,8 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 3.4.2 of the specification"
     rule
     shared CaseTypes caseTypes(Of o, PrimaryType|MemberName p,
-            [PipePrimaryOrMember *] more)
-            => astNode(`CaseTypes`, [[p, *more*.type]], p, *more*.tokens);
+            [Pipe,PrimaryType|MemberName]* more)
+            => astNode(`CaseTypes`, [[p, *more.map((x) => x[1])]], p, *more);
 
     "Section 3.5 of the specification"
     rule
@@ -830,16 +813,10 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 3.5.1 of the specification"
     rule
-    shared EqualsType equalsType(Eq eq, Type type)
-            => EqualsType(type, eq, *tokenStream(type));
-
-    "Section 3.5.1 of the specification"
-    rule
     shared TypeParameter typeParameter(Variance? var, TypeName name,
-            EqualsType? eq)
+            [Eq,Type]? eq)
             => astNode(`TypeParameter`, [name, var, if (exists eq) then
-                    eq.type else null], var, name, if (exists eq) then
-                    eq.tokens else null);
+                    eq[1] else null], var, name, eq);
 
     "Section 3.5.1 of the specification"
     tokenizer
@@ -906,14 +883,10 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 4.1.2 of the specification"
     rule
-    shared PackageDotName packageDotName(Dot d, PackageName p)
-            => PackageDotName(p, *{d}.chain(tokenStream(p)));
-
-    "Section 4.1.2 of the specification"
-    rule
-    shared FullPackageName fullPackageName(PackageName name, {PackageDotName*} subNames)
-            => astNode(`FullPackageName`, [[name, *subNames*.name]], name,
-                    *subNames*.tokens);
+    shared FullPackageName fullPackageName(PackageName name,
+            [Dot,PackageName]* dotNames)
+            => astNode(`FullPackageName`,
+                    [[name, *dotNames.map((x) => x[1])]], name, *dotNames);
 
     "Section 4.2 of the specification"
     tokenizer
