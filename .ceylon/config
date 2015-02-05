@@ -1,2 +1,2 @@
 [compiler]
-suppresswarnings=ceylonNamespace
+suppresswarning=ceylonNamespace
