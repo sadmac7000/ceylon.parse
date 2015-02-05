@@ -1,4 +1,4 @@
-import ceylon.ast.core { Node, PrimaryType, MemberName }
+import ceylon.ast.core { Node }
 import ceylon.language.meta { type }
 
 "Base class for Ceylon token objects."
