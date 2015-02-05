@@ -9,6 +9,7 @@ import ceylon.collection {
 class StateQueue() {
     value queue = ArrayList<EPState>();
     value states = HashMap<Integer,HashSet<EPState>>();
+    value completeStates = HashMap<Integer,HashSet<EPState>>();
 
     shared Integer size => queue.size;
 
@@ -44,8 +45,7 @@ class StateQueue() {
             states.put(state.pos, HashSet<EPState>());
         }
 
-        value target = states[state.pos];
-        assert(exists target);
+        assert(exists target = states[state.pos]);
 
         if (target.contains(state)) { return; }
 
@@ -53,7 +53,22 @@ class StateQueue() {
 
         queue.offer(state);
 
-        if (state.complete) { return; }
+        if (state.complete) {
+            if (! completeStates.defines(state.start)) {
+                completeStates.put(state.start, HashSet<EPState>());
+            }
+
+            assert(exists ctarget = completeStates[state.start]);
+            ctarget.add(state);
+
+            return;
+        } else if (exists comp = completeStates[state.pos]) {
+            for (c in comp) {
+                if (exists s = state.feed(c)) {
+                    offer(s);
+                }
+            }
+        }
 
         if (exists r=recoveryQueue) {
             r.offer(state);
