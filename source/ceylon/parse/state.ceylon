@@ -272,7 +272,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     }
 
     "Generate a prediction set for this state"
-    shared {EPState *} propagate({Rule *} rules) {
+    shared {EPState *} predict({Rule *} rules) {
         if (exists c = rule.consumes[matchPos],
                 exists r = c.tupleRule) {
             return {EPState(pos, r, 0, pos, [], 0, errorConstructors,

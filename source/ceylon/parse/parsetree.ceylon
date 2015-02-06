@@ -134,7 +134,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
             if (next.complete) {
                 completeState(next);
             } else {
-                propagateState(next);
+                predictState(next);
             }
         }
     }
@@ -170,8 +170,8 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
         return ret;
     }
 
-    "Propagate a state"
-    void propagateState(EPState state) {
+    "Run prediction for a state"
+    void predictState(EPState state) {
         assert(exists wants = state.rule.consumes[state.matchPos]);
 
         for (want in wants ) {
@@ -193,7 +193,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
             stateQueue.offer(s);
         }
 
-        for (s in state.propagate(rules)) {
+        for (s in state.predict(rules)) {
             stateQueue.offer(s);
         }
     }
