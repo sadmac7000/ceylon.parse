@@ -100,7 +100,7 @@ ProductionClause[] clausesFromTupleType(Type<[Anything*]>&Generic clauses) {
         value prodClause = if (is ProductionClause rawAtom) then rawAtom else
             ProductionClause(false, false, rawAtom);
 
-        return [*{prodClause}.chain(clausesFromTupleType(rest))];
+        return [prodClause].append(clausesFromTupleType(rest));
     }
 
     if (is Type<[]> clauses) { return []; }
