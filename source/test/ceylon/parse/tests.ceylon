@@ -1,3 +1,4 @@
+import ceylon.parse { ... }
 import ceylon.test { test, assertEquals, assertThatException }
 
 "A base class for symbols in the test that defines a few handy features."
