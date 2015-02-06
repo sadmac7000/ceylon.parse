@@ -228,6 +228,25 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
         return ret;
     }
 
+    shared String sexp {
+        variable String ret = "( ``rule.produces``";
+
+        for (c in children) {
+            ret += " ";
+            if (is EPState c) {
+                ret += c.sexp;
+            } else if (is Symbol c) {
+                ret += c.string;
+            } else if (! exists c) {
+                ret += "_";
+            } else {
+                ret += "<ERROR>";
+            }
+        }
+        ret += " )";
+        return ret;
+    }
+
     "Offer a symbol to this state for scanning or completion"
     shared EPState? feed(Symbol|EPState? other) {
         assert(exists want = rule.consumes[matchPos]);
