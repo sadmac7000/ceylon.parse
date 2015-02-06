@@ -1023,4 +1023,38 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     rule
     shared VariadicParameter variadicParameter(Annotations a, VariadicType t, MemberName m)
             => astNode(`VariadicParameter`, [t, m, a], a, t, m);
+
+    "Section 4.4 of the specification"
+    tokenizer
+    shared Token<Interface>? interface_(String input, Object? prev)
+            => literal(`Interface`, input, prev, "interface");
+
+    "Section 4.4 of the specification"
+    rule
+    shared InterfaceDefinition interfaceDefinition(Annotations a, TypeName n,
+            TypeParameters p, CaseTypes? c, SatisfiedTypes? s,
+            [TypeConstraint *] t, InterfaceBody b)
+            => astNode(`InterfaceDefinition`,
+                    [n, b, c, s, p, t, a],
+                    a, n, p, c, s, t, b);
+
+    "Section 4.4 of the specification"
+    rule
+    shared InterfaceAliasDefinition interfaceAliasDefinition(Annotations a,
+            TypeName n, TypeParameters p, CaseTypes? c, SatisfiedTypes? s,
+            [TypeConstraint *] t, TypeSpecifier b)
+            => astNode(`InterfaceAliasDefinition`,
+                    [n, b, c, s, p, t, a],
+                    a, n, p, c, s, t, b);
+
+    "Section 4.4 of the specification"
+    rule
+    shared InterfaceBody interfaceBody(CurlOpen a, [Declaration *] d,
+            CurlClose b)
+            => astNode(`InterfaceBody`, [d], a, d, b);
+
+    "Section 4.4.5 of the specification"
+    rule
+    shared TypeSpecifier typeSpecifier(DArrow d, Type t)
+            => astNode(`TypeSpecifier`, [t], d, t);
 }

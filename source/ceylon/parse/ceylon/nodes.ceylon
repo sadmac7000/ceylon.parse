@@ -219,6 +219,11 @@ shared class Void(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken("void", ls, cs, le, ce) {}
 
+"'interface'"
+shared class Interface(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("interface", ls, cs, le, ce) {}
+
 "The -> operator"
 shared class Arrow(Integer ls, Integer cs,
         Integer le, Integer ce)
