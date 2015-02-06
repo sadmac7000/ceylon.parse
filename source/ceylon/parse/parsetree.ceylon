@@ -312,6 +312,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
             ret = validate();
         }
 
+
         assert(exists v=ret);
         return v;
     }
