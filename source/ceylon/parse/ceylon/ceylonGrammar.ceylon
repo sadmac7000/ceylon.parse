@@ -680,7 +680,8 @@ object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared CommaSepList<ItemType> commaSepList<ItemType>(ItemType t,
             [Comma, ItemType]* subsequent)
             given ItemType satisfies Node
-            => CommaSepList<ItemType>([t], *tokenStream(*subsequent));
+            => CommaSepList<ItemType>([t, *subsequent.map((x) => x[1])],
+                    *tokenStream(t, *subsequent));
 
     "Section 3.2.8 of the specification"
     rule
