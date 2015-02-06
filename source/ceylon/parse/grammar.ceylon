@@ -217,7 +217,7 @@ ProductionClause makeProductionClause(Type p, FunctionOrValueDeclaration f) {
 
 "Exception thrown when a grammar is ambiguous. [[Grammar]] subtypes which
  override [[Grammar.resolveAmbiguity]] may choose not to throw this exception."
-class AmbiguityException()
+shared class AmbiguityException()
         extends Exception("Parser generated ambiguous results") {}
 
 "A [[Grammar]] is defined by a series of BNF-style production rules. The rules
