@@ -15,7 +15,7 @@ object tupleGrammar extends ABGrammar<S>() {
 }
 
 test
-void tupleTest() {
+void tuple() {
     value root = tupleGrammar.parse("abababab");
     value expect = S (0,
                 ATerm(0),

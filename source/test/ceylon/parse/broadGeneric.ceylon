@@ -115,7 +115,7 @@ object broadGenericGrammar extends ABGrammar<[S*]>() {
 }
 
 test
-void broadGenericTest() {
+void broadGeneric() {
     value text = "a a*a ( a ) a a*a ( a ) a a*a ( a )";
     value root = broadGenericGrammar.parse(text);
     value expect = [S(0,
