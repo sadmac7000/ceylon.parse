@@ -81,12 +81,30 @@ shared class ProductionClause(shared Boolean variadic,
 
     shared actual Iterator<Atom> iterator() => allAtoms.iterator();
 
-    shared Rule? tupleRule =
-            if (values.size == 1,
-                is Atom a = values.first,
-                is Type<Tuple<Anything,Anything,Anything[]>> t = a.type)
-                then Rule.TupleRule(t, g)
-                else null;
+    "Memoization for [[predicted]]"
+    variable {Rule *}? predicted_cache = null;
+
+    "Generate a prediction set for this clause"
+    shared {Rule *} predicted {
+        if (exists p = predicted_cache) { return p; }
+
+        if (values.size == 1,
+            is Atom a = values.first,
+            is Type<Tuple<Anything,Anything,Anything[]>> t = a.type) {
+            value p = {Rule.TupleRule(t, g)};
+            predicted_cache = p;
+            return p;
+        }
+
+       value p = {
+            for (other in g.rules)
+                if ((this.select(other.produces.subtypeOf)).size > 0)
+                    other
+        };
+
+        predicted_cache = p;
+        return p;
+    }
 }
 
 "Turn a tuple type into predicates"

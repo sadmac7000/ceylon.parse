@@ -193,7 +193,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
             stateQueue.offer(s);
         }
 
-        for (s in state.predict(rules)) {
+        for (s in state.predicted) {
             stateQueue.offer(s);
         }
     }

@@ -272,23 +272,11 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     }
 
     "Generate a prediction set for this state"
-    shared {EPState *} predict({Rule *} rules) {
-        if (exists c = rule.consumes[matchPos],
-                exists r = c.tupleRule) {
-            return {EPState(pos, r, 0, pos, [], 0, errorConstructors,
-                    tokensProcessed, lastToken)};
-        }
-
-        {EPState *} predict = {
-            for (other in rules)
-                if (exists c=rule.consumes[matchPos],
-                    (c.select(other.produces.subtypeOf)).size > 0)
-                    EPState(pos, other, 0, pos, [], 0, errorConstructors,
-                            tokensProcessed, lastToken)
-        };
-
-        return predict;
-    }
+    shared {EPState *} predicted =>
+            if (exists c = rule.consumes[matchPos])
+            then c.predicted.map((r) => EPState(pos, r, 0, pos, [], 0,
+                        errorConstructors, tokensProcessed, lastToken))
+            else {};
 
     shared actual Boolean equals(Object other) {
         if (is EPState other) {
