@@ -65,6 +65,7 @@ class BadTokenConstructorException()
 
 shared class ProductionClause(shared Boolean variadic,
         shared Boolean once,
+        shared AnyGrammar g,
         shared Atom|ProductionClause *values)
         satisfies Iterable<Atom> {
 
@@ -84,23 +85,24 @@ shared class ProductionClause(shared Boolean variadic,
             if (values.size == 1,
                 is Atom a = values.first,
                 is Type<Tuple<Anything,Anything,Anything[]>> t = a.type)
-                then Rule.TupleRule(t)
+                then Rule.TupleRule(t, g)
                 else null;
 }
 
 "Turn a tuple type into predicates"
-ProductionClause[] clausesFromTupleType(Type<[Anything*]>&Generic clauses) {
+ProductionClause[] clausesFromTupleType(Type<[Anything*]>&Generic clauses,
+        AnyGrammar g) {
     if (is Type<Tuple<Anything,Anything,Anything[]>> clauses) {
         assert(exists firstParam = `class Tuple`.typeParameterDeclarations[1]);
         assert(exists restParam = `class Tuple`.typeParameterDeclarations[2]);
         assert(exists first = clauses.typeArguments[firstParam]);
         assert(is Type<[Anything*]>&Generic rest = clauses.typeArguments[restParam]);
 
-        value rawAtom = makeTypeAtom(first, false, false);
+        value rawAtom = makeTypeAtom(first, false, false, g);
         value prodClause = if (is ProductionClause rawAtom) then rawAtom else
-            ProductionClause(false, false, rawAtom);
+            ProductionClause(false, false, g, rawAtom);
 
-        return [prodClause].append(clausesFromTupleType(rest));
+        return [prodClause].append(clausesFromTupleType(rest, g));
     }
 
     if (is Type<[]> clauses) { return []; }
@@ -108,9 +110,9 @@ ProductionClause[] clausesFromTupleType(Type<[Anything*]>&Generic clauses) {
     value once = clauses is Type<[Anything+]>;
     assert(exists param = `interface Sequential`.typeParameterDeclarations[0]);
     assert(exists unitType = clauses.typeArguments[param]);
-    value typeAtom = makeTypeAtom(unitType, true, once);
+    value typeAtom = makeTypeAtom(unitType, true, once, g);
     return if (is ProductionClause typeAtom) then [typeAtom] else
-        [ProductionClause(true, once, typeAtom)];
+        [ProductionClause(true, once, g, typeAtom)];
 }
 
 "Give the arguments list back as a sequence"
@@ -124,29 +126,34 @@ shared class Rule {
     shared Integer precedence;
     shared Associativity associativity;
     shared actual Integer hash;
+    shared AnyGrammar g;
 
     shared new Rule(Object(Object?*) consume,
             ProductionClause[] consumes,
             Atom produces,
             Integer precedence,
-            Associativity associativity) {
+            Associativity associativity,
+            AnyGrammar g) {
         this.consume = consume;
         this.consumes = consumes;
         this.produces = produces;
         this.precedence = precedence;
         this.associativity = associativity;
         this.hash = consumes.hash ^ 2 + produces.hash;
+        this.g = g;
     }
 
-    shared new TupleRule(Type<Tuple<Anything,Anything,Anything[]>> tuple) {
+    shared new TupleRule(Type<Tuple<Anything,Anything,Anything[]>> tuple,
+            AnyGrammar g) {
         this.produces = Atom(tuple);
         this.consume = argsToSequence;
         this.precedence = 0;
         this.associativity = nonassoc;
 
         assert(is Type<Anything[]>&Generic tuple);
-        this.consumes = clausesFromTupleType(tuple);
+        this.consumes = clausesFromTupleType(tuple, g);
         this.hash = consumes.hash ^ 2 + produces.hash;
+        this.g = g;
     }
 
     shared actual Boolean equals(Object other) {
@@ -184,17 +191,18 @@ shared class Rule {
 }
 
 "Break a type down into type atoms or aggregate production clauses"
-ProductionClause|Atom makeTypeAtom(Type p, Boolean f, Boolean once) {
+ProductionClause|Atom makeTypeAtom(Type p, Boolean f, Boolean once, AnyGrammar g) {
     if (is UnionType p) {
-        return ProductionClause(f, once, *{for (t in p.caseTypes)
-            makeTypeAtom(t, false, false)});
+        return ProductionClause(f, once, g, *{for (t in p.caseTypes)
+            makeTypeAtom(t, false, false, g)});
     } else {
         return Atom(p);
     }
 }
 
 "Turn a type into a production clause"
-ProductionClause makeProductionClause(Type p, FunctionOrValueDeclaration f) {
+ProductionClause makeProductionClause(Type p, FunctionOrValueDeclaration f,
+        AnyGrammar g) {
     ProductionClause|Atom x;
     Boolean once;
 
@@ -202,14 +210,14 @@ ProductionClause makeProductionClause(Type p, FunctionOrValueDeclaration f) {
         assert(is ClassOrInterface p);
         assert(exists sub = p.typeArguments.items.first);
         once = p.declaration == `interface Sequence`;
-        x = makeTypeAtom(sub, true, once);
+        x = makeTypeAtom(sub, true, once, g);
     } else {
         once = false;
-        x = makeTypeAtom(p, false, false);
+        x = makeTypeAtom(p, false, false, g);
     }
 
     if (is Atom x) {
-        return ProductionClause(f.variadic, once, x);
+        return ProductionClause(f.variadic, once, g, x);
     } else {
         return x;
     }
@@ -220,11 +228,14 @@ ProductionClause makeProductionClause(Type p, FunctionOrValueDeclaration f) {
 shared class AmbiguityException()
         extends Exception("Parser generated ambiguous results") {}
 
+"Alias for any type of grammar"
+shared alias AnyGrammar => Grammar<Object, Nothing>;
+
 "A [[Grammar]] is defined by a series of BNF-style production rules. The rules
  are specifed by defining methods with the `rule` annotation.  The parser will
  create an appropriate production rule and call the annotated method in order
  to reduce the value."
-shared abstract class Grammar<out Root, Data>()
+shared abstract class Grammar<out Root, in Data>()
         given Data satisfies List<Object>
         given Root satisfies Object {
     "A list of rules for this grammar"
@@ -307,12 +318,13 @@ shared abstract class Grammar<out Root, Data>()
 
         value params = zipPairs(r.parameterTypes,
                 r.declaration.parameterDeclarations);
-        value consumes = [ for (p in params) makeProductionClause(*p) ];
+        value consumes = [ for (p in params)
+            makeProductionClause(p[0], p[1], this) ];
         value produces = Atom(r.type);
 
         assert(exists ruleAnnotation = r.declaration.annotations<GrammarRule>()[0]);
         value rule = Rule(consume, consumes, produces,
-                ruleAnnotation.precedence, ruleAnnotation.associativity);
+                ruleAnnotation.precedence, ruleAnnotation.associativity, this);
 
         rules = rules.withTrailing(rule);
     }
