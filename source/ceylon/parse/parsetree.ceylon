@@ -174,12 +174,22 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
     void predictState(EPState state) {
         assert(exists wants = state.rule.consumes[state.matchPos]);
 
-        for (want in wants ) {
-            for (k->t in tokenizers) {
-                if (! k.subtypeOf(want)) { continue; }
-                if (is Data tail = data[state.pos...],
-                    exists sym = t(tail, state.lastToken),
-                    exists s = state.feed(sym)) {
+        for (want in wants) {
+            for (subtype in want.subtypes) {
+                value t = tokenizers[subtype];
+
+                if (! exists t) { continue; }
+                assert(exists t);
+                value tail = data[state.pos...];
+
+                if (! is Data tail) { continue; }
+                assert(is Data tail);
+
+                value sym = t(tail, state.lastToken);
+                if (! exists sym) { continue; }
+                assert(exists sym);
+
+                if (exists s = state.feed(sym)) {
                     stateQueue.offer(s);
                 }
             }

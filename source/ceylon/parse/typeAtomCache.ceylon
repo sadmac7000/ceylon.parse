@@ -2,8 +2,16 @@ import ceylon.language.meta.model { Type }
 import ceylon.collection { HashMap, HashSet }
 
 "A type atom"
-shared class Atom(Type t) {
-    shared actual Integer hash = typeAtomCache.getAlias(t);
+shared class Atom {
+    shared actual Integer hash;
+
+    shared new Atom(Type t) {
+        this.hash = typeAtomCache.getAlias(t);
+    }
+
+    new ByHash(Integer hash) {
+        this.hash = hash;
+    }
 
     shared actual Boolean equals(Object other) {
         if (is Atom other) {
@@ -17,6 +25,9 @@ shared class Atom(Type t) {
         return typeAtomCache.supertypeSet(hash).contains(other.hash);
     }
 
+    shared Set<Atom> subtypes => HashSet<Atom>{ for (x in
+            typeAtomCache.subtypeSet(hash)) Atom.ByHash(x) };
+
     shared Boolean supertypeOf(Atom other) => other.subtypeOf(this);
 
     shared Type type => typeAtomCache.resolve(hash);
@@ -24,7 +35,6 @@ shared class Atom(Type t) {
     shared actual String string {
         return filterTypes(type.string);
     }
-
 }
 
 "Remove noise from type names"
