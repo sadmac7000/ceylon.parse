@@ -55,9 +55,6 @@ class EPState {
     "Starting position for the rule match"
     shared Integer start;
 
-    "Error constructors"
-    shared Map<Atom,Object(Object?, Object?)> errorConstructors;
-
     "Tokens"
     shared [Symbol|EPState|Error?*] children;
 
@@ -74,31 +71,27 @@ class EPState {
     variable Integer? _lsd = null;
 
     "Create a new initial EPState for the given start rule"
-    shared new EPState(Rule rule,
-            Map<Atom,Object(Object?, Object?)> errorConstructors) {
+    shared new EPState(Rule rule) {
         this.pos = 0;
         this.rule = rule;
         this.matchPos = 0;
         this.start = 0;
         this.children = [];
         this.baseLsd = 0;
-        this.errorConstructors = errorConstructors;
         this.tokensProcessedBefore = 0;
         this.lastToken = null;
         this.matchedOnce = false;
     }
 
     "Create a new EPState predicted from the given rule"
-    new Predicted(Integer pos, Rule rule,
-            Map<Atom,Object(Object?, Object?)> errorConstructors,
-            Integer tokensProcessedBefore, Object? lastToken) {
+    new Predicted(Integer pos, Rule rule, Integer tokensProcessedBefore,
+            Object? lastToken) {
         this.pos = pos;
         this.rule = rule;
         this.matchPos = 0;
         this.start = pos;
         this.children = [];
         this.baseLsd = 0;
-        this.errorConstructors = errorConstructors;
         this.tokensProcessedBefore = tokensProcessedBefore;
         this.lastToken = lastToken;
         this.matchedOnce = false;
@@ -148,7 +141,6 @@ class EPState {
         this.children = original.children.withTrailing(newChild);
         this.rule = original.rule;
         this.start = original.start;
-        this.errorConstructors = original.errorConstructors;
         this.tokensProcessedBefore = original.tokensProcessedBefore;
     }
 
@@ -160,7 +152,6 @@ class EPState {
         this.start = original.start;
         this.children = original.children;
         this.baseLsd = original.baseLsd;
-        this.errorConstructors = original.errorConstructors;
         this.tokensProcessedBefore = original.tokensProcessedBefore;
         this.lastToken = original.lastToken;
         this.matchedOnce = original.matchedOnce;
@@ -232,7 +223,8 @@ class EPState {
 
     "Propagate this state with a trailing error."
     shared {EPState *} failPropagate({Token *} skip,
-            Boolean badToken) {
+            Boolean badToken,
+            Map<Atom,Object(Object?, Object?)> errorConstructors) {
         assert(exists nextSet = rule.consumes[matchPos]);
 
         value delete = { for (s in skip) EPState.Derived(this, pos + s.length,
@@ -317,7 +309,7 @@ class EPState {
     shared {EPState *} predicted =>
             if (exists c = rule.consumes[matchPos])
             then c.predicted.map((r) => EPState.Predicted(pos, r,
-                        errorConstructors, tokensProcessed, lastToken))
+                        tokensProcessed, lastToken))
             else {};
 
     shared actual Boolean equals(Object other) {

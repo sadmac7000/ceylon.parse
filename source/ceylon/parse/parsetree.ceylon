@@ -123,7 +123,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
     for (rule in rules) {
         if (! result.supertypeOf(rule.produces)) { continue; }
 
-        value newState = EPState(rule, errorConstructors);
+        value newState = EPState(rule);
         stateQueue.offer(newState);
     }
 
@@ -222,7 +222,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
             assert(is Data tokenData = data[state.pos..(i - 1)]);
             value tok = constructBadToken(tokenData, state.lastToken);
 
-            for (s in state.failPropagate({tok}, true)) {
+            for (s in state.failPropagate({tok}, true, errorConstructors)) {
                 stateQueue.offer(s);
             }
         } else {
@@ -252,7 +252,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
                 }
             }
 
-            for (s in state.failPropagate(resultSet, false)) {
+            for (s in state.failPropagate(resultSet, false, errorConstructors)) {
                 stateQueue.offer(s);
             }
         }
