@@ -39,9 +39,7 @@ class ErrorInsert(shared actual Object newSym)
         satisfies InsertingError {}
 
 "An Earley parser state"
-class EPState(pos, rule, matchPos, start, children, baseLsd,
-        errorConstructors, tokensProcessedBefore, lastToken = null,
-        matchedOnce=false) {
+class EPState {
     "Starting Levenshtein distance"
     Integer baseLsd;
 
@@ -63,12 +61,6 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     "Tokens"
     shared [Symbol|EPState|Error?*] children;
 
-    "Number of tokens matched. It is important that this does not count error
-     tokens."
-    shared Integer tokensProcessed = sum({ for (c in children) if (is EPState c)
-        c.tokensProcessed }.chain({ for (c in children) if (is Symbol c) 1
-        }).chain({0})) + tokensProcessedBefore;
-
     "Position this state belongs to"
     shared Integer pos;
 
@@ -78,7 +70,107 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
     "The rule we are matching"
     shared Rule rule;
 
+    "Memoization for lsd attribute"
     variable Integer? _lsd = null;
+
+    "Create a new initial EPState for the given start rule"
+    shared new EPState(Rule rule,
+            Map<Atom,Object(Object?, Object?)> errorConstructors) {
+        this.pos = 0;
+        this.rule = rule;
+        this.matchPos = 0;
+        this.start = 0;
+        this.children = [];
+        this.baseLsd = 0;
+        this.errorConstructors = errorConstructors;
+        this.tokensProcessedBefore = 0;
+        this.lastToken = null;
+        this.matchedOnce = false;
+    }
+
+    "Create a new EPState predicted from the given rule"
+    new Predicted(Integer pos, Rule rule,
+            Map<Atom,Object(Object?, Object?)> errorConstructors,
+            Integer tokensProcessedBefore, Object? lastToken) {
+        this.pos = pos;
+        this.rule = rule;
+        this.matchPos = 0;
+        this.start = pos;
+        this.children = [];
+        this.baseLsd = 0;
+        this.errorConstructors = errorConstructors;
+        this.tokensProcessedBefore = tokensProcessedBefore;
+        this.lastToken = lastToken;
+        this.matchedOnce = false;
+    }
+
+    "Produce a new EPState derived from a previous state"
+    new Derived(EPState original, Integer newPos, Symbol|EPState|Error? newChild) {
+        this.pos = newPos;
+
+        if (is Symbol newChild) {
+            this.lastToken = newChild.sym;
+        } else if (is EPState newChild) {
+            this.lastToken = newChild.lastToken;
+        } else if (is ErrorReplace newChild) {
+            this.lastToken = newChild.newSym;
+        } else if (is DeletingError newChild) {
+            this.lastToken = newChild.original;
+        } else {
+            this.lastToken = original.lastToken;
+        }
+
+        assert(exists currentConsumes =
+                original.rule.consumes[original.matchPos]);
+
+        if (is ErrorDelete newChild) {
+            this.matchPos = original.matchPos;
+            this.matchedOnce = false;
+        } else if (currentConsumes.variadic) {
+            if (this.pos != original.pos) {
+                this.matchPos = original.matchPos;
+            } else {
+                this.matchPos = original.matchPos + 1;
+            }
+
+            this.matchedOnce = true;
+        } else {
+            this.matchPos = original.matchPos + 1;
+            this.matchedOnce = false;
+        }
+
+        if (is Error newChild) {
+            this.baseLsd = original.baseLsd + 1;
+        } else {
+            this.baseLsd = original.baseLsd;
+        }
+
+        this.children = original.children.withTrailing(newChild);
+        this.rule = original.rule;
+        this.start = original.start;
+        this.errorConstructors = original.errorConstructors;
+        this.tokensProcessedBefore = original.tokensProcessedBefore;
+    }
+
+    "Produce a new EPState skipping the current production clause"
+    new Advanced(EPState original) {
+        this.pos = original.pos;
+        this.rule = original.rule;
+        this.matchPos = original.matchPos + 1;
+        this.start = original.start;
+        this.children = original.children;
+        this.baseLsd = original.baseLsd;
+        this.errorConstructors = original.errorConstructors;
+        this.tokensProcessedBefore = original.tokensProcessedBefore;
+        this.lastToken = original.lastToken;
+        this.matchedOnce = original.matchedOnce;
+    }
+
+    "Number of tokens matched. It is important that this does not count error
+     tokens."
+    shared Integer tokensProcessed => sum({ for (c in children) if (is EPState c)
+        c.tokensProcessed }.chain({ for (c in children) if (is Symbol c) 1
+        }).chain({0})) + tokensProcessedBefore;
 
     "Levenshtein distance between what we matched after error correction and
      the real string"
@@ -97,11 +189,11 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
         return ret;
     }
 
-    shared actual Integer hash = start ^ 4 +
+    shared actual Integer hash => start ^ 4 +
         pos ^ 3 + matchPos ^ 2 + rule.hash;
 
     "Whether this state is complete"
-    shared Boolean complete = rule.consumes.size == matchPos;
+    shared Boolean complete => rule.consumes.size == matchPos;
 
     "The AST node for this state"
     shared Symbol astNode {
@@ -127,66 +219,15 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
         return s;
     }
 
-    "Derive a new state"
-    EPState derive(Integer newPos, Symbol|EPState|Error? newChild) {
-        Integer newBaseLsd;
-        Integer newMatchPos;
-        Boolean once;
-
-        Object? last;
-
-        if (is Symbol newChild) {
-            last = newChild.sym;
-        } else if (is EPState newChild) {
-            last = newChild.lastToken;
-        } else if (is ErrorReplace newChild) {
-            last = newChild.newSym;
-        } else if (is DeletingError newChild) {
-            last = newChild.original;
-        } else {
-            last = lastToken;
-        }
-
-        assert(exists currentConsumes = rule.consumes[matchPos]);
-
-        if (is ErrorDelete newChild) {
-            newMatchPos = matchPos;
-            once = false;
-        } else if (currentConsumes.variadic) {
-            if (newPos != pos) {
-                newMatchPos = matchPos;
-            } else {
-                newMatchPos = matchPos + 1;
-            }
-
-            once = true;
-        } else {
-            newMatchPos = matchPos + 1;
-            once = false;
-        }
-
-        if (is Error newChild) {
-            newBaseLsd = baseLsd + 1;
-        } else {
-            newBaseLsd = baseLsd;
-        }
-
-        value newChildren = children.withTrailing(newChild);
-
-        return EPState(newPos, rule, newMatchPos, start, newChildren,
-                newBaseLsd, errorConstructors, tokensProcessedBefore,
-                last, once);
-    }
-
+    "Stop matching the current variadic (if the current production clause is a
+     variadic) and move to the next clause."
     shared EPState? breakVariadic() {
         if (complete) { return null; }
         assert(exists currentConsumes = rule.consumes[matchPos]);
         if (! currentConsumes.variadic) { return null; }
         if (currentConsumes.once && ! matchedOnce) { return null; }
 
-        return EPState(pos, rule, matchPos + 1, start, children,
-                baseLsd, errorConstructors, tokensProcessedBefore,
-                lastToken);
+        return EPState.Advanced(this);
     }
 
     "Propagate this state with a trailing error."
@@ -194,7 +235,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
             Boolean badToken) {
         assert(exists nextSet = rule.consumes[matchPos]);
 
-        value delete = { for (s in skip) derive(pos + s.length,
+        value delete = { for (s in skip) EPState.Derived(this, pos + s.length,
                 ErrorDelete(s.sym))
         };
 
@@ -211,7 +252,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
 
             assert(exists inscons);
 
-            value replace = { for (s in skip) derive(pos + s.length,
+            value replace = { for (s in skip) EPState.Derived(this, pos + s.length,
                     ErrorReplace(inscons(s.sym, lastToken), s.sym))
             };
 
@@ -220,7 +261,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
             if (badToken) { continue; }
 
             value newToken = inscons(null, lastToken);
-            value insert = derive(pos, ErrorInsert(newToken));
+            value insert = EPState.Derived(this, pos, ErrorInsert(newToken));
 
             ret = ret.chain({insert});
         }
@@ -228,6 +269,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
         return ret;
     }
 
+    "S-Expression view of this state"
     shared String sexp {
         variable String ret = "( ``rule.produces``";
 
@@ -255,11 +297,11 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
             value intersects = want.select(other.type.subtypeOf);
             if (intersects.size == 0) { return null; }
 
-            return derive(pos + other.length, other);
+            return EPState.Derived(this, pos + other.length, other);
         } else if (! exists other){
             if (! want.contains(nullAtom)) { return null; }
 
-            return derive(pos, null);
+            return EPState.Derived(this, pos, null);
         } else {
             value intersects = want.select(other.rule.produces.subtypeOf);
             if (intersects.size == 0) { return null; }
@@ -267,14 +309,14 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
             if (exists p = rule.forbidPosition(other.rule),
                 p == matchPos) { return null; }
 
-            return derive(other.pos, other);
+            return EPState.Derived(this, other.pos, other);
         }
     }
 
     "Generate a prediction set for this state"
     shared {EPState *} predicted =>
             if (exists c = rule.consumes[matchPos])
-            then c.predicted.map((r) => EPState(pos, r, 0, pos, [], 0,
+            then c.predicted.map((r) => EPState.Predicted(pos, r,
                         errorConstructors, tokensProcessed, lastToken))
             else {};
 
@@ -305,7 +347,7 @@ class EPState(pos, rule, matchPos, start, children, baseLsd,
 
     "Checks which of two states (this and another) would make the best recovery
      token. The least state, by the returned comparison, is the winner"
-    shared Comparison compareRecovery(EPState other, {Rule *} rules) {
+    shared Comparison compareRecovery(EPState other) {
         if (other.lsd != lsd) { return lsd.compare(other.lsd); }
         if (other.tokensProcessed != tokensProcessed) { return
             other.tokensProcessed.compare(tokensProcessed); }

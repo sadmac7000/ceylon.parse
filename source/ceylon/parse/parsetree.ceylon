@@ -27,8 +27,7 @@ class StateQueue() {
     "Initialize recovery queue"
     shared void initRecovery(Rule[] rules) {
         if (recoveryQueue exists) { return; }
-        recoveryQueue = PriorityQueue<EPState>((x,y) => x.compareRecovery(y,
-                    rules));
+        recoveryQueue = PriorityQueue<EPState>((x,y) => x.compareRecovery(y));
 
         assert(exists r = recoveryQueue);
 
@@ -124,7 +123,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
     for (rule in rules) {
         if (! result.supertypeOf(rule.produces)) { continue; }
 
-        value newState = EPState(0, rule, 0, 0, [], 0, errorConstructors, 0);
+        value newState = EPState(rule, errorConstructors);
         stateQueue.offer(newState);
     }
 
