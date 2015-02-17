@@ -45,6 +45,16 @@ Token<TypeArg>? literal<TypeArg>(Class<TypeArg, [Integer,Integer,Integer,Integer
     return null;
 }
 
+"Keyword token"
+Token<TypeArg>? keyword<TypeArg>(Class<TypeArg, [Integer,Integer,Integer,Integer]> t,
+        String input, Object? prev, String wants)
+        given TypeArg satisfies Object {
+        value c = input[wants.size];
+
+        if (exists c, c.letter || c.digit || c == '_') { return null; }
+        return literal(t, input, prev, wants);
+}
+
 "Parse a single-character token"
 Token<TypeArg>? takeCharToken<TypeArg>(Class<TypeArg, [Integer, Integer, Integer,
         Integer]>|Class<TypeArg, [String, Integer, Integer, Integer,
@@ -759,12 +769,12 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 3.3.2 of the specification"
     tokenizer
     shared Token<Extends>? extends_(String input, Object? prev)
-            => literal(`Extends`, input, prev, "extends");
+            => keyword(`Extends`, input, prev, "extends");
 
     "Section 3.3.2 of the specification"
     tokenizer
     shared Token<Super>? super_(String input, Object? prev)
-            => literal(`Super`, input, prev, "super");
+            => keyword(`Super`, input, prev, "super");
 
     "Section 3.3.2 of the specification"
     rule
@@ -786,7 +796,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 3.3.3 of the specification"
     tokenizer
     shared Token<Satisfies>? satisfies_(String input, Object? prev)
-            => literal(`Satisfies`, input, prev, "satisfies");
+            => keyword(`Satisfies`, input, prev, "satisfies");
 
     "Section 3.3.3 of the specification"
     rule
@@ -798,7 +808,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 3.4.2 of the specification"
     tokenizer
     shared Token<Of>? of_(String input, Object? prev)
-            => literal(`Of`, input, prev, "of");
+            => keyword(`Of`, input, prev, "of");
 
     "Section 3.4.2 of the specification"
     rule
@@ -822,12 +832,12 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 3.5.1 of the specification"
     tokenizer
     shared Token<In>? in_(String input, Object? prev)
-            => literal(`In`, input, prev, "in");
+            => keyword(`In`, input, prev, "in");
 
     "Section 3.5.1 of the specification"
     tokenizer
     shared Token<Out>? out_(String input, Object? prev)
-            => literal(`Out`, input, prev, "out");
+            => keyword(`Out`, input, prev, "out");
 
     "Section 3.5.1 of the specification"
     rule
@@ -842,7 +852,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 3.5.3 of the specification"
     tokenizer
     shared Token<Given>? given_(String input, Object? prev)
-            => literal(`Given`, input, prev, "given");
+            => keyword(`Given`, input, prev, "given");
 
     "Section 3.5.3 of the specification"
     rule
@@ -892,7 +902,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 4.2 of the specification"
     tokenizer
     shared Token<ImportTok>? importTok(String input, Object? prev)
-            => literal(`ImportTok`, input, prev, "import");
+            => keyword(`ImportTok`, input, prev, "import");
 
     "Section 4.2 of the specification"
     rule
@@ -990,7 +1000,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 4.3.4 of the specification"
     tokenizer
     shared Token<Dynamic>? dynamic_(String input, Object? prev)
-            => literal(`Dynamic`, input, prev, "dynamic");
+            => keyword(`Dynamic`, input, prev, "dynamic");
 
     "Section 4.3.4 of the specification"
     rule
@@ -1006,7 +1016,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 4.3.5 of the specification"
     tokenizer
     shared Token<Void>? void_(String input, Object? prev)
-            => literal(`Void`, input, prev, "void");
+            => keyword(`Void`, input, prev, "void");
 
     "Section 4.3.5 of the specification"
     rule
@@ -1027,7 +1037,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 4.4 of the specification"
     tokenizer
     shared Token<Interface>? interface_(String input, Object? prev)
-            => literal(`Interface`, input, prev, "interface");
+            => keyword(`Interface`, input, prev, "interface");
 
     "Section 4.4 of the specification"
     rule
