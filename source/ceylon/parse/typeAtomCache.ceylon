@@ -3,38 +3,35 @@ import ceylon.collection { HashMap, HashSet }
 
 "A type atom"
 shared class Atom {
-    shared actual Integer hash;
+    shared Integer val;
 
     shared new Atom(Type t) {
-        this.hash = typeAtomCache.getAlias(t);
+        this.val = typeAtomCache.getAlias(t);
     }
 
     new ByHash(Integer hash) {
-        this.hash = hash;
+        this.val = hash;
     }
 
-    shared actual Boolean equals(Object other) {
-        if (is Atom other) {
-            return other.hash == hash;
-        }
+    shared actual Integer hash => val;
 
-        return false;
-    }
+    shared actual Boolean equals(Object other)
+        => if (is Atom other) then other.val == val else false;
 
-    shared Boolean subtypeOf(Atom other) {
-        return typeAtomCache.supertypeSet(hash).contains(other.hash);
-    }
+    shared Boolean subtypeOf(Atom other)
+        => typeAtomCache.supertypeSet(val).contains(other.val);
 
     shared Set<Atom> subtypes => HashSet<Atom>{ for (x in
-            typeAtomCache.subtypeSet(hash)) Atom.ByHash(x) };
+            typeAtomCache.subtypeSet(val)) Atom.ByHash(x) };
+
+    shared Set<Atom> supertypes => HashSet<Atom>{ for (x in
+            typeAtomCache.supertypeSet(val)) Atom.ByHash(x) };
 
     shared Boolean supertypeOf(Atom other) => other.subtypeOf(this);
 
-    shared Type type => typeAtomCache.resolve(hash);
+    shared Type type => typeAtomCache.resolve(val);
 
-    shared actual String string {
-        return filterTypes(type.string);
-    }
+    shared actual String string => filterTypes(type.string);
 }
 
 "Remove noise from type names"
