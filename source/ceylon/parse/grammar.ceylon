@@ -361,7 +361,8 @@ shared abstract class Grammar<out Root, in Data>()
             meths.select((x) => !x.typeParameterDeclarations.empty);
 
         value queue = ArrayList<Atom>{*haveSet};
-        value wantLists = HashMap<FunctionDeclaration->Atom,Method<Nothing>->Atom>();
+        value wantLists = HashMap<FunctionDeclaration->Atom,
+              HashSet<Entry<Method<Nothing>,Atom>>>();
         value oldWantSet = wantSet.clone();
 
         while (wantSet.size > 0) {
@@ -372,17 +373,36 @@ shared abstract class Grammar<out Root, in Data>()
                               Nothing>(_type(this), have.type);
                         value completeType = Atom(completeMeth.type);
 
+                        variable value add = false;
                         for (want in wantSet) {
                             if (! want.supertypeOf(completeType)) { continue; }
-                            value prev = wantLists[want];
+                            value key = meth->want;
 
-                            if (! exists prev) {
-                                wantLists.put(meth->want, completeMeth->have);
-                            } else if (prev.item.subtypeOf(completeType)) {
-                                wantLists.put(meth->want, completeMeth->have);
+                            value entry = if (exists e = wantLists[key]) then e
+                                else HashSet<Entry<Method<Nothing>,Atom>>();
+
+                            if (! wantLists.defines(key)) {
+                                wantLists.put(key, entry);
+                            }
+
+                            value deletable =
+                                HashSet<Entry<Method<Nothing>,Atom>>();
+                            for (otherMeth->otherType in entry) {
+                                if (otherMeth != meth) { continue; }
+                                if (otherType.supertypeOf(completeType)) { break; }
+                                if (! otherType.subtypeOf(completeType)) { continue; }
+                                deletable.add(otherMeth->otherType);
+                            } else {
+                                entry.removeAll(deletable);
+                                add = true;
+                                entry.add(completeMeth->have);
                             }
                         }
-                        wantSet.addAll(completeMeth.parameterTypes.map((x) => Atom(x)));
+
+                        if (add) {
+                            wantSet.addAll(completeMeth.parameterTypes.map((x)
+                                        => Atom(x)));
+                        }
                     } catch(TypeApplicationException t) {
                         /* Skip */
                     }
@@ -396,8 +416,9 @@ shared abstract class Grammar<out Root, in Data>()
         }
 
         for (k->v in wantLists) {
-            value meth->param = v;
-            addRule(meth, [param.type]);
+            for (meth->param in v) {
+                addRule(meth, [param.type]);
+            }
         }
     }
 

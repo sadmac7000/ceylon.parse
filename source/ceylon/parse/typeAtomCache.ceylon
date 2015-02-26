@@ -19,7 +19,7 @@ shared class Atom {
         => if (is Atom other) then other.val == val else false;
 
     shared Boolean subtypeOf(Atom other)
-        => typeAtomCache.supertypeSet(val).contains(other.val);
+        => other.subtypes.contains(this);
 
     shared Set<Atom> subtypes => HashSet<Atom>{ for (x in
             typeAtomCache.subtypeSet(val)) Atom.ByHash(x) };
@@ -27,7 +27,7 @@ shared class Atom {
     shared Set<Atom> supertypes => HashSet<Atom>{ for (x in
             typeAtomCache.supertypeSet(val)) Atom.ByHash(x) };
 
-    shared Boolean supertypeOf(Atom other) => other.subtypeOf(this);
+    shared Boolean supertypeOf(Atom other) => other.supertypes.contains(this);
 
     shared Type type => typeAtomCache.resolve(val);
 
@@ -35,32 +35,9 @@ shared class Atom {
 }
 
 "Remove noise from type names"
-String filterTypes(String typeName) {
-    value dcolon = typeName.firstInclusion("::");
-
-    if (! exists dcolon) { return typeName; }
-    assert(exists dcolon);
-
-    value postfix = typeName[(dcolon + 2) ...];
-    value prefix = typeName[0:dcolon];
-
-    value bracket = prefix.firstInclusion("<");
-
-    if (! exists bracket) { return filterTypes(postfix); }
-    assert(exists bracket);
-
-    value comma = prefix.firstInclusion(",");
-
-    Integer stop;
-
-    if (exists comma) {
-        stop = comma + 1;
-    } else {
-        stop = bracket + 1;
-    }
-
-    return filterTypes(prefix[0:stop] + postfix);
-}
+String filterTypes(String typeName)
+    => typeName.replace("ceylon.language::","")
+        .replace("ceylon.parse.ceylon::", "");
 
 "We have to convert type objects to integers to pass them around, otherwise we
  encounter weird performance issues."
@@ -83,16 +60,15 @@ object typeAtomCache {
         value mySupertypes = HashSet<Integer>();
 
         for (k->v in from) {
+            value log = (filterTypes(k.string) == "Iterable<Whitespace,Nothing>");
             if (k.subtypeOf(t)) {
                 mySubtypes.add(v);
-                assert(exists s = supertypes[v]);
-                s.add(next);
+                supertypes[v]?.add(next);
             }
 
             if (k.supertypeOf(t)) {
                 mySupertypes.add(v);
-                assert(exists s = subtypes[v]);
-                s.add(next);
+                subtypes[v]?.add(next);
             }
         }
 
