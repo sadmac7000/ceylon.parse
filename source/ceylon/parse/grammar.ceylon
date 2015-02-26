@@ -75,9 +75,7 @@ shared class ProductionClause(shared Boolean variadic,
     value atomIterator = allIterables.reduce<{Atom *}>((x,y) => x.chain(y));
     value allAtoms = HashSet{*atomIterator};
 
-    shared actual Boolean contains(Object type) {
-        return allAtoms.contains(type);
-    }
+    shared actual Boolean contains(Object type) => allAtoms.contains(type);
 
     shared actual Iterator<Atom> iterator() => allAtoms.iterator();
 
@@ -286,6 +284,7 @@ shared abstract class Grammar<out Root, in Data>()
         value tokenizerMeths = _type(this).getMethods<Nothing>(`Tokenizer`);
 
         value haveSet = HashSet<Atom>();
+        value wantSet = HashSet<Atom>{Atom(`Root`)};
 
         for (t in tokenizerMeths) {
             Token? tokenizer(Data s, Object? last) {
@@ -322,9 +321,16 @@ shared abstract class Grammar<out Root, in Data>()
         for (r in meths) {
             addRule(r);
             haveSet.add(Atom(r.type));
+            wantSet.addAll(r.parameterTypes.map((x) => Atom(x)));
         }
 
-        populateGenericRules(haveSet);
+        value queue = ArrayList{*haveSet};
+
+        while (exists h = queue.accept()) {
+            haveSet.addAll(h.supertypes);
+        }
+
+        populateGenericRules(haveSet, wantSet);
     }
 
     "Add a rule to the rule list"
@@ -348,33 +354,50 @@ shared abstract class Grammar<out Root, in Data>()
     }
 
     "Populate the rules list with any versions of generic rules"
-    void populateGenericRules(MutableSet<Atom> haveSet) {
+    void populateGenericRules(MutableSet<Atom> haveSet, MutableSet<Atom> wantSet) {
         value meths =
             _type(this).declaration.annotatedMemberDeclarations<FunctionDeclaration,GrammarRule>();
         value genericMeths =
             meths.select((x) => !x.typeParameterDeclarations.empty);
 
         value queue = ArrayList<Atom>{*haveSet};
+        value wantLists = HashMap<FunctionDeclaration->Atom,Method<Nothing>->Atom>();
+        value oldWantSet = wantSet.clone();
 
-        while (exists have = queue.accept()) {
-            for (meth in genericMeths) {
-                try {
-                    value completeMeth = meth.memberApply<Nothing, Anything,
-                          Nothing>(_type(this), have.type);
-                    addRule(completeMeth, [have.type]);
-                } catch(TypeApplicationException t) {
-                    /* Skip */
-                }
+        while (wantSet.size > 0) {
+            while (exists have = queue.accept()) {
+                for (meth in genericMeths) {
+                    try {
+                        value completeMeth = meth.memberApply<Nothing, Anything,
+                              Nothing>(_type(this), have.type);
+                        value completeType = Atom(completeMeth.type);
 
-                /*for (t in completeMeth.parameterTypes) {
-                    if (is Model t) {
-                        if (haveSet.contains(t)) { continue; }
+                        for (want in wantSet) {
+                            if (! want.supertypeOf(completeType)) { continue; }
+                            value prev = wantLists[want];
 
-                        haveSet.add(t);
-                        queue.offer(t);
+                            if (! exists prev) {
+                                wantLists.put(meth->want, completeMeth->have);
+                            } else if (prev.item.subtypeOf(completeType)) {
+                                wantLists.put(meth->want, completeMeth->have);
+                            }
+                        }
+                        wantSet.addAll(completeMeth.parameterTypes.map((x) => Atom(x)));
+                    } catch(TypeApplicationException t) {
+                        /* Skip */
                     }
-                }*/
+
+                    /* TODO: Iteration for generics calling generics */
+                }
             }
+
+            wantSet.removeAll(oldWantSet);
+            oldWantSet.addAll(wantSet);
+        }
+
+        for (k->v in wantLists) {
+            value meth->param = v;
+            addRule(meth, [param.type]);
         }
     }
 
