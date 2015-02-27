@@ -18,7 +18,7 @@ object fullAlgebraGrammar extends AlgebraGrammar() {
 test
 shared void associativityResolvedHorizontalAmbiguity()
 {
-    value root = fullAlgebraGrammar.parse("a+b+c");
+    value root = fullAlgebraGrammar.unambiguousParse("a+b+c");
     value expect = Expr (0,
         Expr (0,
             Var("a", 0),
@@ -35,7 +35,7 @@ shared void associativityResolvedHorizontalAmbiguity()
 test
 void multipleOperatorAssociativity()
 {
-    value root = fullAlgebraGrammar.parse("a+b-c");
+    value root = fullAlgebraGrammar.unambiguousParse("a+b-c");
     value expect = Expr (0,
         Expr (0,
             Var("a", 0),

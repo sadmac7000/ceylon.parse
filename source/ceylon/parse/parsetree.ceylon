@@ -259,7 +259,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
     }
 
     "Confirm that we have successfully parsed."
-    Root? validate() {
+    Set<Root>? validate() {
         assert(exists endsPair = stateQueue.latest);
 
         value eosTokens = getTokens(endsPair.key, null);
@@ -304,17 +304,13 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
             return null;
         }
 
-        if (resultNodes.size > 1, exists m = minLsd, m == 0) {
-            return g.resolveAmbiguity(resultNodes);
-        }
-
         assert(exists ret = resultNodes[0]);
-        return ret;
+        return HashSet{*resultNodes};
     }
 
     "The root node of the parse tree"
-    shared Root ast {
-        variable Root? ret = null;
+    shared Set<Root> ast {
+        variable Set<Root>? ret = null;
 
         while (! ret exists) {
             pumpStateQueue();

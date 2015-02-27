@@ -19,7 +19,7 @@ object simpleGrammar extends ABGrammar<S>() {
 
 test
 shared void simple_word1() {
-    value root = simpleGrammar.parse("baab");
+    value root = simpleGrammar.unambiguousParse("baab");
     value expect = S (0,
         BTerm(0),
         A (1,
@@ -34,7 +34,7 @@ shared void simple_word1() {
 
 test
 shared void simple_word2() {
-    value root = simpleGrammar.parse("bab");
+    value root = simpleGrammar.unambiguousParse("bab");
     value expect = S (0,
         BTerm(0),
         A (1,
@@ -48,7 +48,7 @@ shared void simple_word2() {
 
 test
 shared void simple_word3() {
-    value root = simpleGrammar.parse("aaa");
+    value root = simpleGrammar.unambiguousParse("aaa");
     value expect = S (0,
         ATerm(0),
         A (1,
@@ -62,7 +62,7 @@ shared void simple_word3() {
 
 test
 shared void simple_word4() {
-    value root = simpleGrammar.parse("aaaa");
+    value root = simpleGrammar.unambiguousParse("aaaa");
     value expect = S (0,
         ATerm(0),
         A (1,
@@ -77,7 +77,7 @@ shared void simple_word4() {
 
 test
 shared void simple_word4_bad() {
-    value root = simpleGrammar.parse("aaqaa");
+    value root = simpleGrammar.unambiguousParse("aaqaa");
     value expect = S (0,
         ATerm(0),
         A (1,
@@ -92,7 +92,7 @@ shared void simple_word4_bad() {
 
 test
 shared void simple_word2_bad() {
-    value root = simpleGrammar.parse("bqb");
+    value root = simpleGrammar.unambiguousParse("bqb");
     value expect = S (0,
         BTerm(0),
         A (1,
@@ -106,7 +106,7 @@ shared void simple_word2_bad() {
 
 test
 shared void simple_word2_bad2() {
-    value root = simpleGrammar.parse("bb");
+    value root = simpleGrammar.unambiguousParse("bb");
     value expect = S (0,
         BTerm(0),
         A (1,

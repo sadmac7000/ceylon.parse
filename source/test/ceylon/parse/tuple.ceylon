@@ -16,7 +16,7 @@ object tupleGrammar extends ABGrammar<S>() {
 
 test
 void tuple() {
-    value root = tupleGrammar.parse("abababab");
+    value root = tupleGrammar.unambiguousParse("abababab");
     value expect = S (0,
                 ATerm(0),
                 BTerm(1),

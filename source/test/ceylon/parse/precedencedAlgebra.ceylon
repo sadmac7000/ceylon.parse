@@ -11,7 +11,7 @@ object precedencedAlgebraGrammar extends AlgebraGrammar() {
 
 test
 void precedenceResolvedVerticalAmbiguity() {
-    value root = precedencedAlgebraGrammar.parse("a+b*c");
+    value root = precedencedAlgebraGrammar.unambiguousParse("a+b*c");
     value expect = Expr (0,
         Var("a", 0),
         Plus(1),
@@ -28,6 +28,6 @@ void precedenceResolvedVerticalAmbiguity() {
 test
 void horizontalAmbiguityDespitePrecedence() {
     assertThatException(() =>
-            precedencedAlgebraGrammar.parse("a+b+c"))
+            precedencedAlgebraGrammar.unambiguousParse("a+b+c"))
         .hasType(`AmbiguityException`);
 }

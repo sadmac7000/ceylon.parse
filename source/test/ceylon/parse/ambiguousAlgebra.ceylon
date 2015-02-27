@@ -12,21 +12,21 @@ object ambiguousAlgebraGrammar extends AlgebraGrammar() {
 test
 void verticalAmbiguity() {
     assertThatException(() =>
-            ambiguousAlgebraGrammar.parse("a+b*c"))
+            ambiguousAlgebraGrammar.unambiguousParse("a+b*c"))
         .hasType(`AmbiguityException`);
 }
 
 test
 void horizontalAmbiguity() {
     assertThatException(() =>
-            ambiguousAlgebraGrammar.parse("a+b+c"))
+            ambiguousAlgebraGrammar.unambiguousParse("a+b+c"))
         .hasType(`AmbiguityException`);
 }
 
 test
 void resolvedVerticalAmbiguity()
 {
-    value root = ambiguousAlgebraGrammar.parse("(a+b)*c");
+    value root = ambiguousAlgebraGrammar.unambiguousParse("(a+b)*c");
     value expect = Expr (1,
         Expr (1,
             Var("a", 1),
@@ -43,7 +43,7 @@ void resolvedVerticalAmbiguity()
 test
 void resolvedHorizontalAmbiguity()
 {
-    value root = ambiguousAlgebraGrammar.parse("(a+b)+c");
+    value root = ambiguousAlgebraGrammar.unambiguousParse("(a+b)+c");
     value expect = Expr (1,
         Expr (1,
             Var("a", 1),

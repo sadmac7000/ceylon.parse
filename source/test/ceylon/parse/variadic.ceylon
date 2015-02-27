@@ -12,7 +12,7 @@ object variadicGrammar extends ABGrammar<S>() {
 
 test
 shared void variadic() {
-    value root = variadicGrammar.parse("abababaa");
+    value root = variadicGrammar.unambiguousParse("abababaa");
     value expect = S (0,
                 ATerm(0),
                 BTerm(1),

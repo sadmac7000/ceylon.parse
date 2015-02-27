@@ -239,8 +239,8 @@ ProductionClause makeProductionClause(Type p, FunctionOrValueDeclaration f,
     }
 }
 
-"Exception thrown when a grammar is ambiguous. [[Grammar]] subtypes which
- override [[Grammar.resolveAmbiguity]] may choose not to throw this exception."
+"Exception thrown when a grammar is ambiguous and we request an unambiguous
+ parse via [[Grammar.unambiguousParse]]."
 shared class AmbiguityException()
         extends Exception("Parser generated ambiguous results") {}
 
@@ -437,14 +437,18 @@ shared abstract class Grammar<out Root, in Data>()
     rule
     shared [K*] emptyIterable<K>() => [];
 
-    "Method to resolve parse ambiguities. The default implementation simply
-     throws [[AmbiguityException]]. Child classes may override this behavior.
-     If the child class would like to recover the error, it should return
-     a single root node which will be used as the resolved root."
-    shared default Root resolveAmbiguity({Object *} roots) {
-        throw AmbiguityException();
-    }
-
     "Parse a stream"
-    shared Root parse(Data data) => ParseTree(this, data).ast;
+    shared Set<Root> parse(Data data) => ParseTree(this, data).ast;
+
+    "Parse a stream. Throw an exception if the parse is ambiguous"
+    shared Root unambiguousParse(Data data) {
+        value result = parse(data);
+
+        if (result.size != 1) {
+            throw AmbiguityException();
+        }
+
+        assert(exists r = result.first);
+        return r;
+    }
 }

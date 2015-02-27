@@ -12,7 +12,7 @@ object sequenceGrammar extends ABGrammar<S>() {
 
 test
 shared void sequence() {
-    value root = sequenceGrammar.parse("aaabbb");
+    value root = sequenceGrammar.unambiguousParse("aaabbb");
     value expect = S (0,
                 ATerm(0),
                 ATerm(1),

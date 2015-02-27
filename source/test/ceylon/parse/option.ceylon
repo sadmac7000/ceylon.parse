@@ -21,7 +21,7 @@ object optionGrammar extends ABGrammar<S>() {
 
 test
 shared void option() {
-    value root = optionGrammar.parse("abababaa");
+    value root = optionGrammar.unambiguousParse("abababaa");
     value expect = S (0,
         S (0,
             S(0,

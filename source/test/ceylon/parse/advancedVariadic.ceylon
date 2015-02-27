@@ -22,7 +22,7 @@ object advancedVariadicGrammar extends ABGrammar<S>() {
 
 test
 shared void advancedVariadic() {
-    value root = advancedVariadicGrammar.parse("bbb");
+    value root = advancedVariadicGrammar.unambiguousParse("bbb");
     value expect = S (0,
                 A(0,
                     BTerm(0),

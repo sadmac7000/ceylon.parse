@@ -19,7 +19,7 @@ object inheritingGrammar extends ABGrammar<S>() {
 
 test
 shared void inheritance() {
-    value root = inheritingGrammar.parse("aaaaa");
+    value root = inheritingGrammar.unambiguousParse("aaaaa");
     value expect = S (0,
                 ASubtype(0, ATerm(0)),
                 ASubtype(1, ATerm(1)),

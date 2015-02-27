@@ -15,7 +15,7 @@ object choiceGrammar extends ABGrammar<S>() {
 
 test
 shared void choice1() {
-    value root = choiceGrammar.parse("abababab");
+    value root = choiceGrammar.unambiguousParse("abababab");
     value expect = S (0,
         S (0,
             S(0,
@@ -39,7 +39,7 @@ shared void choice1() {
 
 test
 shared void choice2() {
-    value root = choiceGrammar.parse("abbbabbb");
+    value root = choiceGrammar.unambiguousParse("abbbabbb");
     value expect = S (0,
         S (0,
             S(0,
