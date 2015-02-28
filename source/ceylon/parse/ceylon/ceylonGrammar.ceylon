@@ -1041,21 +1041,30 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 4.4 of the specification"
     rule
-    shared InterfaceDefinition interfaceDefinition(Annotations a, TypeName n,
-            TypeParameters p, CaseTypes? c, SatisfiedTypes? s,
+    shared InterfaceDefinition interfaceDefinition(Annotations a, Interface i,
+            TypeName n, TypeParameters p, CaseTypes? c, SatisfiedTypes? s,
             [TypeConstraint *] t, InterfaceBody b)
             => astNode(`InterfaceDefinition`,
                     [n, b, c, s, p, t, a],
-                    a, n, p, c, s, t, b);
+                    a, i, n, p, c, s, t, b);
 
     "Section 4.4 of the specification"
     rule
     shared InterfaceAliasDefinition interfaceAliasDefinition(Annotations a,
-            TypeName n, TypeParameters p, CaseTypes? c, SatisfiedTypes? s,
-            [TypeConstraint *] t, TypeSpecifier b)
+            Interface i, TypeName n, TypeParameters p, CaseTypes? c,
+            SatisfiedTypes? s, [TypeConstraint *] t, TypeSpecifier b)
             => astNode(`InterfaceAliasDefinition`,
                     [n, b, c, s, p, t, a],
-                    a, n, p, c, s, t, b);
+                    a, i, n, p, c, s, t, b);
+
+    "Section 4.4 of the specification"
+    rule
+    shared DynamicInterfaceDefinition dynamicInterfaceDefinition(Annotations a, Dynamic i,
+            TypeName n, TypeParameters p, CaseTypes? c, SatisfiedTypes? s,
+            [TypeConstraint *] t, InterfaceBody b)
+            => astNode(`DynamicInterfaceDefinition`,
+                    [n, b, c, s, p, t, a],
+                    a, i, n, p, c, s, t, b);
 
     "Section 4.4 of the specification"
     rule
