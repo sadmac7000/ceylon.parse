@@ -224,6 +224,11 @@ shared class Interface(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken("interface", ls, cs, le, ce) {}
 
+"'class'"
+shared class ClassTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("class", ls, cs, le, ce) {}
+
 "The -> operator"
 shared class Arrow(Integer ls, Integer cs,
         Integer le, Integer ce)

@@ -1042,7 +1042,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 4.4 of the specification"
     rule
     shared InterfaceDefinition interfaceDefinition(Annotations a, Interface i,
-            TypeName n, TypeParameters p, CaseTypes? c, SatisfiedTypes? s,
+            TypeName n, TypeParameters? p, CaseTypes? c, SatisfiedTypes? s,
             [TypeConstraint *] t, InterfaceBody b)
             => astNode(`InterfaceDefinition`,
                     [n, b, c, s, p, t, a],
@@ -1051,7 +1051,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 4.4 of the specification"
     rule
     shared InterfaceAliasDefinition interfaceAliasDefinition(Annotations a,
-            Interface i, TypeName n, TypeParameters p, CaseTypes? c,
+            Interface i, TypeName n, TypeParameters? p, CaseTypes? c,
             SatisfiedTypes? s, [TypeConstraint *] t, TypeSpecifier b)
             => astNode(`InterfaceAliasDefinition`,
                     [n, b, c, s, p, t, a],
@@ -1060,7 +1060,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 4.4 of the specification"
     rule
     shared DynamicInterfaceDefinition dynamicInterfaceDefinition(Annotations a, Dynamic i,
-            TypeName n, TypeParameters p, CaseTypes? c, SatisfiedTypes? s,
+            TypeName n, TypeParameters? p, CaseTypes? c, SatisfiedTypes? s,
             [TypeConstraint *] t, InterfaceBody b)
             => astNode(`DynamicInterfaceDefinition`,
                     [n, b, c, s, p, t, a],
@@ -1076,4 +1076,41 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     rule
     shared TypeSpecifier typeSpecifier(DArrow d, Type t)
             => astNode(`TypeSpecifier`, [t], d, t);
+
+    "Section 4.5 of the specification"
+    tokenizer
+    shared Token<ClassTok>? class_(String input, Object? prev)
+            => keyword(`ClassTok`, input, prev, "class");
+
+    "Section 4.5 of the specification"
+    rule
+    shared ClassDefinition classDefinition(Annotations a, ClassTok i,
+            TypeName n, TypeParameters p, Parameters? pr, CaseTypes? c,
+            ExtendedType? e, SatisfiedTypes? s, [TypeConstraint *] t,
+            ClassBody b)
+            => astNode(`ClassDefinition`,
+                    [n, pr, b, c, e, s, p, t, a],
+                    a, i, n, p, pr, c, e, s, t, b);
+
+    "Section 4.5 of the specification"
+    rule
+    shared ClassAliasDefinition classAliasDefinition(Annotations a, ClassTok i,
+            TypeName n, TypeParameters p, Parameters pr, CaseTypes? c,
+            ExtendedType? e, SatisfiedTypes? s,
+            [TypeConstraint *] t, ClassSpecifier b)
+            => astNode(`ClassAliasDefinition`,
+                    [n, pr, b, c, e, s, p, t, a],
+                    a, i, n, p, pr, c, e, s, t, b);
+
+    "Section 4.5 of the specification"
+    rule
+    shared ClassBody classBody(CurlOpen a,
+            [Declaration|Statement *] d,
+            CurlClose b)
+            => astNode(`ClassBody`, [d], a, d, b);
+
+    "Section 4.5.9 of the specification"
+    rule
+    shared ClassSpecifier classSpecifier(DArrow d, ClassInstantiation t)
+            => astNode(`ClassSpecifier`, [t], d, t);
 }
