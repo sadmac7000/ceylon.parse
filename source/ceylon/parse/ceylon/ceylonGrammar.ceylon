@@ -1130,6 +1130,6 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared TypeAliasDefinition typeAliasDefinition(Annotations a, Alias al,
             TypeName n, TypeParameters? tp, [TypeConstraint *] tc,
             TypeSpecifier s, Semicolon end)
-            => astNode(`TypeAliasDefinition`, [n, s, tp, tc, a], a, al, n, tp, tc,
-                    s);
+            => astNode(`TypeAliasDefinition`, [n, s, tp, tc, a],
+                    a, al, n, tp, tc, s, end);
 }
