@@ -1119,4 +1119,17 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     rule
     shared ClassSpecifier classSpecifier(DArrow d, ClassInstantiation t)
             => astNode(`ClassSpecifier`, [t], d, t);
+
+    "Section 4.6 of the specification"
+    tokenizer
+    shared Token<Alias>? alias_(String input, Object? prev)
+            => keyword(`Alias`, input, prev, "alias");
+
+    "Section 4.6 of the specification"
+    rule
+    shared TypeAliasDefinition typeAliasDefinition(Annotations a, Alias al,
+            TypeName n, TypeParameters? tp, [TypeConstraint *] tc,
+            TypeSpecifier s, Semicolon end)
+            => astNode(`TypeAliasDefinition`, [n, s, tp, tc, a], a, al, n, tp, tc,
+                    s);
 }
