@@ -1050,7 +1050,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 4.4 of the specification"
     tokenizer
-    shared Semicolon semicolon(String input, Object? prev)
+    shared Token<Semicolon>? semicolon(String input, Object? prev)
             => literal(`Semicolon`, input, prev, ";");
 
     "Section 4.4 of the specification"
