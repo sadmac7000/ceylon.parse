@@ -164,6 +164,11 @@ shared class DArrow(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken("=>", ls, cs, le, ce) {}
 
+"A ;"
+shared class Semicolon(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken(";", ls, cs, le, ce) {}
+
 "An ellipsis"
 shared class Ellipsis(Integer ls, Integer cs,
         Integer le, Integer ce)

@@ -1049,13 +1049,19 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
                     a, i, n, p, c, s, t, b);
 
     "Section 4.4 of the specification"
+    tokenizer
+    shared Semicolon semicolon(String input, Object? prev)
+            => literal(`Semicolon`, input, prev, ";");
+
+    "Section 4.4 of the specification"
     rule
     shared InterfaceAliasDefinition interfaceAliasDefinition(Annotations a,
             Interface i, TypeName n, TypeParameters? p, CaseTypes? c,
-            SatisfiedTypes? s, [TypeConstraint *] t, TypeSpecifier b)
+            SatisfiedTypes? s, [TypeConstraint *] t, TypeSpecifier b,
+            Semicolon end)
             => astNode(`InterfaceAliasDefinition`,
                     [n, b, c, s, p, t, a],
-                    a, i, n, p, c, s, t, b);
+                    a, i, n, p, c, s, t, b, end);
 
     "Section 4.4 of the specification"
     rule
@@ -1097,10 +1103,10 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared ClassAliasDefinition classAliasDefinition(Annotations a, ClassTok i,
             TypeName n, TypeParameters p, Parameters pr, CaseTypes? c,
             ExtendedType? e, SatisfiedTypes? s,
-            [TypeConstraint *] t, ClassSpecifier b)
+            [TypeConstraint *] t, ClassSpecifier b, Semicolon end)
             => astNode(`ClassAliasDefinition`,
                     [n, pr, b, c, e, s, p, t, a],
-                    a, i, n, p, pr, c, e, s, t, b);
+                    a, i, n, p, pr, c, e, s, t, b, end);
 
     "Section 4.5 of the specification"
     rule
