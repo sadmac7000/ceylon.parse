@@ -60,7 +60,6 @@ object typeAtomCache {
         value mySupertypes = HashSet<Integer>();
 
         for (k->v in from) {
-            value log = (filterTypes(k.string) == "Iterable<Whitespace,Nothing>");
             if (k.subtypeOf(t)) {
                 mySubtypes.add(v);
                 supertypes[v]?.add(next);
