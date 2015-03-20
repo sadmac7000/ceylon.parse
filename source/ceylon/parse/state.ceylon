@@ -319,17 +319,7 @@ class EPState {
             if (other.rule != rule) { return false; }
             if (other.matchPos != matchPos) { return false; }
 
-            if (other.children.size != children.size) { return false; }
-
-            for (e in zipPairs(other.children, children)) {
-                if (exists a = e[0],
-                    exists b = e[1],
-                    a != b) {
-                    return false;
-                }
-
-                if ((e[0] exists) != (e[1] exists)) { return false; }
-            }
+            if (other.children != children) { return false; }
 
             return true;
         } else {
