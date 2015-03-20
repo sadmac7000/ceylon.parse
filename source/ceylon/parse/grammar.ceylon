@@ -281,17 +281,14 @@ shared abstract class Grammar<out Root, in Data>()
         value meths = _type(this).getMethods<Nothing>(`GrammarRule`);
         value errConMeths =
             _type(this).getMethods<Nothing>(`GrammarErrorConstructor`);
-        value tokenizerMeths = _type(this).getMethods<Nothing>(`Tokenizer`);
+        value tokenizerMeths =
+            _type(this).getMethods<Nothing, Token<Object>?, [Data, Object?]>(`Tokenizer`);
 
         value haveSet = HashSet<Atom>();
         value wantSet = HashSet<Atom>{Atom(`Root`)};
 
         for (t in tokenizerMeths) {
-            Token? tokenizer(Data s, Object? last) {
-                assert(is Token? ret = t.declaration.memberInvoke(this, [],
-                            s, last));
-                return ret;
-            }
+            value tokenizer = t.bind(this);
 
             assert(is UnionType retType = t.type);
             value caseTypes =  retType.caseTypes;
