@@ -7,6 +7,7 @@ import ceylon.language.meta.model {
     UnionType,
     ClassOrInterface,
     Method,
+    Function,
     TypeApplicationException
 }
 import ceylon.language.meta.declaration {
@@ -144,13 +145,13 @@ shared class Rule {
     shared actual Integer hash;
     shared AnyGrammar g;
 
-    shared new Rule(Object(Object?*) consume,
+    shared new Rule(Function<Object,Nothing> consume,
             ProductionClause[] consumes,
             Atom produces,
             Integer precedence,
             Associativity associativity,
             AnyGrammar g) {
-        this.consume = consume;
+        this.consume = (Object?* x) => consume.apply(*x);
         this.consumes = consumes;
         this.produces = produces;
         this.precedence = precedence;
@@ -278,7 +279,7 @@ shared abstract class Grammar<out Root, in Data>()
         if (populated) { return; }
         populated = true;
 
-        value meths = _type(this).getMethods<Nothing>(`GrammarRule`);
+        value meths = _type(this).getMethods<Nothing, Object, Nothing>(`GrammarRule`);
         value errConMeths =
             _type(this).getMethods<Nothing, Object, [Object?, Object?]>(`GrammarErrorConstructor`);
         value tokenizerMeths =
@@ -325,11 +326,8 @@ shared abstract class Grammar<out Root, in Data>()
     }
 
     "Add a rule to the rule list"
-    void addRule(Method<Nothing> r, Type<Anything>[] typeArgs = []) {
-        Object consume(Object? *o) {
-            assert(is Object ret = r.declaration.memberInvoke(this, typeArgs, *o));
-            return ret;
-        }
+    void addRule(Method<Nothing, Object, Nothing> r) {
+        value consume = r.bind(this);
 
         value params = zipPairs(r.parameterTypes,
                 r.declaration.parameterDeclarations);
@@ -353,14 +351,14 @@ shared abstract class Grammar<out Root, in Data>()
 
         value queue = ArrayList<Atom>{*haveSet};
         value wantLists = HashMap<FunctionDeclaration->Atom,
-              HashSet<Entry<Method<Nothing>,Atom>>>();
+              HashSet<Entry<Method<Nothing, Object, Nothing>,Atom>>>();
         value oldWantSet = wantSet.clone();
 
         while (wantSet.size > 0) {
             while (exists have = queue.accept()) {
                 for (meth in genericMeths) {
                     try {
-                        value completeMeth = meth.memberApply<Nothing, Anything,
+                        value completeMeth = meth.memberApply<Nothing, Object,
                               Nothing>(_type(this), have.type);
                         value completeType = Atom(completeMeth.type);
 
@@ -370,14 +368,15 @@ shared abstract class Grammar<out Root, in Data>()
                             value key = meth->want;
 
                             value entry = if (exists e = wantLists[key]) then e
-                                else HashSet<Entry<Method<Nothing>,Atom>>();
+                                else HashSet<Entry<Method<Nothing, Object,
+                                    Nothing>,Atom>>();
 
                             if (! wantLists.defines(key)) {
                                 wantLists.put(key, entry);
                             }
 
                             value deletable =
-                                HashSet<Entry<Method<Nothing>,Atom>>();
+                                HashSet<Entry<Method<Nothing, Object, Nothing>,Atom>>();
                             for (otherMeth->otherType in entry) {
                                 if (otherMeth != meth) { continue; }
                                 if (otherType.supertypeOf(completeType)) { break; }
@@ -408,7 +407,7 @@ shared abstract class Grammar<out Root, in Data>()
 
         for (k->v in wantLists) {
             for (meth->param in v) {
-                addRule(meth, [param.type]);
+                addRule(meth);
             }
         }
     }
