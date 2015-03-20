@@ -280,7 +280,7 @@ shared abstract class Grammar<out Root, in Data>()
 
         value meths = _type(this).getMethods<Nothing>(`GrammarRule`);
         value errConMeths =
-            _type(this).getMethods<Nothing>(`GrammarErrorConstructor`);
+            _type(this).getMethods<Nothing, Object, [Object?, Object?]>(`GrammarErrorConstructor`);
         value tokenizerMeths =
             _type(this).getMethods<Nothing, Token<Object>?, [Data, Object?]>(`Tokenizer`);
 
@@ -306,13 +306,7 @@ shared abstract class Grammar<out Root, in Data>()
         }
 
         for (c in errConMeths) {
-            Object construct(Object? o, Object? prev) {
-                assert(is Object ret = c.declaration.memberInvoke(this, [],
-                            o, prev));
-                return ret;
-            }
-
-            errorConstructors.put(Atom(c.type), construct);
+            errorConstructors.put(Atom(c.type), c.bind(this));
         }
 
         for (r in meths) {
