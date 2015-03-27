@@ -1132,4 +1132,20 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             TypeSpecifier s, Semicolon end)
             => astNode(`TypeAliasDefinition`, [n, s, tp, tc, a],
                     a, al, n, tp, tc, s, end);
+
+    "Section 4.7 of the specification"
+    rule
+    shared FunctionDeclaration functionDeclaration(Annotations a, MemberName m,
+            Type|DynamicModifier|VoidModifier t, TypeParameters? tp,
+            [Parameters+] p, [TypeConstraint*] tc, Semicolon end)
+            => astNode(`FunctionDeclaration`, [m, t, p, tp, tc, a],
+                    a, m, t, tp, p, tc, end);
+
+    "Section 4.7 of the specification"
+    rule
+    shared FunctionDefinition functionDefinition(Annotations a, MemberName m,
+            Type|DynamicModifier|VoidModifier t, TypeParameters? tp,
+            [Parameters+] p, [TypeConstraint*] tc, Block b)
+            => astNode(`FunctionDefinition`, [m, t, p, b, tp, tc, a],
+                    a, m, t, tp, p, tc, b);
 }
