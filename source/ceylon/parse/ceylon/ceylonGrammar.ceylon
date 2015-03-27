@@ -1148,4 +1148,13 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             [Parameters+] p, [TypeConstraint*] tc, Block b)
             => astNode(`FunctionDefinition`, [m, t, p, b, tp, tc, a],
                     a, m, t, tp, p, tc, b);
+
+    "Section 4.7 of the specification"
+    rule
+    shared FunctionShortcutDefinition functionShortcutDefinition(Annotations a,
+            MemberName m, Type|DynamicModifier|VoidModifier t,
+            TypeParameters? tp, [Parameters+] p, [TypeConstraint*] tc,
+            LazySpecifier b, Semicolon end)
+            => astNode(`FunctionShortcutDefinition`, [m, t, p, b, tp, tc, a],
+                    a, m, t, tp, p, tc, b, end);
 }
