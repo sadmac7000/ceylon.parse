@@ -956,8 +956,14 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 4.3.1 of the specification"
     rule
-    shared Parameters parameters(CommaSepList<Parameter> p)
-            => astNode(`Parameters`, [p.nodes], p.tokens);
+    shared Parameters parametersEmpty(ParOpen o, ParClose c)
+            => astNode(`Parameters`, [[]], o, c);
+
+    "Section 4.3.1 of the specification"
+    rule
+    shared Parameters parameters(ParOpen o, CommaSepList<Parameter> p,
+            ParClose c)
+            => astNode(`Parameters`, [p.nodes], o, p.tokens, c);
 
     "Section 4.3.3 of the specification"
     rule
