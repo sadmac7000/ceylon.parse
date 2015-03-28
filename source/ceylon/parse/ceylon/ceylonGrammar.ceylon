@@ -1097,7 +1097,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 4.5 of the specification"
     rule
     shared ClassDefinition classDefinition(Annotations a, ClassTok i,
-            TypeName n, TypeParameters p, Parameters? pr, CaseTypes? c,
+            TypeName n, TypeParameters? p, Parameters? pr, CaseTypes? c,
             ExtendedType? e, SatisfiedTypes? s, [TypeConstraint *] t,
             ClassBody b)
             => astNode(`ClassDefinition`,
@@ -1107,7 +1107,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 4.5 of the specification"
     rule
     shared ClassAliasDefinition classAliasDefinition(Annotations a, ClassTok i,
-            TypeName n, TypeParameters p, Parameters pr, CaseTypes? c,
+            TypeName n, TypeParameters? p, Parameters pr, CaseTypes? c,
             ExtendedType? e, SatisfiedTypes? s,
             [TypeConstraint *] t, ClassSpecifier b, Semicolon end)
             => astNode(`ClassAliasDefinition`,
