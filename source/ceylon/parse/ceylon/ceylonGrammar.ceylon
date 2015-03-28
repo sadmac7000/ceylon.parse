@@ -1196,4 +1196,8 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             Block s)
             => astNode(`ValueGetterDefinition`, [m, t, s, a],
                     a, m, t, s);
+
+    "Temporary"
+    rule
+    shared Annotations annotations() => astNode(`Annotations`, [null, []]);
 }
