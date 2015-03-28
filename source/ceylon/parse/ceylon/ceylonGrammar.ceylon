@@ -1157,4 +1157,37 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             LazySpecifier b, Semicolon end)
             => astNode(`FunctionShortcutDefinition`, [m, t, p, b, tp, tc, a],
                     a, m, t, tp, p, tc, b, end);
+
+    "Section 4.8 of the specification"
+    rule
+    shared ValueDeclaration valueDeclaration(Annotations a,
+            MemberName m, Type|VariadicType|DynamicModifier t, Semicolon end)
+            => astNode(`ValueDeclaration`, [m, t, a],
+                    a, m, t, end);
+
+    "Section 4.8 of the specification"
+    rule
+    shared ValueDefinition valueDefinition(Annotations a,
+            MemberName m, Type|ValueModifier|DynamicModifier t,
+            AnySpecifier s, Semicolon end)
+            => astNode(`ValueDefinition`, [m, t, s, a],
+                    a, m, t, s, end);
+
+    "Section 4.8 of the specification"
+    tokenizer
+    shared Token<Value>? value_(String input, Object? prev)
+            => keyword(`Value`, input, prev, "value");
+
+    "Section 4.8 of the specification"
+    rule
+    shared ValueModifier valueModifier(Value d)
+            => astNode(`ValueModifier`, [], d);
+
+    "Section 4.8 of the specification"
+    rule
+    shared ValueGetterDefinition valueGetterDefinition(Annotations a,
+            MemberName m, Type|ValueModifier|DynamicModifier t,
+            Block s)
+            => astNode(`ValueGetterDefinition`, [m, t, s, a],
+                    a, m, t, s);
 }

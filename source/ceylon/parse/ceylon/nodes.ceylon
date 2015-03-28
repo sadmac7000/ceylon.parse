@@ -219,6 +219,11 @@ shared class Dynamic(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken("dynamic", ls, cs, le, ce) {}
 
+"'value'"
+shared class Value(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("value", ls, cs, le, ce) {}
+
 "'void'"
 shared class Void(Integer ls, Integer cs,
         Integer le, Integer ce)
