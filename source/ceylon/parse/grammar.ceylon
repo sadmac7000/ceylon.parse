@@ -7,17 +7,14 @@ import ceylon.language.meta.model {
     UnionType,
     ClassOrInterface,
     Method,
-    Function,
-    TypeApplicationException
+    Function
 }
 import ceylon.language.meta.declaration {
-    FunctionOrValueDeclaration,
-    FunctionDeclaration
+    FunctionOrValueDeclaration
 }
 import ceylon.collection {
     HashMap,
     HashSet,
-    MutableSet,
     ArrayList
 }
 
@@ -321,8 +318,6 @@ shared abstract class Grammar<out Root, in Data>()
         while (exists h = queue.accept()) {
             haveSet.addAll(h.supertypes);
         }
-
-        populateGenericRules(haveSet, wantSet);
     }
 
     "Add a rule to the rule list"
@@ -342,90 +337,11 @@ shared abstract class Grammar<out Root, in Data>()
         rules = rules.withTrailing(rule);
     }
 
-    "Populate the rules list with any versions of generic rules"
-    void populateGenericRules(MutableSet<Atom> haveSet, MutableSet<Atom> wantSet) {
-        value meths =
-            _type(this).declaration.annotatedMemberDeclarations<FunctionDeclaration,GrammarRule>();
-        value genericMeths =
-            meths.select((x) => !x.typeParameterDeclarations.empty);
-
-        value queue = ArrayList<Atom>{*haveSet};
-        value wantLists = HashMap<FunctionDeclaration->Atom,
-              HashSet<Entry<Method<Nothing, Object, Nothing>,Atom>>>();
-        value oldWantSet = wantSet.clone();
-
-        while (wantSet.size > 0) {
-            while (exists have = queue.accept()) {
-                for (meth in genericMeths) {
-                    try {
-                        value completeMeth = meth.memberApply<Nothing, Object,
-                              Nothing>(_type(this), have.type);
-                        value completeType = Atom(completeMeth.type);
-
-                        variable value add = false;
-                        for (want in wantSet) {
-                            if (! want.supertypeOf(completeType)) { continue; }
-                            value key = meth->want;
-
-                            value entry = if (exists e = wantLists[key]) then e
-                                else HashSet<Entry<Method<Nothing, Object,
-                                    Nothing>,Atom>>();
-
-                            if (! wantLists.defines(key)) {
-                                wantLists.put(key, entry);
-                            }
-
-                            value deletable =
-                                HashSet<Entry<Method<Nothing, Object, Nothing>,Atom>>();
-                            for (otherMeth->otherType in entry) {
-                                if (otherMeth != meth) { continue; }
-                                if (otherType.supertypeOf(completeType)) { break; }
-                                if (! otherType.subtypeOf(completeType)) { continue; }
-                                deletable.add(otherMeth->otherType);
-                            } else {
-                                entry.removeAll(deletable);
-                                add = true;
-                                entry.add(completeMeth->have);
-                            }
-                        }
-
-                        if (add) {
-                            wantSet.addAll(completeMeth.parameterTypes.map((x)
-                                        => Atom(x)));
-                        }
-                    } catch(TypeApplicationException t) {
-                        /* Skip */
-                    }
-
-                    /* TODO: Iteration for generics calling generics */
-                }
-            }
-
-            wantSet.removeAll(oldWantSet);
-            oldWantSet.addAll(wantSet);
-        }
-
-        for (k->v in wantLists) {
-            for (meth->param in v) {
-                addRule(meth);
-            }
-        }
-    }
-
     "Returns a token to represent an unparseable region. The input data is
      exactly the contents of that region."
     shared default Object badTokenConstructor(Data data, Object? previous) {
         throw BadTokenConstructorException();
     }
-
-    "A generic rule that parses iterables, thus handling iterables in argument
-     lists."
-    rule
-    shared [K+] iterables<K>(K+ k) => k;
-
-    "A generic rule to match empty iterables"
-    rule
-    shared [K*] emptyIterable<K>() => [];
 
     "Parse a stream"
     shared Set<Root> parse(Data data) => ParseTree(this, data).ast;
