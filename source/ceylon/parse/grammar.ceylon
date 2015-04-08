@@ -282,9 +282,6 @@ shared abstract class Grammar<out Root, in Data>()
         value tokenizerMeths =
             _type(this).getMethods<Nothing, Token<Object>?, [Data, Object?]>(`Tokenizer`);
 
-        value haveSet = HashSet<Atom>();
-        value wantSet = HashSet<Atom>{Atom(`Root`)};
-
         for (t in tokenizerMeths) {
             value tokenizer = t.bind(this);
 
@@ -300,7 +297,6 @@ shared abstract class Grammar<out Root, in Data>()
 
             value atom = Atom(type);
             tokenizers.put(atom, tokenizer);
-            haveSet.add(atom);
         }
 
         for (c in errConMeths) {
@@ -309,14 +305,6 @@ shared abstract class Grammar<out Root, in Data>()
 
         for (r in meths) {
             addRule(r);
-            haveSet.add(Atom(r.type));
-            wantSet.addAll(r.parameterTypes.map((x) => Atom(x)));
-        }
-
-        value queue = ArrayList{*haveSet};
-
-        while (exists h = queue.accept()) {
-            haveSet.addAll(h.supertypes);
         }
     }
 
