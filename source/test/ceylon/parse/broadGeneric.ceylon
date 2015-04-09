@@ -95,7 +95,7 @@ object broadGenericGrammar extends ABGrammar<[S*]>() {
         }
     }
 
-    rule
+    omniRule
     shared K whitespace<K>({Spc+} space, K k) given K of Mul|RParen|LParen|ATerm => k;
 
     rule
