@@ -5,7 +5,7 @@ import ceylon.collection { HashMap, HashSet }
 shared class Atom {
     shared Integer val;
 
-    shared new Atom(Type t) {
+    shared new (Type t) {
         this.val = typeAtomCache.getAlias(t);
     }
 
