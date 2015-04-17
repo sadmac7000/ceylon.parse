@@ -10,6 +10,7 @@ import ceylon.language.meta.model {
     Function
 }
 import ceylon.language.meta.declaration {
+    FunctionDeclaration,
     FunctionOrValueDeclaration,
     ClassOrInterfaceDeclaration
 }
@@ -119,7 +120,12 @@ shared class ProductionClause(shared Boolean variadic,
             for (other in g.rules)
                 if ((this.select(other.produces.subtypeOf)).size > 0)
                     other
-        };
+        }.chain(localAtoms.map((x) {
+                return if (is Type<Object> t = x.type)
+                    then g.getOmniRulesFor(t)
+                    else {};
+            }).fold<{Rule *}>({})
+                ((x, y) => x.chain(y)));
 
         predicted_cache = p;
         return p;
@@ -278,6 +284,9 @@ shared abstract class Grammar<out Root, in Data>()
     "A list of rules for this grammar"
     shared variable Rule[] rules = [];
 
+    "Omni-rule methods"
+    variable FunctionDeclaration[] omniRuleMeths = [];
+
     "The result symbol we expect from this tree"
     shared Atom result = Atom(`Root`);
 
@@ -329,7 +338,24 @@ shared abstract class Grammar<out Root, in Data>()
         for (r in meths) {
             addRule(r);
         }
+
+        omniRuleMeths =
+            _type(this).declaration.annotatedMemberDeclarations<FunctionDeclaration,OmniRule>();
     }
+
+    "Reify omni rules for a given type"
+    shared {Rule *} getOmniRulesFor(Type<Object> t)
+        => omniRuleMeths.map((declaration) {
+            value consume = declaration.memberApply(t).bind(this);
+            value params = zipPairs(consume.parameterTypes,
+                    declaration.parameterDeclarations);
+            value consumes = [ for (p in params)
+                makeProductionClause(p[0], p[1], this) ];
+            value produces = Atom(t);
+            assert(exists ruleAnnotation = declaration.annotations<OmniRule>()[0]);
+            return Rule(consume, consumes, produces,
+                    ruleAnnotation.precedence, ruleAnnotation.associativity, this);
+        });
 
     "Add a rule to the rule list"
     void addRule(Method<Nothing, Object, Nothing> r) {
