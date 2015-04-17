@@ -71,7 +71,7 @@ class EPState {
     variable Integer? _lsd = null;
 
     "Create a new initial EPState for the given start rule"
-    shared new EPState(Rule rule) {
+    shared new (Rule rule) {
         this.pos = 0;
         this.rule = rule;
         this.matchPos = 0;
