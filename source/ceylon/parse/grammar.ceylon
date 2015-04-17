@@ -171,7 +171,7 @@ shared class Rule {
     shared actual Integer hash;
     shared AnyGrammar g;
 
-    shared new Rule(Function<Object,Nothing> consume,
+    shared new (Function<Object,Nothing> consume,
             ProductionClause[] consumes,
             Atom produces,
             Integer precedence,
