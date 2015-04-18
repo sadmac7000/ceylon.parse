@@ -19,7 +19,7 @@ shared abstract class Regular() satisfies Summable<Regular> {
 }
 
 class Any({Character *} valuesIn) extends Regular() {
-    value values = HashSet{ valuesIn };
+    value values = HashSet{ *valuesIn };
 
     shared actual Integer? match(String s, Integer? maxLength) {
         if (exists maxLength, maxLength < 1) { return null; }
