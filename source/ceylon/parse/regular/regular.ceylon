@@ -80,7 +80,7 @@ class Repeat(Regular r, Integer min, Integer? max) extends Regular() {
             matched = matching.match(s, maxLength);
         }
 
-        if (count > 0) { return last; }
+        if (count >= min) { return last; }
         return null;
     }
 }
