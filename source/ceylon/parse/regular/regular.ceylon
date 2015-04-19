@@ -3,7 +3,7 @@ import ceylon.collection { HashSet }
 shared abstract class Regular() satisfies Summable<Regular> {
     shared formal Integer? match(String s, Integer? maxLength = null);
 
-    shared Regular repeat(Integer min, Integer? max)
+    shared Regular repeat(Integer min, Integer? max = null)
         => if (exists m = max) then Repeat(this, min, max)
         else Repeat(this, min, min);
 
