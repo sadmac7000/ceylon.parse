@@ -29,3 +29,12 @@ shared void andTest() {
     assert(! exp.match("abdd") exists);
     assert(exists k = exp.match("abcd"), k == 4);
 }
+
+test
+shared void orTest() {
+    value exp = lit("abc").or(lit("def"));
+
+    assert(exp.match("abc") exists);
+    assert(exp.match("def") exists);
+    assert(! exp.match("abf") exists);
+}
