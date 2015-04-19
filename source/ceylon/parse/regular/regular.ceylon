@@ -41,7 +41,7 @@ class Lookahead(Regular r, Boolean invert) extends Regular() {
         => if (r.match(s) exists) then !invert else invert;
 
     shared actual Integer? match(String s, Integer? maxLength)
-        => if (subMatch(s)) then null else 0;
+        => if (subMatch(s)) then 0 else null;
 }
 
 class Concat(Regular a, Regular b) extends Regular() {
