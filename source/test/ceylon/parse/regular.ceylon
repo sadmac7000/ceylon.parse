@@ -17,3 +17,15 @@ shared void maybe() {
     assert(! exp.match("afe") exists);
     assert(! exp.match("abce") exists);
 }
+
+test
+shared void andTest() {
+    value exp = lit("abc").and(any("abcd").repeat(4));
+
+    assert(exp.match("abca") exists);
+    assert(exp.match("abcb") exists);
+    assert(exp.match("abcd") exists);
+    assert(! exp.match("abc") exists);
+    assert(! exp.match("abdd") exists);
+    assert(exists k = exp.match("abcd"), k == 4);
+}
