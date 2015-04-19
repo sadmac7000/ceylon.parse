@@ -56,7 +56,7 @@ class Concat(Regular a, Regular b) extends Regular() {
 
             if (exists n = next) { return st + n; }
 
-            start = a.match(s, st - 1);
+            start = if (st > 0) then a.match(s, st - 1) else null;
         }
 
         return null;
