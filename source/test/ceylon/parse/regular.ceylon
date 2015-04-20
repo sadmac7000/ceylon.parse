@@ -28,6 +28,10 @@ shared void andTest() {
     assert(! exp.match("abc") exists);
     assert(! exp.match("abdd") exists);
     assert(exists k = exp.match("abcd"), k == 4);
+
+    value exp2 = lit("abc").and(any("abcd").repeat(2));
+
+    assert(exists k2 = exp2.match("abc"), k2 == 2);
 }
 
 test
@@ -37,4 +41,16 @@ shared void orTest() {
     assert(exp.match("abc") exists);
     assert(exp.match("def") exists);
     assert(! exp.match("abf") exists);
+}
+
+test
+shared void repeatTest() {
+    value exp = lit("a").repeat(3, 5);
+
+    assert(! exp.match("a") exists);
+    assert(! exp.match("aa") exists);
+    assert(exp.match("aaa") exists);
+    assert(exp.match("aaaa") exists);
+    assert(exp.match("aaaaa") exists);
+    assert(exists k = exp.match("aaaaaa"), k == 5);
 }
