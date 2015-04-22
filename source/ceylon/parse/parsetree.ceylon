@@ -85,10 +85,9 @@ class StateQueue() {
     }
 
     "Accept a recovery state"
-    shared EPState acceptRecoveryState() {
+    shared EPState? acceptRecoveryState() {
         assert(exists r=recoveryQueue);
-        assert(exists ret=r.accept());
-        return ret;
+        return r.accept();
     }
 }
 
@@ -211,6 +210,16 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
     void recoverError() {
         stateQueue.initRecovery(rules);
         value state = stateQueue.acceptRecoveryState();
+        if (! exists state) {
+            /* TODO: Getting here means the grammar is malformed such that none
+             * of the rules actually produce the AST root. It's a complex error
+             * to handle better, and it won't come up very often, but we should
+             * probably try.
+             */
+        }
+
+        assert(exists state);
+
         value tokens = getTokens(state.pos, state.lastToken);
         value badToken = tokens.size == 0;
 
@@ -260,6 +269,11 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
 
     "Confirm that we have successfully parsed."
     Set<Root>? validate() {
+        if (! stateQueue.latest exists) {
+            recoverError();
+            return null;
+        }
+
         assert(exists endsPair = stateQueue.latest);
 
         value eosTokens = getTokens(endsPair.key, null);
