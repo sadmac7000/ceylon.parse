@@ -1,4 +1,5 @@
-import ceylon.parse { Grammar, Token, rule, tokenizer, lassoc }
+import ceylon.parse { Grammar, Token, rule, omniRule, genericRule,
+    tokenizer, lassoc }
 import ceylon.language.meta.model { Class }
 import ceylon.ast.core { ASTSuper = Super, ... }
 
@@ -242,13 +243,13 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 2.2 of the specification"
     rule
     shared BlockComment blockComment(CommentStart start,
-            {CommentBody|BlockComment*} body, CommentEnd end)
+            [CommentBody|BlockComment*] body, CommentEnd end)
             => meta(`BlockComment`, start, body, end);
 
     "Section 2.2 of the specification"
-    rule
+    omniRule
     shared AnySym separator<AnySym>(
-            {BlockComment|LineComment|Whitespace+} before,
+            [BlockComment|LineComment|Whitespace+] before,
             AnySym sym)
             given AnySym satisfies CeylonToken
             => sym;
@@ -256,7 +257,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 2.2 of the specification"
     rule
     shared AnyCompilationUnit trailingWs(AnyCompilationUnit ret,
-            {BlockComment|LineComment|Whitespace+} after)
+            [BlockComment|LineComment|Whitespace+] after)
             => ret;
 
     "Section 2.3 of the specification"
@@ -358,7 +359,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 2.4.1 of the specification"
     rule
-    shared Digits digits({Digit+} items) => Digits(*items);
+    shared Digits digits([Digit+] items) => Digits(*items);
 
     "Section 2.4.1 of the specification"
     rule
@@ -368,7 +369,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 2.4.1 of the specification"
     rule
     shared Digits clusteredDigits(Digit? a, Digit? b, Digit c,
-            {DigitCluster+} clusters)
+            [DigitCluster+] clusters)
             => meta(`Digits`, a, b, c, clusters);
 
     "Section 2.4.1 of the specification"
@@ -378,13 +379,13 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 2.4.1 of the specification"
     rule
-    shared FracDigits fracDigits({FracDigitCluster+} clusters,
+    shared FracDigits fracDigits([FracDigitCluster+] clusters,
             Digit a, Digit? b, Digit? c)
             => meta(`FracDigits`, clusters, a, b, c);
 
     "Section 2.4.1 of the specification"
     rule
-    shared FracDigits unmarkedFracDigits({Digits+} digits) => FracDigits(*digits);
+    shared FracDigits unmarkedFracDigits([Digits+] digits) => FracDigits(*digits);
 
 
     "Section 2.4.1 of the specification"
@@ -404,38 +405,38 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 2.4.1 of the specification"
     rule
-    shared BinDigits binDigits({BinDigit+} digits) => BinDigits(*digits);
+    shared BinDigits binDigits([BinDigit+] digits) => BinDigits(*digits);
 
     "Section 2.4.1 of the specification"
     rule
     shared BinDigits clusteredBinDigits(BinDigit? a, BinDigit? b, BinDigit? c,
-            BinDigit d, {BinDigitCluster+} clusters)
+            BinDigit d, [BinDigitCluster+] clusters)
             => meta(`BinDigits`, a, b, c, d, clusters);
 
     "Section 2.4.1 of the specification"
     rule
-    shared HexDigits hexDigits({HexDigit+} digits) => HexDigits(*digits);
+    shared HexDigits hexDigits([HexDigit+] digits) => HexDigits(*digits);
 
     "Section 2.4.1 of the specification"
     rule
     shared HexDigits clusteredHexDigits(HexDigit? a, HexDigit? b, HexDigit? c,
-            HexDigit d, {HexDigitCluster+} clusters)
+            HexDigit d, [HexDigitCluster+] clusters)
             => meta(`HexDigits`, a, b, c, d, clusters);
 
     "Section 2.4.1 of the specification"
     rule
     shared HexDigits twoClusteredHexDigits(HexDigit? a, HexDigit b,
-            {HexDigitTwoCluster+} clusters)
+            [HexDigitTwoCluster+] clusters)
             => meta(`HexDigits`, a, b, clusters);
 
     "Section 2.4.1 of the specification"
     rule
-    shared IntegerLiteral hexLiteral(HashMark h, {HexDigits+} digits)
+    shared IntegerLiteral hexLiteral(HashMark h, [HexDigits+] digits)
             => astTextNode(`IntegerLiteral`, h, digits);
 
     "Section 2.4.1 of the specification"
     rule
-    shared IntegerLiteral binLiteral(DollarMark h, {BinDigits+} digits)
+    shared IntegerLiteral binLiteral(DollarMark h, [BinDigits+] digits)
             => astTextNode(`IntegerLiteral`, h, digits);
 
     "Section 2.4.1 of the specification"
@@ -450,7 +451,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 2.4.1 of the specification"
     rule
-    shared IntegerLiteral decLiteral({Digits+} digits,
+    shared IntegerLiteral decLiteral([Digits+] digits,
             Magnitude? m)
             => astTextNode(`IntegerLiteral`, digits, m);
 
@@ -476,18 +477,18 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 2.4.1 of the specification"
     rule
-    shared Exponent exponent(ExpMarker e, Plus|Minus? s, {Digit+} digits)
+    shared Exponent exponent(ExpMarker e, Plus|Minus? s, [Digit+] digits)
             => meta(`Exponent`, e, s, digits);
 
     "Section 2.4.1 of the specification"
     rule
-    shared FloatLiteral floatLiteral({Digits+} digits, Dot dot,
-            {FracDigits+} fracs, Magnitude|Minitude|Exponent? m)
+    shared FloatLiteral floatLiteral([Digits+] digits, Dot dot,
+            [FracDigits+] fracs, Magnitude|Minitude|Exponent? m)
             => astTextNode(`FloatLiteral`, digits, dot, fracs, m);
 
     "Section 2.4.1 of the specification"
     rule
-    shared FloatLiteral shortcutFloatLiteral({Digits+} digits, Minitude m)
+    shared FloatLiteral shortcutFloatLiteral([Digits+] digits, Minitude m)
             => astTextNode(`FloatLiteral`, digits, m);
 
     "Section 2.4.2 of the specification"
@@ -686,7 +687,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             SqOpen a, SqClose b) => astNode(`SequentialType`, [type], a, b);
 
     "Section 3.2.8 of the specification"
-    rule
+    genericRule(`class CommaSepList`)
     shared CommaSepList<ItemType> commaSepList<ItemType>(ItemType t,
             [Comma, ItemType]* subsequent)
             given ItemType satisfies Node
@@ -782,7 +783,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             => meta(`SuperDot`, s, d);
 
     "Section 3.3.2 of the specification"
-    rule 
+    rule
     shared ClassInstantiation classInstantiation(SuperDot? sup,
             TypeNameWithTypeArguments type, PositionalArguments args)
             => astNode(`ClassInstantiation`, [type, args, if (exists sup) then
