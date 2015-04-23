@@ -102,6 +102,19 @@ shared class ProductionClause(shared Boolean variadic,
 
     shared actual Iterator<Atom> iterator() => allAtoms.iterator();
 
+    shared actual Integer hash => variadic.hash ^ 3 + once.hash ^ 2 +
+        values.hash;
+
+    shared actual Boolean equals(Object that) {
+        if (! is ProductionClause that) { return false; }
+        assert(is ProductionClause that);
+
+        if (that.variadic != variadic) { return false; }
+        if (that.once != once) { return false; }
+        if (that.values != values) { return false; }
+        return true;
+    }
+
     "Memoization for [[predicted]]"
     variable {Rule *}? predicted_cache = null;
 
@@ -121,11 +134,7 @@ shared class ProductionClause(shared Boolean variadic,
             for (other in g.rules)
                 if ((this.select(other.produces.subtypeOf)).size > 0)
                     other
-        }.chain(localAtoms.map((x) {
-                return if (is Type<Object> t = x.type)
-                    then g.getOmniRulesFor(t).chain(g.getGenericRulesFor(t))
-                    else {};
-            }).fold<{Rule *}>({})
+        }.chain(localAtoms.map(g.getDynamicRulesFor).fold<{Rule *}>({})
                 ((x, y) => x.chain(y)));
 
         predicted_cache = p;
@@ -288,6 +297,9 @@ shared abstract class Grammar<out Root, in Data>()
     "Omni-rule methods"
     variable FunctionDeclaration[] omniRuleMeths = [];
 
+    "Dynamic rules cache"
+    value dynamicRulesCache = HashMap<Atom,{Rule *}>();
+
     "Generic rule initial values structure"
     class GenericInfo(shared FunctionDeclaration declaration,
                       shared ClassOrInterfaceDeclaration target,
@@ -396,6 +408,21 @@ shared abstract class Grammar<out Root, in Data>()
         value cl = ProductionClause(false, true, this, result).predicted;
         startRulesCache = cl;
         return cl;
+    }
+
+    "Get dynamic and omni rules"
+    shared {Rule *} getDynamicRulesFor(Atom a)
+        => dynamicRulesCache[a] else getDynamicRulesSlowpath(a);
+
+    "Populate dynamicRulesCache and return its new value"
+    {Rule *} getDynamicRulesSlowpath(Atom a) {
+        value t = a.type;
+        if (! is Type<Object> t) { return {}; }
+        assert(is Type<Object> t);
+
+        value ret = getOmniRulesFor(t).chain(getGenericRulesFor(t));
+        dynamicRulesCache.put(a,ret);
+        return ret;
     }
 
     "Reify omni rules for a given type"
