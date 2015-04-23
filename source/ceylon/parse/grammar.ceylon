@@ -7,7 +7,8 @@ import ceylon.language.meta.model {
     UnionType,
     ClassOrInterface,
     Method,
-    Function
+    Function,
+    TypeApplicationException
 }
 import ceylon.language.meta.declaration {
     FunctionDeclaration,
@@ -122,7 +123,7 @@ shared class ProductionClause(shared Boolean variadic,
                     other
         }.chain(localAtoms.map((x) {
                 return if (is Type<Object> t = x.type)
-                    then g.getOmniRulesFor(t)
+                    then g.getOmniRulesFor(t).chain(g.getGenericRulesFor(t))
                     else {};
             }).fold<{Rule *}>({})
                 ((x, y) => x.chain(y)));
@@ -287,12 +288,46 @@ shared abstract class Grammar<out Root, in Data>()
     "Omni-rule methods"
     variable FunctionDeclaration[] omniRuleMeths = [];
 
+    "Generic rule initial values structure"
+    class GenericInfo(shared FunctionDeclaration declaration,
+                      shared ClassOrInterfaceDeclaration target,
+                      shared Integer precedence,
+                      shared Associativity associativity) {
+        shared actual String string = declaration.string;
+        shared Rule? reify(ClassOrInterface<Object> cl, AnyGrammar g) {
+            ClassOrInterface<Object> realized;
+            try {
+                realized = target.apply<Object>(*cl.typeArguments.items);
+            } catch(TypeApplicationException e) { return null; }
+
+            if (! realized.subtypeOf(cl)) { return null; }
+
+            value consume =
+                declaration.memberApply<Nothing,Object,Nothing>(_type(g),
+                        *cl.typeArguments.items).bind(g);
+            value params = zipPairs(consume.parameterTypes,
+                    declaration.parameterDeclarations);
+            value consumes = [ for (p in params)
+                makeProductionClause(p[0], p[1], g) ];
+            value produces = Atom(consume.type);
+            assert(exists ruleAnnotation = declaration.annotations<GenericRule>()[0]);
+            return Rule(consume, consumes, produces,
+                    ruleAnnotation.precedence, ruleAnnotation.associativity, g);
+        }
+    }
+
+    "Generic rule initial values"
+    variable GenericInfo[] genericInfos = [];
+
     "The result symbol we expect from this tree"
     shared Atom result = Atom(`Root`);
 
     "Error constructors"
     shared Map<Atom, Object(Object?, Object?)> errorConstructors =
         HashMap<Atom, Object(Object?, Object?)>();
+
+    "Cached result for startRules"
+    variable {Rule *}? startRulesCache = null;
 
     "Tokenizers"
     shared Map<Atom, Token?(Data, Object?)> tokenizers =
@@ -341,12 +376,35 @@ shared abstract class Grammar<out Root, in Data>()
 
         omniRuleMeths =
             _type(this).declaration.annotatedMemberDeclarations<FunctionDeclaration,OmniRule>();
+
+        value genericInfosStream =
+            _type(this).declaration.annotatedMemberDeclarations<FunctionDeclaration,GenericRule>().map((x) {
+                        assert(exists annotation =
+                                x.annotations<GenericRule>()[0]);
+                        return GenericInfo(x, annotation.c,
+                                annotation.precedence,
+                                annotation.associativity);
+                    });
+
+        genericInfos = [*genericInfosStream];
+    }
+
+    "Starting rules"
+    shared {Rule *} startRules {
+        if (exists k = startRulesCache) { return k; }
+
+        value cl = ProductionClause(false, true, this, result).predicted;
+        startRulesCache = cl;
+        return cl;
     }
 
     "Reify omni rules for a given type"
     shared {Rule *} getOmniRulesFor(Type<Object> t)
         => omniRuleMeths.map((declaration) {
-            value consume = declaration.memberApply(t).bind(this);
+            Function<Object,Nothing> consume;
+            try {
+                consume = declaration.memberApply<Nothing,Object,Nothing>(_type(this), t).bind(this);
+            } catch(TypeApplicationException t) { return null; }
             value params = zipPairs(consume.parameterTypes,
                     declaration.parameterDeclarations);
             value consumes = [ for (p in params)
@@ -355,7 +413,15 @@ shared abstract class Grammar<out Root, in Data>()
             assert(exists ruleAnnotation = declaration.annotations<OmniRule>()[0]);
             return Rule(consume, consumes, produces,
                     ruleAnnotation.precedence, ruleAnnotation.associativity, this);
-        });
+        }).narrow<Rule>();
+
+    "Reify generic rules for a given type"
+    shared {Rule *} getGenericRulesFor(Type<Object> t)
+        => genericInfos.map((info)
+            => if (is ClassOrInterface<Object> t)
+               then info.reify(t, this)
+               else null
+           ).narrow<Rule>();
 
     "Add a rule to the rule list"
     void addRule(Method<Nothing, Object, Nothing> r) {
@@ -394,4 +460,12 @@ shared abstract class Grammar<out Root, in Data>()
         assert(exists r = result.first);
         return r;
     }
+
+    "Default rule for sequential objects"
+    genericRule(`interface Sequence`)
+    shared [K+] sequence<K>(K+ ret) => ret;
+
+    "Default rule for empty sequential objects"
+    genericRule(`interface Sequential`)
+    shared [K*] sequential<K>() => [];
 }

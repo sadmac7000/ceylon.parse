@@ -119,9 +119,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
     "Queue of states to process"
     value stateQueue = StateQueue();
 
-    for (rule in rules) {
-        if (! result.supertypeOf(rule.produces)) { continue; }
-
+    for (rule in g.startRules) {
         value newState = EPState(rule);
         stateQueue.offer(newState);
     }

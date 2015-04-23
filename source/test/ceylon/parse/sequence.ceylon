@@ -5,7 +5,7 @@ import ceylon.test { test, assertEquals }
  more B's using sequence matching"
 object sequenceGrammar extends ABGrammar<S>() {
     rule
-    shared S rule1({ATerm+} a, {BTerm *} b) {
+    shared S rule1([ATerm+] a, [BTerm *] b) {
         return S(a.first.position, *a.chain(b));
     }
 }

@@ -96,7 +96,7 @@ object broadGenericGrammar extends ABGrammar<[S*]>() {
     }
 
     omniRule
-    shared K whitespace<K>({Spc+} space, K k) given K of Mul|RParen|LParen|ATerm => k;
+    shared K whitespace<K>([Spc+] space, K k) given K of Mul|RParen|LParen|ATerm => k;
 
     rule
     shared A aparse(ATerm a) => A(a.position, a);
@@ -105,7 +105,7 @@ object broadGenericGrammar extends ABGrammar<[S*]>() {
     shared MulA mulA(Mul m, A a) => MulA(m.position, m, a);
 
     rule
-    shared MMulA mmulA(A a, {MulA *} list) => MMulA(a.position, a, *list);
+    shared MMulA mmulA(A a, [MulA *] list) => MMulA(a.position, a, *list);
 
     rule
     shared S stmnt(ATerm at, MMulA m, ParenBox p) => S(at.position, at, m, p);
