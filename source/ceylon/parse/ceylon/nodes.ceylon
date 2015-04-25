@@ -224,6 +224,11 @@ shared class Value(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken("value", ls, cs, le, ce) {}
 
+"'new'"
+shared class New(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("new", ls, cs, le, ce) {}
+
 "'void'"
 shared class Void(Integer ls, Integer cs,
         Integer le, Integer ce)

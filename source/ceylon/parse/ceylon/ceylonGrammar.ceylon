@@ -1198,6 +1198,18 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             => astNode(`ValueGetterDefinition`, [m, t, s, a],
                     a, m, t, s);
 
+    "Section 4.9 of the specification"
+    tokenizer
+    shared Token<New>? new_(String input, Object? prev)
+            => keyword(`New`, input, prev, "new");
+
+    "Section 4.9 of the specification"
+    rule
+    shared ConstructorDefinition constructorDefinition(Annotations a,
+            New nk, TypeName? n, Parameters p, ExtendedType e, Block b)
+            => astNode(`ConstructorDefinition`, [n, p, b, e, a],
+                    a, nk, n, p, e, b);
+
     "Temporary"
     rule
     shared Annotations annotations() => astNode(`Annotations`, [null, []]);
