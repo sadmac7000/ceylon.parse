@@ -1210,6 +1210,17 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             => astNode(`ConstructorDefinition`, [n, p, b, e, a],
                     a, nk, n, p, e, b);
 
+    "Section 5.2.1 of the specification"
+    rule
+    shared TypedVariable typedVariable(Type t, MemberName m, Specifier? s)
+            => astNode(`TypedVariable`, [m, t, s], t, m, s);
+
+    "Section 5.2.1 of the specification"
+    rule
+    shared SpecifiedVariable specifiedVariable(Type|ValueModifier? t,
+            MemberName m, Specifier s)
+            => astNode(`SpecifiedVariable`, [m, s, t], t, m, s);
+
     "Temporary"
     rule
     shared Annotations annotations() => astNode(`Annotations`, [null, []]);
