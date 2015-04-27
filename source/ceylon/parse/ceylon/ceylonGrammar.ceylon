@@ -1221,6 +1221,19 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             MemberName m, Specifier s)
             => astNode(`SpecifiedVariable`, [m, s, t], t, m, s);
 
+    "Section 5.2.3 of the specification"
+    rule
+    shared VariadicVariable variadicVariable(UnionType? u, Star s,
+            MemberName m)
+            => astNode(`VariadicVariable`, [m, u], u, s, m);
+
+    "Section 5.2.4 of the specification"
+    rule
+    shared TuplePattern tuplePattern(SqOpen o, CommaSepList<Pattern> l,
+            [Comma, VariadicVariable]? v, SqClose c)
+            =>astNode(`TuplePattern`, [l.nodes, if (exists v) then v[1] else null],
+                    o, *l.nodes.chain([v, c]));
+
     "Temporary"
     rule
     shared Annotations annotations() => astNode(`Annotations`, [null, []]);
