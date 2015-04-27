@@ -1234,6 +1234,12 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             =>astNode(`TuplePattern`, [l.nodes, if (exists v) then v[1] else null],
                     o, *l.nodes.chain([v, c]));
 
+    "Section 5.2.5 of the specification"
+    rule
+    shared EntryPattern entryPattern(VariablePattern|TuplePattern k, Arrow a,
+            VariablePattern|TuplePattern v)
+            =>astNode(`EntryPattern`, [k, v], k, a, v);
+
     "Temporary"
     rule
     shared Annotations annotations() => astNode(`Annotations`, [null, []]);
