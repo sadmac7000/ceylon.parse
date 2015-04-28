@@ -6,7 +6,9 @@ import ceylon.collection {
 }
 
 "A queue of states"
-class StateQueue() {
+class StateQueue(AnyGrammar g) {
+    g.populateRules();
+
     value queue = ArrayList<EPState>();
     value states = HashMap<Integer,HashSet<EPState>>();
     value completeStates = HashMap<Integer,HashSet<EPState>>();
@@ -74,8 +76,28 @@ class StateQueue() {
         }
     }
 
+    for (rule in g.startRules) {
+        value newState = EPState(rule);
+        offer(newState);
+    }
+
     "Accept an item from this queue"
-    shared EPState? accept() => queue.accept();
+    shared EPState? accept() {
+        variable value state = queue.accept();
+
+        while (exists st = state, st.complete) {
+            for (s in at(st.start)) {
+                if (! s.complete,
+                    exists n = s.feed(st)) {
+                    offer(n);
+                }
+            }
+
+            state = queue.accept();
+        }
+
+        return state;
+    }
 
     "Get states for a given position"
     shared HashSet<EPState> at(Integer pos) {
@@ -99,49 +121,16 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
                                                    Data data)
         given Data satisfies List<Object>
         given Root satisfies Object {
-    g.populateRules();
-
-    "A list of rules for this object"
-    shared Rule[] rules = g.rules;
-
-    "The result symbol we expect from this tree"
-    shared Atom result = g.result;
-
-    "Error constructors"
-    shared Map<Atom, Object(Object?, Object?)> errorConstructors =
-        g.errorConstructors;
-
-    "Tokenizers"
-    value tokenizers = g.tokenizers;
 
     value tokenCache = HashMap<Integer, Set<Token>>();
 
     "Queue of states to process"
-    value stateQueue = StateQueue();
-
-    for (rule in g.startRules) {
-        value newState = EPState(rule);
-        stateQueue.offer(newState);
-    }
+    value stateQueue = StateQueue(g);
 
     "Process queued states"
     void pumpStateQueue() {
         while(exists next = stateQueue.accept()) {
-            if (next.complete) {
-                completeState(next);
-            } else {
-                predictState(next);
-            }
-        }
-    }
-
-    "Process a complete state"
-    void completeState(EPState state) {
-        for (s in stateQueue.at(state.start)) {
-            if (! s.complete,
-                exists n = s.feed(state)) {
-                stateQueue.offer(n);
-            }
+            predictState(next);
         }
     }
 
@@ -159,7 +148,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
         }
 
         assert(is Data tail = data[loc...]);
-        value ret = HashSet{elements={ for (t in tokenizers.items)
+        value ret = HashSet{elements={ for (t in g.tokenizers.items)
             if (exists r = t(tail, last)) r};};
 
         tokenCache.put(loc, ret);
@@ -168,11 +157,12 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
 
     "Run prediction for a state"
     void predictState(EPState state) {
+        /* FIXME: This method is the performance bottleneck */
         assert(exists wants = state.rule.consumes[state.matchPos]);
 
         for (want in wants) {
             for (subtype in want.subtypes) {
-                value t = tokenizers[subtype];
+                value t = g.tokenizers[subtype];
 
                 if (! exists t) { continue; }
                 assert(exists t);
@@ -206,7 +196,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
 
     "Recover an error"
     void recoverError() {
-        stateQueue.initRecovery(rules);
+        stateQueue.initRecovery(g.rules);
         value state = stateQueue.acceptRecoveryState();
         if (! exists state) {
             /* TODO: Getting here means the grammar is malformed such that none
@@ -229,7 +219,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
             assert(is Data tokenData = data[state.pos..(i - 1)]);
             value tok = constructBadToken(tokenData, state.lastToken);
 
-            for (s in state.failPropagate({tok}, true, errorConstructors)) {
+            for (s in state.failPropagate({tok}, true, g.errorConstructors)) {
                 stateQueue.offer(s);
             }
         } else {
@@ -259,7 +249,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
                 }
             }
 
-            for (s in state.failPropagate(resultSet, false, errorConstructors)) {
+            for (s in state.failPropagate(resultSet, false, g.errorConstructors)) {
                 stateQueue.offer(s);
             }
         }
@@ -295,7 +285,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
 
         for (i in endsPair.item) {
             if (! i.complete) { continue; }
-            if (! result.supertypeOf(i.rule.produces)) { continue; }
+            if (! g.result.supertypeOf(i.rule.produces)) { continue; }
             if (i.start != 0) { continue; }
 
             if (! exists k = minLsd) {
