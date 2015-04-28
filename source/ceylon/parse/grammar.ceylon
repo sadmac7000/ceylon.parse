@@ -116,29 +116,48 @@ shared class ProductionClause(shared Boolean variadic,
     }
 
     "Memoization for [[predicted]]"
-    variable {Rule *}? predicted_cache = null;
+    variable {Rule *}? predictedCache = null;
+
+    "Memoization for [[predicted]]"
+    variable {Token?(Nothing, Object?) *}? scannerCache = null;
 
     "Generate a prediction set for this clause"
     shared {Rule *} predicted {
-        if (exists p = predicted_cache) { return p; }
+        if (exists p = predictedCache) { return p; }
 
         if (values.size == 1,
             is Atom a = values.first,
             is Type<Tuple<Anything,Anything,Anything[]>> t = a.type) {
             value p = {Rule.TupleRule(t, g)};
-            predicted_cache = p;
+            predictedCache = p;
             return p;
         }
 
-       value p = {
+       value p = [*{
             for (other in g.rules)
                 if ((this.select(other.produces.subtypeOf)).size > 0)
                     other
         }.chain(localAtoms.map(g.getDynamicRulesFor).fold<{Rule *}>({})
-                ((x, y) => x.chain(y)));
+                ((x, y) => x.chain(y)))];
 
-        predicted_cache = p;
+        predictedCache = p;
         return p;
+    }
+
+    shared {Token?(Nothing, Object?) *} scanners {
+        if (exists s = scannerCache) { return s; }
+
+        scannerCache = [*productionClauses.map((x) => x.scanners)
+            .chain(
+                    localAtoms.map((a)
+                        => a.subtypes.map((x) => g.tokenizers[x])
+                            .narrow<Object>()
+                    )
+                  )
+            .fold<{Token?(Nothing, Object?) *}>({})((x, y) => x.chain(y))];
+
+        assert(exists s = scannerCache);
+        return s;
     }
 }
 
@@ -420,7 +439,7 @@ shared abstract class Grammar<out Root, in Data>()
         if (! is Type<Object> t) { return {}; }
         assert(is Type<Object> t);
 
-        value ret = getOmniRulesFor(t).chain(getGenericRulesFor(t));
+        value ret = [*getOmniRulesFor(t).chain(getGenericRulesFor(t))];
         dynamicRulesCache.put(a,ret);
         return ret;
     }

@@ -160,22 +160,11 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
         /* FIXME: This method is the performance bottleneck */
         assert(exists wants = state.rule.consumes[state.matchPos]);
 
-        for (want in wants) {
-            for (subtype in want.subtypes) {
-                value t = g.tokenizers[subtype];
-
-                if (! exists t) { continue; }
-                assert(exists t);
-                value tail = data[state.pos...];
-
-                if (! is Data tail) { continue; }
-                assert(is Data tail);
-
-                value sym = t(tail, state.lastToken);
-                if (! exists sym) { continue; }
-                assert(exists sym);
-
-                if (exists s = state.feed(sym)) {
+        if (is Data tail = data[state.pos...]) {
+            for (t in wants.scanners) {
+                assert(is Token?(Data,Object?) t);
+                if (exists sym = t(tail, state.lastToken),
+                    exists s = state.feed(sym)) {
                     stateQueue.offer(s);
                 }
             }
