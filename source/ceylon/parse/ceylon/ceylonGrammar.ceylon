@@ -1240,6 +1240,28 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             VariablePattern|TuplePattern v)
             =>astNode(`EntryPattern`, [k, v], k, a, v);
 
+    "Section 5.3 of the specification"
+    rule
+    shared Block block(CurlOpen o, [Declaration|Statement *] s, CurlClose c)
+            => astNode(`Block`, [s], o, s, c);
+
+    "Section 5.3.1 of the specificaton"
+    rule
+    shared AssignmentStatement assignmentStatement(AssignmentOperation a,
+            Semicolon s)
+            => astNode(`AssignmentStatement`, [a], a, s);
+
+    "Section 5.3.1 of the specificaton"
+    rule
+    shared PrefixPostfixStatement
+    prefixPostfixStatement(PrefixOperation|PostfixOperation a, Semicolon s)
+            => astNode(`PrefixPostfixStatement`, [a], a, s);
+
+    "Section 5.3.1 of the specificaton"
+    rule
+    shared InvocationStatement invocationStatement(Invocation a, Semicolon s)
+            => astNode(`InvocationStatement`, [a], a, s);
+
     "Temporary"
     rule
     shared Annotations annotations() => astNode(`Annotations`, [null, []]);
