@@ -1175,10 +1175,10 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 4.8 of the specification"
     rule
     shared ValueDefinition valueDefinition(Annotations a,
-            MemberName m, Type|ValueModifier|DynamicModifier t,
+            Type|ValueModifier|DynamicModifier t, MemberName m,
             AnySpecifier s, Semicolon end)
             => astNode(`ValueDefinition`, [m, t, s, a],
-                    a, m, t, s, end);
+                    a, t, m, s, end);
 
     "Section 4.8 of the specification"
     tokenizer
