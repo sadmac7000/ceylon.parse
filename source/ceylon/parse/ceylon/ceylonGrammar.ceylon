@@ -1262,6 +1262,46 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared InvocationStatement invocationStatement(Invocation a, Semicolon s)
             => astNode(`InvocationStatement`, [a], a, s);
 
+    "Section 5.3.2 of the specification"
+    tokenizer
+    shared Token<ReturnTok>? returnTok(String input, Object? prev)
+            => keyword(`ReturnTok`, input, prev, "return");
+
+    "Section 5.3.2 of the specification"
+    rule
+    shared Return return_(ReturnTok t, Expression? e, Semicolon s)
+            => astNode(`Return`, [e], t, e, s);
+
+    "Section 5.3.2 of the specification"
+    tokenizer
+    shared Token<ThrowTok>? throwTok(String input, Object? prev)
+            => keyword(`ThrowTok`, input, prev, "throw");
+
+    "Section 5.3.2 of the specification"
+    rule
+    shared Throw throw_(ThrowTok t, Expression? e, Semicolon s)
+            => astNode(`Throw`, [e], t, e, s);
+
+    "Section 5.3.2 of the specification"
+    tokenizer
+    shared Token<BreakTok>? breakTok(String input, Object? prev)
+            => keyword(`BreakTok`, input, prev, "break");
+
+    "Section 5.3.2 of the specification"
+    rule
+    shared Break break_(BreakTok t, Semicolon s)
+            => astNode(`Break`, [], t, s);
+
+    "Section 5.3.2 of the specification"
+    tokenizer
+    shared Token<ContinueTok>? continueTok(String input, Object? prev)
+            => keyword(`ContinueTok`, input, prev, "continue");
+
+    "Section 5.3.2 of the specification"
+    rule
+    shared Continue continue_(ContinueTok t, Semicolon s)
+            => astNode(`Continue`, [], t, s);
+
     "Temporary"
     rule
     shared Annotations annotations() => astNode(`Annotations`, [null, []]);

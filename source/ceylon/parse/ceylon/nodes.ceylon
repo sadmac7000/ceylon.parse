@@ -249,6 +249,26 @@ shared class Alias(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken("alias", ls, cs, le, ce) {}
 
+"'return'"
+shared class ReturnTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("return", ls, cs, le, ce) {}
+
+"'throw'"
+shared class ThrowTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("throw", ls, cs, le, ce) {}
+
+"'break'"
+shared class BreakTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("break", ls, cs, le, ce) {}
+
+"'continue'"
+shared class ContinueTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("continue", ls, cs, le, ce) {}
+
 "The -> operator"
 shared class Arrow(Integer ls, Integer cs,
         Integer le, Integer ce)
