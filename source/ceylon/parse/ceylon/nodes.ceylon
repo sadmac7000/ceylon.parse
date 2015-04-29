@@ -16,6 +16,15 @@ shared class CeylonToken(shared String text, shared Integer line_start, shared
     }
 }
 
+
+"Token for keywords"
+shared class Keyword(String t, Integer ls, Integer cs, Integer le, Integer ce)
+        extends CeylonToken(t, ls, cs, le, ce) {}
+
+"Token for keywords"
+shared class Punctuation(String t, Integer ls, Integer cs, Integer le, Integer ce)
+        extends CeylonToken(t, ls, cs, le, ce) {}
+
 "A single-line comment"
 shared class LineComment(Integer ls, Integer cs, Integer le, Integer ce)
         extends CeylonToken("", ls, cs, le, ce) {}
@@ -52,232 +61,232 @@ shared class UIdentText(String text, Integer ls, Integer cs,
 "A +"
 shared class Plus(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("+", ls, cs, le, ce) {}
+        extends Punctuation("+", ls, cs, le, ce) {}
 
 "A -"
 shared class Minus(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("-", ls, cs, le, ce) {}
+        extends Punctuation("-", ls, cs, le, ce) {}
 
 "A #"
 shared class HashMark(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("#", ls, cs, le, ce) {}
+        extends Punctuation("#", ls, cs, le, ce) {}
 
 "A $"
 shared class DollarMark(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("$", ls, cs, le, ce) {}
+        extends Punctuation("$", ls, cs, le, ce) {}
 
 "A _"
 shared class Underscore(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("_", ls, cs, le, ce) {}
+        extends Punctuation("_", ls, cs, le, ce) {}
 
 "A ."
 shared class Dot(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken(".", ls, cs, le, ce) {}
+        extends Punctuation(".", ls, cs, le, ce) {}
 
 "A |"
 shared class Pipe(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("|", ls, cs, le, ce) {}
+        extends Punctuation("|", ls, cs, le, ce) {}
 
 "A &"
 shared class Ampersand(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("&", ls, cs, le, ce) {}
+        extends Punctuation("&", ls, cs, le, ce) {}
 
 "A '"
 shared class Quote(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("'", ls, cs, le, ce) {}
+        extends Punctuation("'", ls, cs, le, ce) {}
 
 "A \""
 shared class DoubleQuote(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("\"", ls, cs, le, ce) {}
+        extends Punctuation("\"", ls, cs, le, ce) {}
 
 "A <"
 shared class LT(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("<", ls, cs, le, ce) {}
+        extends Punctuation("<", ls, cs, le, ce) {}
 
 "A >"
 shared class GT(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken(">", ls, cs, le, ce) {}
+        extends Punctuation(">", ls, cs, le, ce) {}
 
 "A ?"
 shared class Question(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("?", ls, cs, le, ce) {}
+        extends Punctuation("?", ls, cs, le, ce) {}
 
 "A ["
 shared class SqOpen(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("[", ls, cs, le, ce) {}
+        extends Punctuation("[", ls, cs, le, ce) {}
 
 "A ]"
 shared class SqClose(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("]", ls, cs, le, ce) {}
+        extends Punctuation("]", ls, cs, le, ce) {}
 
 "A ("
 shared class ParOpen(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("(", ls, cs, le, ce) {}
+        extends Punctuation("(", ls, cs, le, ce) {}
 
 "A )"
 shared class ParClose(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken(")", ls, cs, le, ce) {}
+        extends Punctuation(")", ls, cs, le, ce) {}
 
 "A ,"
 shared class Comma(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken(",", ls, cs, le, ce) {}
+        extends Punctuation(",", ls, cs, le, ce) {}
 
 "A {"
 shared class CurlOpen(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("{", ls, cs, le, ce) {}
+        extends Punctuation("{", ls, cs, le, ce) {}
 
 "A }"
 shared class CurlClose(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("}", ls, cs, le, ce) {}
+        extends Punctuation("}", ls, cs, le, ce) {}
 
 "A *"
 shared class Star(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("*", ls, cs, le, ce) {}
+        extends Punctuation("*", ls, cs, le, ce) {}
 
 "A ="
 shared class Eq(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("=", ls, cs, le, ce) {}
+        extends Punctuation("=", ls, cs, le, ce) {}
 
 "A =>"
 shared class DArrow(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("=>", ls, cs, le, ce) {}
+        extends Punctuation("=>", ls, cs, le, ce) {}
 
 "A ;"
 shared class Semicolon(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken(";", ls, cs, le, ce) {}
+        extends Punctuation(";", ls, cs, le, ce) {}
+
+"A ->"
+shared class Arrow(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("->", ls, cs, le, ce) {}
 
 "An ellipsis"
 shared class Ellipsis(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("...", ls, cs, le, ce) {}
+        extends Punctuation("...", ls, cs, le, ce) {}
 
 "'super'"
 shared class Super(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("super", ls, cs, le, ce) {}
+        extends Keyword("super", ls, cs, le, ce) {}
 
 "'in'"
 shared class In(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("in", ls, cs, le, ce) {}
+        extends Keyword("in", ls, cs, le, ce) {}
 
 "'out'"
 shared class Out(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("out", ls, cs, le, ce) {}
+        extends Keyword("out", ls, cs, le, ce) {}
 
 "'extends'"
 shared class Extends(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("extends", ls, cs, le, ce) {}
+        extends Keyword("extends", ls, cs, le, ce) {}
 
 "'satisfies'"
 shared class Satisfies(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("satisfies", ls, cs, le, ce) {}
+        extends Keyword("satisfies", ls, cs, le, ce) {}
 
 "'of'"
 shared class Of(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("of", ls, cs, le, ce) {}
+        extends Keyword("of", ls, cs, le, ce) {}
 
 "'given'"
 shared class Given(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("given", ls, cs, le, ce) {}
+        extends Keyword("given", ls, cs, le, ce) {}
 
 "'import'"
 shared class ImportTok(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("import", ls, cs, le, ce) {}
+        extends Keyword("import", ls, cs, le, ce) {}
 
 "'dynamic'"
 shared class Dynamic(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("dynamic", ls, cs, le, ce) {}
+        extends Keyword("dynamic", ls, cs, le, ce) {}
 
 "'value'"
 shared class Value(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("value", ls, cs, le, ce) {}
+        extends Keyword("value", ls, cs, le, ce) {}
 
 "'new'"
 shared class New(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("new", ls, cs, le, ce) {}
+        extends Keyword("new", ls, cs, le, ce) {}
 
 "'void'"
 shared class Void(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("void", ls, cs, le, ce) {}
+        extends Keyword("void", ls, cs, le, ce) {}
 
 "'interface'"
 shared class Interface(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("interface", ls, cs, le, ce) {}
+        extends Keyword("interface", ls, cs, le, ce) {}
 
 "'class'"
 shared class ClassTok(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("class", ls, cs, le, ce) {}
+        extends Keyword("class", ls, cs, le, ce) {}
 
 "'alias'"
 shared class Alias(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("alias", ls, cs, le, ce) {}
+        extends Keyword("alias", ls, cs, le, ce) {}
 
 "'return'"
 shared class ReturnTok(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("return", ls, cs, le, ce) {}
+        extends Keyword("return", ls, cs, le, ce) {}
 
 "'throw'"
 shared class ThrowTok(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("throw", ls, cs, le, ce) {}
+        extends Keyword("throw", ls, cs, le, ce) {}
 
 "'break'"
 shared class BreakTok(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("break", ls, cs, le, ce) {}
+        extends Keyword("break", ls, cs, le, ce) {}
 
 "'continue'"
 shared class ContinueTok(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("continue", ls, cs, le, ce) {}
+        extends Keyword("continue", ls, cs, le, ce) {}
 
 "'this'"
 shared class ThisTok(Integer ls, Integer cs,
         Integer le, Integer ce)
-        extends CeylonToken("this", ls, cs, le, ce) {}
-
-"The -> operator"
-shared class Arrow(Integer ls, Integer cs,
-        Integer le, Integer ce)
-        extends CeylonToken("->", ls, cs, le, ce) {}
+        extends Keyword("this", ls, cs, le, ce) {}
 
 "Text of an LIdentifier"
 shared class LIdentText(String text, Integer ls, Integer cs,
