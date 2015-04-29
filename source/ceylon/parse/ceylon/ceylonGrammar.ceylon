@@ -622,7 +622,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 3.2.7 of the specification"
     tokenizer
     shared Token<GT>? greaterThan(String input, Object? prev)
-            => literal(`GT`, input, prev, "<");
+            => literal(`GT`, input, prev, ">");
 
     "Section 3.2.7 of the specification"
     rule
