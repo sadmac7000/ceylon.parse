@@ -269,6 +269,11 @@ shared class ContinueTok(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken("continue", ls, cs, le, ce) {}
 
+"'this'"
+shared class ThisTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends CeylonToken("this", ls, cs, le, ce) {}
+
 "The -> operator"
 shared class Arrow(Integer ls, Integer cs,
         Integer le, Integer ce)

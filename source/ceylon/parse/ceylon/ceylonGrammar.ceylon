@@ -1302,6 +1302,30 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared Continue continue_(ContinueTok t, Semicolon s)
             => astNode(`Continue`, [], t, s);
 
+    "Section 5.3.3 of the specification"
+    tokenizer
+    shared Token<ThisTok>? thisTok(String input, Object? prev)
+            => keyword(`ThisTok`, input, prev, "this");
+
+    "Section 5.3.3 of the specification"
+    rule
+    shared This this_(ThisTok t)
+            => astNode(`This`, [], t);
+
+    "Section 5.3.3 of the specification"
+    rule
+    shared ValueSpecification valueSpecification([This, Dot]? t, MemberName m,
+            Specifier s, Semicolon e)
+            => astNode(`ValueSpecification`, [m, s, if (exists t) then t[0]
+                    else null], t, m, s, e);
+
+    "Section 5.3.3 of the specification"
+    rule
+    shared LazySpecification lazySpecification([This, Dot]? t,
+            MemberName m, [Parameters*] p, LazySpecifier s, Semicolon e)
+            => astNode(`LazySpecification`, [m, s, p, if (exists t) then t[0]
+                    else null], t, m, p, s, e);
+
     "Temporary"
     rule
     shared Annotations annotations() => astNode(`Annotations`, [null, []]);
