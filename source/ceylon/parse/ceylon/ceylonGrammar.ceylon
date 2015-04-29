@@ -1193,7 +1193,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 4.8 of the specification"
     rule
     shared ValueGetterDefinition valueGetterDefinition(Annotations a,
-            MemberName m, Type|ValueModifier|DynamicModifier t,
+            Type|ValueModifier|DynamicModifier t, MemberName m,
             Block s)
             => astNode(`ValueGetterDefinition`, [m, t, s, a],
                     a, m, t, s);
