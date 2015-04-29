@@ -125,20 +125,17 @@ shared class ProductionClause(shared Boolean variadic,
     shared {Rule *} predicted {
         if (exists p = predictedCache) { return p; }
 
-        if (values.size == 1,
-            is Atom a = values.first,
-            is Type<Tuple<Anything,Anything,Anything[]>> t = a.type) {
-            value p = {Rule.TupleRule(t, g)};
-            predictedCache = p;
-            return p;
-        }
-
        value p = [*{
             for (other in g.rules)
                 if ((this.select(other.produces.subtypeOf)).size > 0)
                     other
         }.chain(localAtoms.map(g.getDynamicRulesFor).fold<{Rule *}>({})
-                ((x, y) => x.chain(y)))];
+                ((x, y) => x.chain(y))
+            ).chain(
+                localAtoms.map((x) =>
+                    x.type).narrow<Type<Tuple<Anything,Anything,Anything[]>>>()
+                    .map((x) => Rule.TupleRule(x, g))
+            )];
 
         predictedCache = p;
         return p;
