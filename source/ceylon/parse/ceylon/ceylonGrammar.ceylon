@@ -1343,6 +1343,11 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             Specifier s, Semicolon e)
             => astNode(`Destructure`, [p, s, v], v, p, s, e);
 
+    "Section 5.3.5 of the specification"
+    rule
+    shared DynamicBlock dynamicBlock(Dynamic d, Block b)
+            => astNode(`DynamicBlock`, [b], d, b);
+
     "Temporary"
     rule
     shared Annotations annotations() => astNode(`Annotations`, [null, []]);
