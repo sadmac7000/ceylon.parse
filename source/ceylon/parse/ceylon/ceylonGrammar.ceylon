@@ -1348,6 +1348,68 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared DynamicBlock dynamicBlock(Dynamic d, Block b)
             => astNode(`DynamicBlock`, [b], d, b);
 
+    "Section 5.4.1 of the specification"
+    rule
+    shared BooleanCondition booleanCondition(Expression e)
+            => astNode(`BooleanCondition`, [e], e);
+
+    "Section 5.4.2 of the specification"
+    tokenizer
+    shared Token<Is>? is_(String input, Object? prev)
+            => keyword(`Is`, input, prev, "is");
+
+    "Section 5.4.2 of the specification"
+    tokenizer
+    shared Token<Bang>? bang(String input, Object? prev)
+            => literal(`Bang`, input, prev, "!");
+
+    "Section 5.4.2 of the specification"
+    rule
+    shared IsCondition isCondition(Bang? b, Is i, TypedVariable tv)
+            => astNode(`IsCondition`, [tv, b exists], b, i, tv);
+
+    "Section 5.4.3 of the specification"
+    tokenizer
+    shared Token<Exists>? exists_(String input, Object? prev)
+            => keyword(`Exists`, input, prev, "exists");
+
+    "Section 5.4.3 of the specification"
+    tokenizer
+    shared Token<Nonempty>? nonempty_(String input, Object? prev)
+            => keyword(`Nonempty`, input, prev, "nonempty");
+
+    "Section 5.4.3 of the specification"
+    rule
+    shared SpecifiedPattern specifiedPattern(Pattern p, Specifier s)
+            => astNode(`SpecifiedPattern`, [p, s], p, s);
+
+    "Section 5.4.3 of the specification"
+    rule
+    shared ExistsCondition existsCondition(Bang? b, Exists i,
+            SpecifiedPattern|LIdentifier tv)
+            => astNode(`ExistsCondition`, [tv, b exists], b, i, tv);
+
+    "Section 5.4.3 of the specification"
+    rule
+    shared NonemptyCondition nonemptyCondition(Bang? b, Nonempty i,
+            SpecifiedPattern|LIdentifier tv)
+            => astNode(`NonemptyCondition`, [tv, b exists], b, i, tv);
+
+    "Section 5.4.4 of the specification"
+    shared alias MatchCaseBase =>
+    IntegerLiteral|CharacterLiteral|StringLiteral|NegationOperation|BaseExpression;
+
+    "Section 5.4.4 of the specification"
+    rule
+    shared MatchCase matchCase(MatchCaseBase b, [[Pipe,MatchCaseBase] *] cont)
+            => astNode(`MatchCase`, [ [b, *cont.narrow<MatchCaseBase>()] ], b,
+                    *cont.map((x) => x[1]));
+
+    "Section 5.4.4 of the specification"
+    rule
+    shared IsCase isCase(Is i, Type t)
+            => astNode(`IsCase`, [t], i, t);
+
     "Temporary"
     rule
     shared Annotations annotations() => astNode(`Annotations`, [null, []]);

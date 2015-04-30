@@ -188,6 +188,11 @@ shared class Ellipsis(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends Punctuation("...", ls, cs, le, ce) {}
 
+"A !"
+shared class Bang(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("!", ls, cs, le, ce) {}
+
 "'super'"
 shared class Super(Integer ls, Integer cs,
         Integer le, Integer ce)
@@ -287,6 +292,21 @@ shared class ContinueTok(Integer ls, Integer cs,
 shared class ThisTok(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends Keyword("this", ls, cs, le, ce) {}
+
+"'is'"
+shared class Is(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Keyword("is", ls, cs, le, ce) {}
+
+"'exists'"
+shared class Exists(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Keyword("exists", ls, cs, le, ce) {}
+
+"'nonempty'"
+shared class Nonempty(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Keyword("nonempty", ls, cs, le, ce) {}
 
 "Text of an LIdentifier"
 shared class LIdentText(String text, Integer ls, Integer cs,
