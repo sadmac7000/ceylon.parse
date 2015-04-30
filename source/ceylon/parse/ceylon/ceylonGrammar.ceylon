@@ -541,13 +541,13 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
         variable value i = 0;
         variable value skip = false;
 
-        while (exists c = input[i], c != "\"" || skip) {
+        while (exists c = input[i], c != '"' || skip) {
             skip = c == '\\' && !skip;
             i++;
         }
 
         if (! input[i] exists) { return null; }
-        if (exists c = input[i], c != "\"") { return null; }
+        if (exists c = input[i], c != '"') { return null; }
 
         value [end_line, end_col] = calculateStopPos(start_line, start_col,
                 input[0:i]);
