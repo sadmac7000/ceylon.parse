@@ -1240,6 +1240,17 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             VariablePattern|TuplePattern v)
             =>astNode(`EntryPattern`, [k, v], k, a, v);
 
+    "Unknown/Future revision"
+    rule
+    shared VariablePattern variablePattern(UnspecifiedVariable u)
+            =>astNode(`VariablePattern`, [u], u);
+
+    "Unknown/Future revision"
+    rule
+    shared UnspecifiedVariable unspecifiedVariable(Type|ValueModifier? t,
+            MemberName m)
+            => astNode(`UnspecifiedVariable`, [m, t], t, m);
+
     "Section 5.3 of the specification"
     rule
     shared Block block(CurlOpen o, [Declaration|Statement *] s, CurlClose c)
@@ -1325,6 +1336,12 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             MemberName m, [Parameters*] p, LazySpecifier s, Semicolon e)
             => astNode(`LazySpecification`, [m, s, p, if (exists t) then t[0]
                     else null], t, m, p, s, e);
+
+    "Section 5.3.4 of the specification"
+    rule
+    shared Destructure destructure(ValueModifier v, TuplePattern|EntryPattern p,
+            Specifier s, Semicolon e)
+            => astNode(`Destructure`, [p, s, v], v, p, s, e);
 
     "Temporary"
     rule
