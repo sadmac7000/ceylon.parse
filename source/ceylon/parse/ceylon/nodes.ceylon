@@ -308,6 +308,16 @@ shared class Nonempty(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends Keyword("nonempty", ls, cs, le, ce) {}
 
+"'if'"
+shared class IfTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Keyword("if", ls, cs, le, ce) {}
+
+"'else'"
+shared class ElseTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Keyword("else", ls, cs, le, ce) {}
+
 "Text of an LIdentifier"
 shared class LIdentText(String text, Integer ls, Integer cs,
         Integer le, Integer ce)

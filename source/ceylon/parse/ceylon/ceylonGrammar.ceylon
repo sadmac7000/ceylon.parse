@@ -1348,6 +1348,12 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared DynamicBlock dynamicBlock(Dynamic d, Block b)
             => astNode(`DynamicBlock`, [b], d, b);
 
+    "Section 5.4 of the specification"
+    rule
+    shared Conditions conditions(ParOpen o, CommaSepList<Condition> l,
+            ParClose c)
+            => astNode(`Conditions`, [l.nodes], *l.nodes);
+
     "Section 5.4.1 of the specification"
     rule
     shared BooleanCondition booleanCondition(Expression e)
@@ -1409,6 +1415,31 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     rule
     shared IsCase isCase(Is i, Type t)
             => astNode(`IsCase`, [t], i, t);
+
+    "Section 5.5.1 of the specification"
+    tokenizer
+    shared Token<IfTok>? ifTok(String input, Object? prev)
+            => keyword(`IfTok`, input, prev, "if");
+
+    "Section 5.5.1 of the specification"
+    tokenizer
+    shared Token<ElseTok>? elseTok(String input, Object? prev)
+            => keyword(`ElseTok`, input, prev, "else");
+
+    "Section 5.5.1 of the specification"
+    rule
+    shared IfElse ifElse(IfClause i, ElseClause? e)
+            => astNode(`IfElse`, [i, e], i, e);
+
+    "Section 5.5.1 of the specification"
+    rule
+    shared IfClause ifClause(IfTok i, Conditions c, Block b)
+            => astNode(`IfClause`, [c, b], i, c, b);
+
+    "Section 5.5.1 of the specification"
+    rule
+    shared ElseClause elseClause(ElseTok i, Block|IfElse b)
+            => astNode(`ElseClause`, [b], i, b);
 
     "Temporary"
     rule
