@@ -118,8 +118,15 @@ shared class ProductionClause(shared Boolean variadic,
     "Memoization for [[predicted]]"
     variable {Rule *}? predictedCache = null;
 
-    "Memoization for [[predicted]]"
-    variable {Token?(Nothing, Object?) *}? scannerCache = null;
+    "Stream of applicable scanners"
+    shared {Token?(Nothing, Object?) *} scanners = [*productionClauses.map((x) => x.scanners)
+            .chain(
+                    localAtoms.map((a)
+                        => a.subtypes.map((x) => g.tokenizers[x])
+                            .narrow<Object>()
+                    )
+                  )
+            .fold<{Token?(Nothing, Object?) *}>({})((x, y) => x.chain(y))];
 
     "Generate a prediction set for this clause"
     shared {Rule *} predicted {
@@ -139,22 +146,6 @@ shared class ProductionClause(shared Boolean variadic,
 
         predictedCache = p;
         return p;
-    }
-
-    shared {Token?(Nothing, Object?) *} scanners {
-        if (exists s = scannerCache) { return s; }
-
-        scannerCache = [*productionClauses.map((x) => x.scanners)
-            .chain(
-                    localAtoms.map((a)
-                        => a.subtypes.map((x) => g.tokenizers[x])
-                            .narrow<Object>()
-                    )
-                  )
-            .fold<{Token?(Nothing, Object?) *}>({})((x, y) => x.chain(y))];
-
-        assert(exists s = scannerCache);
-        return s;
     }
 }
 
