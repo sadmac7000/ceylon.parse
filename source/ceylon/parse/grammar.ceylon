@@ -132,11 +132,11 @@ shared class ProductionClause(shared Boolean variadic,
     shared {Rule *} predicted {
         if (exists p = predictedCache) { return p; }
 
-       value p = [*{
+        value p = [*{
             for (other in g.rules)
                 if ((this.select(other.produces.subtypeOf)).size > 0)
                     other
-        }.chain(localAtoms.map(g.getDynamicRulesFor).fold<{Rule *}>({})
+         }.chain(localAtoms.map(g.getDynamicRulesFor).fold<{Rule *}>({})
                 ((x, y) => x.chain(y))
             ).chain(
                 localAtoms.map((x) =>
