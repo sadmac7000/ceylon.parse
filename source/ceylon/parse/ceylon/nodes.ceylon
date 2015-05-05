@@ -318,6 +318,16 @@ shared class ElseTok(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends Keyword("else", ls, cs, le, ce) {}
 
+"'switch'"
+shared class SwitchTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Keyword("switch", ls, cs, le, ce) {}
+
+"'case'"
+shared class CaseTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Keyword("case", ls, cs, le, ce) {}
+
 "Text of an LIdentifier"
 shared class LIdentText(String text, Integer ls, Integer cs,
         Integer le, Integer ce)

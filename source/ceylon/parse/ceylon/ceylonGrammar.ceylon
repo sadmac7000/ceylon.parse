@@ -1441,6 +1441,43 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared ElseClause elseClause(ElseTok i, Block|IfElse b)
             => astNode(`ElseClause`, [b], i, b);
 
+    "Section 5.5.2 of the specification"
+    tokenizer
+    shared Token<SwitchTok>? switchTok(String input, Object? prev)
+            => keyword(`SwitchTok`, input, prev, "switch");
+
+    "Section 5.5.2 of the specification"
+    tokenizer
+    shared Token<CaseTok>? caseTok(String input, Object? prev)
+            => keyword(`CaseTok`, input, prev, "case");
+
+    "Section 5.5.2 of the specification"
+    rule
+    shared SwitchCaseElse switchCaseElse(SwitchClause c, SwitchCases s)
+            => astNode(`SwitchCaseElse`, [c, s], c, s);
+
+    "Section 5.5.2 of the specification"
+    rule
+    shared SwitchClause switchClause(SwitchTok t, ParOpen o,
+            Expression|SpecifiedVariable e, ParClose p)
+            => astNode(`SwitchClause`, [e], t, o, e, p);
+
+    "Section 5.5.2 of the specification"
+    rule
+    shared SwitchCases switchCases([CaseClause +] c, ElseCaseClause? e)
+            => astNode(`SwitchCases`, [c, e], c, e);
+
+    "Section 5.5.2 of the specification"
+    rule
+    shared ElseCaseClause elseCaseClause(ElseTok i, Block b)
+            => astNode(`ElseCaseClause`, [b], i, b);
+
+    "Section 5.5.2 of the specification"
+    rule
+    shared CaseClause caseClause(CaseTok ct, ParOpen o, CaseItem c,
+            ParClose cl, Block b)
+            => astNode(`CaseClause`, [c, b], ct, o, c, cl, b);
+
     "Temporary"
     rule
     shared Annotations annotations() => astNode(`Annotations`, [null, []]);
