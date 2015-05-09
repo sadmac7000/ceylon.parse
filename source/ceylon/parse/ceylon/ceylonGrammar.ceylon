@@ -1504,6 +1504,16 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared FailClause failClause(ElseTok e, Block b)
             => astNode(`FailClause`, [b], e, b);
 
+    "Section 5.5.4 of the specification"
+    tokenizer
+    shared Token<WhileTok>? whileTok(String input, Object? prev)
+            => keyword(`WhileTok`, input, prev, "while");
+
+    "Section 5.5.4 of the specification"
+    rule
+    shared While while_(WhileTok w, Conditions c, Block b)
+            => astNode(`While`, [c, b], w, c, b);
+
     "Temporary"
     rule
     shared Annotations annotations() => astNode(`Annotations`, [null, []]);

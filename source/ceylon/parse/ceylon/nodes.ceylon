@@ -333,6 +333,11 @@ shared class ForTok(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends Keyword("for", ls, cs, le, ce) {}
 
+"'while'"
+shared class WhileTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Keyword("while", ls, cs, le, ce) {}
+
 "Text of an LIdentifier"
 shared class LIdentText(String text, Integer ls, Integer cs,
         Integer le, Integer ce)
