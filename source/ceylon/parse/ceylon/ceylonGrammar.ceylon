@@ -1572,7 +1572,13 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             Semicolon s)
             => astNode(`Assertion`, [c, a], a, t, c, s);
 
-    "Temporary"
+    "Section 7.1.1 of the specification"
     rule
-    shared Annotations annotations() => astNode(`Annotations`, [null, []]);
+    shared Annotations annotations(StringLiteral? s, [Annotation *] a)
+            => astNode(`Annotations`, [s, a], s, a);
+
+    "Section 7.1.1 of the specification"
+    rule
+    shared Annotation annotation(MemberName m, Arguments? a)
+            => astNode(`Annotation`, [m, a], m, a);
 }
