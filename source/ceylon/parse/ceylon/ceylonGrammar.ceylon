@@ -1,7 +1,7 @@
 import ceylon.parse { Grammar, Token, rule, omniRule, genericRule,
     tokenizer, lassoc }
 import ceylon.language.meta.model { Class }
-import ceylon.ast.core { ASTSuper = Super, ... }
+import ceylon.ast.core { ... }
 
 "AST Node key to attach individual tokens"
 shared Key<CeylonToken[]> tokensKey = ScopedKey<CeylonToken[]>(`package
@@ -773,20 +773,15 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 3.3.2 of the specification"
     tokenizer
-    shared Token<Super>? super_(String input, Object? prev)
-            => keyword(`Super`, input, prev, "super");
+    shared Token<SuperTok>? superTok(String input, Object? prev)
+            => keyword(`SuperTok`, input, prev, "super");
 
     "Section 3.3.2 of the specification"
     rule
-    shared SuperDot superDot(Super s, Dot d)
-            => meta(`SuperDot`, s, d);
-
-    "Section 3.3.2 of the specification"
-    rule
-    shared ClassInstantiation classInstantiation(SuperDot? sup,
+    shared ClassInstantiation classInstantiation([SuperTok, Dot]? sup,
             TypeNameWithTypeArguments type, PositionalArguments args)
             => astNode(`ClassInstantiation`, [type, args, if (exists sup) then
-            ASTSuper() else null], sup, type, args);
+            Super() else null], sup, type, args);
 
     "Section 3.3.2 of the specification"
     rule
@@ -1586,6 +1581,28 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
         return astNode(`StringTemplate`, [stringLits, exprs], s, a,
                 *b.withTrailing(e));
     }
+
+    "Section 6.3 of the specification"
+    tokenizer
+    shared Token<OuterTok>? outerTok(String input, Object? prev)
+            => keyword(`OuterTok`, input, prev, "outer");
+
+    "Section 6.3 of the specification"
+    tokenizer
+    shared Token<PackageTok>? packageTok(String input, Object? prev)
+            => keyword(`PackageTok`, input, prev, "package");
+
+    "Section 6.3 of the specification"
+    rule
+    shared Super super_(SuperTok t) => astNode(`Super`, [], t);
+
+    "Section 6.3 of the specification"
+    rule
+    shared Outer outer_(OuterTok t) => astNode(`Outer`, [], t);
+
+    "Section 6.3 of the specification"
+    rule
+    shared Package package_(PackageTok t) => astNode(`Package`, [], t);
 
     "Section 7.1.1 of the specification"
     rule

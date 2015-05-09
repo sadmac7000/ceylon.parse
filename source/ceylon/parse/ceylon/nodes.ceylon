@@ -204,7 +204,7 @@ shared class TickTick(Integer ls, Integer cs,
         extends Punctuation("\`\`", ls, cs, le, ce) {}
 
 "'super'"
-shared class Super(Integer ls, Integer cs,
+shared class SuperTok(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends Keyword("super", ls, cs, le, ce) {}
 
@@ -368,6 +368,16 @@ shared class AssertTok(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends Keyword("assert", ls, cs, le, ce) {}
 
+"'outer'"
+shared class OuterTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Keyword("outer", ls, cs, le, ce) {}
+
+"'package'"
+shared class PackageTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Keyword("package", ls, cs, le, ce) {}
+
 "Text of an LIdentifier"
 shared class LIdentText(String text, Integer ls, Integer cs,
         Integer le, Integer ce)
@@ -469,10 +479,6 @@ shared class Exponent(CeylonToken+ tokens)
 
 "A . followed by a base type"
 shared class QualifiedTypeSuffix(CeylonToken+ tokens)
-        extends CeylonMetaToken(*tokens) {}
-
-"A 'super' followed by a '.'"
-shared class SuperDot(CeylonToken+ tokens)
         extends CeylonMetaToken(*tokens) {}
 
 "A node that isn't part of the AST but simplifies rules"
