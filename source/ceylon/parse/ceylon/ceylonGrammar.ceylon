@@ -1478,6 +1478,32 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             ParClose cl, Block b)
             => astNode(`CaseClause`, [c, b], ct, o, c, cl, b);
 
+    "Section 5.5.3 of the specification"
+    tokenizer
+    shared Token<ForTok>? forTok(String input, Object? prev)
+            => keyword(`ForTok`, input, prev, "for");
+
+    "Section 5.5.3 of the specification"
+    rule
+    shared ForFail forFail(ForClause f, FailClause? c)
+            => astNode(`ForFail`, [f, c], f, c);
+
+    "Section 5.5.3 of the specification"
+    rule
+    shared ForClause forClause(ForTok t, ForIterator f, Block b)
+            => astNode(`ForClause`, [f, b], t, f, b);
+
+    "Section 5.5.3 of the specification"
+    rule
+    shared ForIterator forIterator(ParOpen o, Pattern p, In i, Expression e,
+            ParClose c)
+            => astNode(`ForIterator`, [p, e], o, p, i, e, c);
+
+    "Section 5.5.3 of the specification"
+    rule
+    shared FailClause failClause(ElseTok e, Block b)
+            => astNode(`FailClause`, [b], e, b);
+
     "Temporary"
     rule
     shared Annotations annotations() => astNode(`Annotations`, [null, []]);
