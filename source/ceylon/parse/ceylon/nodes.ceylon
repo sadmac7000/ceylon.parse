@@ -193,6 +193,16 @@ shared class Bang(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends Punctuation("!", ls, cs, le, ce) {}
 
+"A `"
+shared class Tick(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("`", ls, cs, le, ce) {}
+
+"A \``"
+shared class TickTick(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("\`\`", ls, cs, le, ce) {}
+
 "'super'"
 shared class Super(Integer ls, Integer cs,
         Integer le, Integer ce)

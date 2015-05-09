@@ -541,13 +541,12 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
         variable value i = 0;
         variable value skip = false;
 
-        while (exists c = input[i], c != '"' || skip) {
+        while (exists c = input[i], (c != '"' && ! input[i...].startsWith("\``")) || skip) {
             skip = c == '\\' && !skip;
             i++;
         }
 
         if (! input[i] exists) { return null; }
-        if (exists c = input[i], c != '"') { return null; }
 
         value [end_line, end_col] = calculateStopPos(start_line, start_col,
                 input[0:i]);
@@ -1571,6 +1570,22 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared Assertion assertion(Annotations a, AssertTok t, Conditions c,
             Semicolon s)
             => astNode(`Assertion`, [c, a], a, t, c, s);
+
+    "Section 6.2 of the specification"
+    tokenizer
+    shared Token<TickTick>? tickTick(String input, Object? prev)
+            => literal(`TickTick`, input, prev, "\``");
+
+    "Section 6.2 of the specification"
+    rule
+    shared StringTemplate stringTemplate(DoubleQuote s, StringLiteralTok a,
+            [[TickTick,Expression,TickTick,StringLiteralTok] +] b, DoubleQuote e)
+    {
+        value stringLits = [*{StringLiteral(a.text)}.chain(b.map((x) => StringLiteral(x[3].text)))];
+        value exprs = [*b.map((x) => x[1])];
+        return astNode(`StringTemplate`, [stringLits, exprs], s, a,
+                *b.withTrailing(e));
+    }
 
     "Section 7.1.1 of the specification"
     rule
