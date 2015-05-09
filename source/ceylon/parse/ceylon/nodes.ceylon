@@ -338,6 +338,26 @@ shared class WhileTok(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends Keyword("while", ls, cs, le, ce) {}
 
+"'try'"
+shared class TryTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Keyword("try", ls, cs, le, ce) {}
+
+"'catch'"
+shared class CatchTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Keyword("catch", ls, cs, le, ce) {}
+
+"'finally'"
+shared class FinallyTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Keyword("finally", ls, cs, le, ce) {}
+
+"'assert'"
+shared class AssertTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Keyword("assert", ls, cs, le, ce) {}
+
 "Text of an LIdentifier"
 shared class LIdentText(String text, Integer ls, Integer cs,
         Integer le, Integer ce)

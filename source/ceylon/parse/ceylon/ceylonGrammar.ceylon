@@ -1514,6 +1514,64 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared While while_(WhileTok w, Conditions c, Block b)
             => astNode(`While`, [c, b], w, c, b);
 
+    "Section 5.5.5 of the specification"
+    tokenizer
+    shared Token<TryTok>? tryTok(String input, Object? prev)
+            => keyword(`TryTok`, input, prev, "try");
+
+    "Section 5.5.5 of the specification"
+    tokenizer
+    shared Token<CatchTok>? catchTok(String input, Object? prev)
+            => keyword(`CatchTok`, input, prev, "catch");
+
+    "Section 5.5.5 of the specification"
+    tokenizer
+    shared Token<FinallyTok>? finallyTok(String input, Object? prev)
+            => keyword(`FinallyTok`, input, prev, "finally");
+
+    "Section 5.5.5 of the specification"
+    rule
+    shared TryCatchFinally tryCatchFinally(TryClause t, CatchClause[] c,
+            FinallyClause? f)
+            => astNode(`TryCatchFinally`, [t, c, f], t, c, f);
+
+    "Section 5.5.5 of the specification"
+    rule
+    shared TryClause tryClause(TryTok t, Resources? r, Block b)
+            => astNode(`TryClause`, [b, r], t, r, b);
+
+    "Section 5.5.5 of the specification"
+    rule
+    shared Resources resources(ParOpen o, CommaSepList<Resource> r, ParClose c)
+            => astNode(`Resources`, [r.nodes], o, *r.nodes.withTrailing(c));
+
+    "Section 5.5.5 of the specification"
+    rule
+    shared Resource resource(Expression|SpecifiedVariable r)
+            => astNode(`Resource`, [r], r);
+
+    "Section 5.5.5 of the specification"
+    rule
+    shared CatchClause catchClause(CatchTok t, ParOpen o,
+            UnspecifiedVariable u, ParClose c, Block b)
+            => astNode(`CatchClause`, [u, b], t, o, u, c, b);
+
+    "Section 5.5.5 of the specification"
+    rule
+    shared FinallyClause finallyClause(FinallyTok t, Block b)
+            => astNode(`FinallyClause`, [b], t, b);
+
+    "Section 5.5.6 of the specification"
+    tokenizer
+    shared Token<AssertTok>? assertTok(String input, Object? prev)
+            => keyword(`AssertTok`, input, prev, "assert");
+
+    "Section 5.5.6 of the specification"
+    rule
+    shared Assertion assertion(Annotations a, AssertTok t, Conditions c,
+            Semicolon s)
+            => astNode(`Assertion`, [c, a], a, t, c, s);
+
     "Temporary"
     rule
     shared Annotations annotations() => astNode(`Annotations`, [null, []]);
