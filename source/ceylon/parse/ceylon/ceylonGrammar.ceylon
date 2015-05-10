@@ -1626,6 +1626,18 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             ParClose c)
             => astNode(`GroupedExpression`, [e], o, e, c);
 
+    "Section 6.5.1 of the specification"
+    rule
+    shared BaseExpression baseExpression(NameWithTypeArguments n)
+            => astNode(`BaseExpression`, [n], n);
+
+    "Section 6.5.1 of the specification"
+    rule
+    shared MemberNameWithTypeArguments memberNameWithArguments(
+            MemberName name, TypeArguments? args)
+            => astNode(`MemberNameWithTypeArguments`, [name, args],
+                    name, args);
+
     "Section 7.1.1 of the specification"
     rule
     shared Annotations annotations(StringLiteral? s, [Annotation *] a)
