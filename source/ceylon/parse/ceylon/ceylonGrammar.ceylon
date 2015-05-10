@@ -1638,6 +1638,37 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             => astNode(`MemberNameWithTypeArguments`, [name, args],
                     name, args);
 
+    "Section 6.5.2 of the specification"
+    rule
+    shared QualifiedExpression qualifiedExpression(Primary p,
+            AnyMemberOperator o, NameWithTypeArguments n)
+            => astNode(`QualifiedExpression`, [p, n, o], p, o, n);
+
+    "Section 6.5.2 of the specification"
+    rule
+    shared MemberOperator memberOperator(Dot d)
+            => astNode(`MemberOperator`, [], d);
+
+    "Section 6.5.2 of the specification"
+    tokenizer
+    shared Token<QDot>? qdot(String input, Object? prev)
+            => literal(`QDot`, input, prev, "?.");
+
+    "Section 6.5.2 of the specification"
+    tokenizer
+    shared Token<SDot>? sdot(String input, Object? prev)
+            => literal(`SDot`, input, prev, "*.");
+
+    "Section 6.5.2 of the specification"
+    rule
+    shared SafeMemberOperator safeMemberOperator(QDot d)
+            => astNode(`SafeMemberOperator`, [], d);
+
+    "Section 6.5.2 of the specification"
+    rule
+    shared SpreadMemberOperator spreadMemberOperator(SDot d)
+            => astNode(`SpreadMemberOperator`, [], d);
+
     "Section 7.1.1 of the specification"
     rule
     shared Annotations annotations(StringLiteral? s, [Annotation *] a)

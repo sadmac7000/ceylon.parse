@@ -203,6 +203,16 @@ shared class TickTick(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends Punctuation("\`\`", ls, cs, le, ce) {}
 
+"A ?."
+shared class QDot(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("?.", ls, cs, le, ce) {}
+
+"A *."
+shared class SDot(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("*.", ls, cs, le, ce) {}
+
 "'super'"
 shared class SuperTok(Integer ls, Integer cs,
         Integer le, Integer ce)
