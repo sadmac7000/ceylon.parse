@@ -378,6 +378,11 @@ shared class PackageTok(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends Keyword("package", ls, cs, le, ce) {}
 
+"'function'"
+shared class FunctionTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Keyword("function", ls, cs, le, ce) {}
+
 "Text of an LIdentifier"
 shared class LIdentText(String text, Integer ls, Integer cs,
         Integer le, Integer ce)

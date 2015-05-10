@@ -1604,6 +1604,22 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     rule
     shared Package package_(PackageTok t) => astNode(`Package`, [], t);
 
+    "Section 6.4 of the specification"
+    tokenizer
+    shared Token<FunctionTok>? functionTok(String input, Object? prev)
+            => keyword(`FunctionTok`, input, prev, "function");
+
+    "Section 6.4 of the specification"
+    rule
+    shared FunctionModifier functionModifier(FunctionTok t)
+            => astNode(`FunctionModifier`, [], t);
+
+    "Section 6.4 of the specification"
+    rule
+    shared FunctionExpression functionExpression(FunctionModifier|VoidModifier? m,
+            [Parameters+] p, Block|LazySpecifier l)
+            => astNode(`FunctionExpression`, [p, l, m], m, p, l);
+
     "Section 7.1.1 of the specification"
     rule
     shared Annotations annotations(StringLiteral? s, [Annotation *] a)
