@@ -1620,6 +1620,12 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             [Parameters+] p, Block|LazySpecifier l)
             => astNode(`FunctionExpression`, [p, l, m], m, p, l);
 
+    "Section 6.5 of the specification"
+    rule
+    shared GroupedExpression groupedExpression(ParOpen o, Expression e,
+            ParClose c)
+            => astNode(`GroupedExpression`, [e], o, e, c);
+
     "Section 7.1.1 of the specification"
     rule
     shared Annotations annotations(StringLiteral? s, [Annotation *] a)
