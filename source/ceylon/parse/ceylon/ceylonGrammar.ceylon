@@ -1680,6 +1680,103 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared SpreadMemberOperator spreadMemberOperator(SDot d)
             => astNode(`SpreadMemberOperator`, [], d);
 
+    "Section 6.6 of the specification"
+    rule
+    shared Invocation invocation(Primary p, Arguments a)
+            => astNode(`Invocation`, [p, a], p, a);
+
+    "Section 6.6.3 of the specification"
+    rule
+    shared ArgumentList argumentList(CommaSepList<Expression> l,
+            [Comma,SpreadArgument|Comprehension]? c)
+            => astNode(`ArgumentList`, [l.nodes, if (exists c) then c[1] else
+                    null],
+                    *l.nodes.chain({c}));
+
+    "Section 6.6.3 of the specification"
+    rule
+    shared ArgumentList argumentList2(SpreadArgument|Comprehension? c)
+            => astNode(`ArgumentList`, [[], c], c);
+
+    "Section 6.6.5 of the specification"
+    rule
+    shared SpreadArgument spreadArgument(Star s, UnioningExpression e)
+            => astNode(`SpreadArgument`, [e], s, e);
+
+    "Section 6.6.6 of the specification"
+    rule
+    shared Comprehension comprehension(InitialComprehensionClause i)
+            => astNode(`Comprehension`, [i], i);
+
+    "Section 6.6.6 of the specification"
+    rule
+    shared ForComprehensionClause forComprehensionClause(ForTok t,
+            ForIterator f, ComprehensionClause c)
+            => astNode(`ForComprehensionClause`, [f, c], t, f, c);
+
+    "Section 6.6.6 of the specification"
+    rule
+    shared IfComprehensionClause ifComprehensionClause(IfTok t,
+            Conditions f, ComprehensionClause c)
+            => astNode(`IfComprehensionClause`, [f, c], t, f, c);
+
+    "Section 6.6.7 of the specification"
+    rule
+    shared PositionalArguments positionalArguments(ParOpen p, ArgumentList a,
+            ParClose c)
+            => astNode(`PositionalArguments`, [a], p, a, c);
+
+    "Section 6.6.8 of the specification"
+    rule
+    shared NamedArguments namedArguments(CurlOpen p,
+            NamedArgument[] n, ArgumentList a, CurlClose c)
+            => astNode(`NamedArguments`, [n, a], p, n, a, c);
+
+    "Section 6.6.9 of the specification"
+    rule
+    shared AnonymousArgument anonymousArgument(Expression e, Semicolon s)
+            => astNode(`AnonymousArgument`, [e], e, s);
+
+    "Section 6.6.10 of the specification"
+    rule
+    shared SpecifiedArgument specifiedArgument(Specification s)
+            => astNode(`SpecifiedArgument`, [s], s);
+
+    "Section 6.6.11 of the specification"
+    rule
+    shared ValueArgument valueArgument(Type|ValueModifier|DynamicModifier t,
+            LIdentifier n, [AnySpecifier,Semicolon]|[Block] b)
+            => astNode(`ValueArgument`, [n,t,b[0]], t, n, b);
+
+    "Section 6.6.11 of the specification"
+    rule
+    shared FunctionArgument functionArgument(
+            Type|VoidModifier|FunctionModifier|DynamicModifier t,
+            LIdentifier n, [Parameters+] p, [LazySpecifier,Semicolon]|[Block] b)
+            => astNode(`FunctionArgument`, [n,t,p,b[0]], t, n, p, b);
+
+    "Section 6.6.11 of the specification"
+    rule
+    shared ObjectArgument objectArgument(ObjectTok o, MemberName n,
+            ExtendedType? e, SatisfiedTypes? s, ClassBody c)
+            => astNode(`ObjectArgument`, [n, c, e, s], o, n, e, s, c);
+
+    "Section 6.6.12 of the specification"
+    rule
+    shared Iterable iterable(CurlOpen o, ArgumentList a, CurlClose c)
+            => astNode(`Iterable`, [a], o, a, c);
+
+    "Section 6.6.12 of the specification"
+    rule
+    shared Tuple tuple(SqOpen o, ArgumentList a, SqClose c)
+            => astNode(`Tuple`, [a], o, a, c);
+
+    "Section 6.6.13 of the specification"
+    rule
+    shared DynamicValue dynamicValue(Dynamic d, SqOpen o,
+            NamedArgument[] n, ArgumentList a, SqClose c)
+            => astNode(`DynamicValue`, [n, a], d, o, n, a, c);
+
     "Section 7.1.1 of the specification"
     rule
     shared Annotations annotations(StringLiteral? s, [Annotation *] a)
