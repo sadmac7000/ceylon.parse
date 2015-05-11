@@ -1821,6 +1821,12 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             ParClose c)
             => astNode(`PatternList`, [p.nodes], o, p.nodes.chain({c}));
 
+    "Section 6.7.4 of the specification"
+    rule
+    shared ObjectExpression objectExpression(ObjectTok o, ExtendedType? e,
+            SatisfiedTypes? s, ClassBody b)
+            => astNode(`ObjectExpression`, [b, e, s], o, e, s, b);
+
     "Section 7.1.1 of the specification"
     rule
     shared Annotations annotations(StringLiteral? s, [Annotation *] a)
