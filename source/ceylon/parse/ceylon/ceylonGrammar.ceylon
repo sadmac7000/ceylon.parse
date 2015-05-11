@@ -1804,6 +1804,23 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             DisjoiningExpression|IfElseExpression|LetExpression x)
             => astNode(`CaseExpression`, [c, x], t, o, c, e, x);
 
+    "Section 6.7.3 of the specification"
+    tokenizer
+    shared Token<LetTok>? letTok(String input, Object? prev)
+            => keyword(`LetTok`, input, prev, "let");
+
+    "Section 6.7.3 of the specification"
+    rule
+    shared LetExpression letExpression(LetTok l, PatternList p,
+            DisjoiningExpression|IfElseExpression|LetExpression x)
+            => astNode(`LetExpression`, [p, x], l, p, x);
+
+    "Section 6.7.3 of the specification"
+    rule
+    shared PatternList patternList(ParOpen o, CommaSepList<SpecifiedPattern> p,
+            ParClose c)
+            => astNode(`PatternList`, [p.nodes], o, p.nodes.chain({c}));
+
     "Section 7.1.1 of the specification"
     rule
     shared Annotations annotations(StringLiteral? s, [Annotation *] a)
