@@ -1116,6 +1116,17 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             CurlClose b)
             => astNode(`ClassBody`, [d], a, d, b);
 
+    "Section 4.5.7 of the specification"
+    tokenizer
+    shared Token<ObjectTok>? object_(String input, Object? prev)
+            => keyword(`ObjectTok`, input, prev, "object");
+
+    "Section 4.5.7 of the specification"
+    rule
+    shared ObjectDefinition objectDefinition(Annotations a, ObjectTok i,
+            MemberName n, ExtendedType? e, SatisfiedTypes? s, ClassBody b)
+            => astNode(`ObjectDefinition`, [n, b, e, s, a], a, i, n, e, s, b);
+
     "Section 4.5.9 of the specification"
     rule
     shared ClassSpecifier classSpecifier(DArrow d, ClassInstantiation t)
