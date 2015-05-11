@@ -795,9 +795,9 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
 
     "Section 3.3.3 of the specification"
     rule
-    shared SatisfiedTypes satisfiedTypes(PrimaryType p,
+    shared SatisfiedTypes satisfiedTypes(Satisfies s, PrimaryType p,
             [Ampersand,PrimaryType]* more)
-            => astNode(`SatisfiedTypes`, [[p, *more.map((x) => x[1])]], p,
+            => astNode(`SatisfiedTypes`, [[p, *more.map((x) => x[1])]], s, p,
                     *more);
 
     "Section 3.4.2 of the specification"
