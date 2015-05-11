@@ -1789,6 +1789,21 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             ElseTok e, DisjoiningExpression|IfElseExpression|LetExpression x)
             => astNode(`IfElseExpression`, [c, h, x], i, c, t, h, e, x);
 
+    "Section 6.7.2 of the specification"
+    rule
+    shared SwitchCaseElseExpression switchCaseElseExpression(SwitchClause s,
+            [CaseExpression +] c, [ElseTok,
+            DisjoiningExpression|IfElseExpression|LetExpression]? e)
+            => astNode(`SwitchCaseElseExpression`, [s, c, if (exists e) then e[1] else
+            null], s, c, e);
+
+    "Section 6.7.2 of the specification"
+    rule
+    shared CaseExpression caseExpression(CaseTok t, ParOpen o, CaseItem c,
+            ParClose e,
+            DisjoiningExpression|IfElseExpression|LetExpression x)
+            => astNode(`CaseExpression`, [c, x], t, o, c, e, x);
+
     "Section 7.1.1 of the specification"
     rule
     shared Annotations annotations(StringLiteral? s, [Annotation *] a)
