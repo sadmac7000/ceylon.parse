@@ -130,7 +130,14 @@ shared class ProductionClause(shared Boolean variadic,
 
     "Generate a prediction set for this clause"
     shared {Rule *} predicted {
-        if (exists p = predictedCache) { return p; }
+        predict();
+        assert(exists p = predictedCache);
+        return p;
+    }
+
+    "Populate the cached prediction set"
+    shared void predict() {
+        if (exists p = predictedCache) { return; }
 
         value p = [*{
             for (other in g.rules)
@@ -145,7 +152,6 @@ shared class ProductionClause(shared Boolean variadic,
             )];
 
         predictedCache = p;
-        return p;
     }
 }
 
@@ -248,6 +254,8 @@ shared class Rule {
         if (associativity == lassoc) { return consumes.size - 1; }
         return null;
     }
+
+    shared void predictAll() { for (c in consumes) { c.predict(); } }
 }
 
 "Break a type down into type atoms or aggregate production clauses"
@@ -406,6 +414,8 @@ shared abstract class Grammar<out Root, in Data>()
                     });
 
         genericInfos = [*genericInfosStream];
+
+        for (r in rules) { r.predictAll(); }
     }
 
     "Starting rules"
