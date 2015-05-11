@@ -70,6 +70,10 @@ class EPState {
     "Memoization for lsd attribute"
     variable Integer? _lsd = null;
 
+    "Number of tokens matched. It is important that this does not count error
+     tokens."
+    shared Integer tokensProcessed;
+
     "Create a new initial EPState for the given start rule"
     shared new (Rule rule) {
         this.pos = 0;
@@ -81,6 +85,7 @@ class EPState {
         this.tokensProcessedBefore = 0;
         this.lastToken = null;
         this.matchedOnce = false;
+        this.tokensProcessed = tokensProcessedBefore;
     }
 
     "Create a new EPState predicted from the given rule"
@@ -95,6 +100,7 @@ class EPState {
         this.tokensProcessedBefore = tokensProcessedBefore;
         this.lastToken = lastToken;
         this.matchedOnce = false;
+        this.tokensProcessed = tokensProcessedBefore;
     }
 
     "Produce a new EPState derived from a previous state"
@@ -142,6 +148,9 @@ class EPState {
         this.rule = original.rule;
         this.start = original.start;
         this.tokensProcessedBefore = original.tokensProcessedBefore;
+        this.tokensProcessed = original.tokensProcessed + (if (is Symbol
+                newChild) then 1 else if (is EPState newChild) then
+            newChild.tokensProcessed else 0);
     }
 
     "Produce a new EPState skipping the current production clause"
@@ -155,13 +164,8 @@ class EPState {
         this.tokensProcessedBefore = original.tokensProcessedBefore;
         this.lastToken = original.lastToken;
         this.matchedOnce = original.matchedOnce;
+        this.tokensProcessed = original.tokensProcessed;
     }
-
-    "Number of tokens matched. It is important that this does not count error
-     tokens."
-    shared Integer tokensProcessed => sum({ for (c in children) if (is EPState c)
-        c.tokensProcessed }.chain({ for (c in children) if (is Symbol c) 1
-        }).chain({0})) + tokensProcessedBefore;
 
     "Levenshtein distance between what we matched after error correction and
      the real string"
