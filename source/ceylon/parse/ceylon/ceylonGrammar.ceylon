@@ -1777,6 +1777,18 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             NamedArgument[] n, ArgumentList a, SqClose c)
             => astNode(`DynamicValue`, [n, a], d, o, n, a, c);
 
+    "Section 6.7.1 of the specification"
+    tokenizer
+    shared Token<ThenTok>? thenTok(String input, Object? prev)
+            => keyword(`ThenTok`, input, prev, "then");
+
+    "Section 6.7.1 of the specification"
+    rule
+    shared IfElseExpression ifElseExpression(IfTok i, Conditions c,
+            ThenTok t, DisjoiningExpression|IfElseExpression|LetExpression h,
+            ElseTok e, DisjoiningExpression|IfElseExpression|LetExpression x)
+            => astNode(`IfElseExpression`, [c, h, x], i, c, t, h, e, x);
+
     "Section 7.1.1 of the specification"
     rule
     shared Annotations annotations(StringLiteral? s, [Annotation *] a)

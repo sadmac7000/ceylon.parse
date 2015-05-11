@@ -398,6 +398,11 @@ shared class ObjectTok(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends Keyword("object", ls, cs, le, ce) {}
 
+"'then'"
+shared class ThenTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Keyword("then", ls, cs, le, ce) {}
+
 "Text of an LIdentifier"
 shared class LIdentText(String text, Integer ls, Integer cs,
         Integer le, Integer ce)
