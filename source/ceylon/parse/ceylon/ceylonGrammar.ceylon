@@ -2,9 +2,10 @@ import ceylon.parse { Grammar, Token, rule, omniRule, genericRule,
     tokenizer, lassoc }
 import ceylon.language.meta.model { Class }
 import ceylon.ast.core { ... }
+import ceylon.collection { ArrayList }
 
 "AST Node key to attach individual tokens"
-shared Key<CeylonToken[]> tokensKey = ScopedKey<CeylonToken[]>(`package
+shared Key<List<CeylonToken>> tokensKey = ScopedKey<List<CeylonToken>>(`package
         ceylon.parse.ceylon`, "tokens");
 
 "List of reserved words"
@@ -117,6 +118,8 @@ TypeArg meta<TypeArg>(Class<TypeArg, [CeylonToken+]> t,
     return t(*toks);
 }
 
+variable Integer called = 0;
+
 "AST Node"
 NodeType astNode<NodeType, Arguments>(Class<NodeType, Arguments> t,
         Arguments args, CeylonToken|{CeylonToken|Node*}|Node?* children)
@@ -131,33 +134,33 @@ NodeType astNode<NodeType, Arguments>(Class<NodeType, Arguments> t,
 NodeType astTextNode<NodeType>(Class<NodeType, [String]> t,
         CeylonToken|{CeylonToken|Node*}|Node?* children)
         given NodeType satisfies Node {
-    assert(is [CeylonToken+]tstream = tokenStream(*children));
+    value tstream = tokenStream(*children);
     value ret = t(tokenText(*tstream));
     ret.put(tokensKey, tstream);
     return ret;
 }
 
 "Text from a stream of tokens"
-String tokenText(CeylonToken+ token) {
+String tokenText(CeylonToken* token) {
     return (token*.text).fold("")((x,y)=>x+y);
 }
 
 "Extract all tokens from a series of arguments to a production"
-CeylonToken[] tokenStream(CeylonToken|{CeylonToken|Node*}|Node?* args) {
-    variable CeylonToken[] ret = [];
+List<CeylonToken> tokenStream(CeylonToken|{CeylonToken|Node*}|Node?* args) {
+    value ret = ArrayList<CeylonToken>();
 
     for (arg in args) {
         if (! exists arg) {
             continue;
         } else if (is CeylonMetaToken arg) {
-            ret = ret.append(tokenStream(*arg.subtokens));
+            ret.addAll(tokenStream(*arg.subtokens));
         } else if (is CeylonToken arg) {
-            ret = ret.withTrailing(arg);
+            ret.add(arg);
         } else if (is {CeylonToken|Node*} arg) {
-            ret = ret.append(tokenStream(*arg));
+            ret.addAll(tokenStream(*arg));
         } else {
             assert(exists k = arg.get(tokensKey));
-            ret.append(k);
+            ret.addAll(k);
         }
     }
 
