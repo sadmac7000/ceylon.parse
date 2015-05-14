@@ -1,14 +1,26 @@
 import ceylon.collection { HashSet }
 
+"Result of a string match"
+shared interface MatchResult of Res {
+    shared formal Integer length;
+}
+
+"Our private MatchResult"
+class Res(shared actual Integer length)
+        satisfies MatchResult {
+    shared default Res? backtrack = null;
+}
+
 "A regular language for string matching."
 shared abstract class Regular<Char>() satisfies Summable<Regular<Char>>
         given Char satisfies Object {
 
-    "Match the start of sequence [[s]] against this language. Return the match
-     length or `null` if no match. [[maxLength]] prevents the return of a
-     match longer than the given length when specified, though we can still
-     look ahead further for context to determine if the match is successful."
-    shared formal Integer? match(List<Char> s, Integer? maxLength = null);
+    "Match the start of sequence [[s]] against this language. Return a
+     [[MatchResult]] or `null` if no match. [[maxLength]] prevents the
+     return of a match longer than the given length when specified, though we
+     can still look ahead further for context to determine if the match is
+     successful."
+    shared formal MatchResult? match(List<Char> s, Integer? maxLength = null);
 
     "Get a new regular language that repeats this language [[min]] times, or
      between [[min]] and [[max]] times."
@@ -50,9 +62,9 @@ class Any<Char>({Char *} valuesIn) extends Regular<Char>()
     "All characters that we match"
     value values = HashSet{ *valuesIn };
 
-    shared actual Integer? match(List<Char> s, Integer? maxLength) {
+    shared actual MatchResult? match(List<Char> s, Integer? maxLength) {
         if (exists maxLength, maxLength < 1) { return null; }
-        if (exists c = s[0], values.contains(c)) { return 1; }
+        if (exists c = s[0], values.contains(c)) { Res(1); }
         return null;
     }
 }
@@ -60,9 +72,9 @@ class Any<Char>({Char *} valuesIn) extends Regular<Char>()
 "Regular language that matches a literal string"
 class Literal<Char>(List<Char> val) extends Regular<Char>()
         given Char satisfies Object {
-    shared actual Integer? match(List<Char> s, Integer? maxLength) {
+    shared actual MatchResult? match(List<Char> s, Integer? maxLength) {
         if (exists maxLength, maxLength < val.size) { return null; }
-        if (s.startsWith(val)) { return 1; }
+        if (s.startsWith(val)) { return Res(val.size); }
         return null;
     }
 }
@@ -72,28 +84,43 @@ class Literal<Char>(List<Char> val) extends Regular<Char>()
  doesn't match, and `null` when it does."
 class Lookahead<Char>(Regular<Char> r, Boolean invert) extends Regular<Char>()
         given Char satisfies Object {
-    shared Boolean subMatch(List<Char> s)
+    Boolean subMatch(List<Char> s)
         => if (r.match(s) exists) then !invert else invert;
 
-    shared actual Integer? match(List<Char> s, Integer? maxLength)
-        => if (subMatch(s)) then 0 else null;
+    shared actual MatchResult? match(List<Char> s, Integer? maxLength)
+        => if (subMatch(s)) then Res(0) else null;
 }
 
 "Regular language that concatenates two other languages"
 class Concat<Char>(Regular<Char> a, Regular<Char> b) extends Regular<Char>()
         given Char satisfies Object {
-    shared actual Integer? match(List<Char> s, Integer? maxLength) {
 
-        variable Integer? start = a.match(s, maxLength);
+    "Match result with appropriate backtracking"
+    class CRes(List<Char> s, Integer? maxLength, Res aRes, Res bRes)
+            extends Res(aRes.length + bRes.length) {
+        shared actual Res? backtrack {
+            if (exists b = bRes.backtrack) {
+                return CRes(s, maxLength, aRes, b);
+            }
 
-        while (exists st = start) {
-            Integer? nextLength = if (exists maxLength) then maxLength - st
+            return outer.resultB(s, maxLength, aRes.backtrack);
+        }
+    }
+
+    shared actual MatchResult? match(List<Char> s, Integer? maxLength)
+            => resultB(s, maxLength, a.match(s, maxLength));
+
+    "Get the second part of the match result"
+    Res? resultB(List<Char> s, Integer? maxLength,
+            variable MatchResult? aRes) {
+        while (exists a = aRes) {
+            value nextLength = if (exists maxLength) then maxLength - a.length
                 else null;
-            Integer? next = b.match(s[st...], nextLength);
+            value next = b.match(s[a.length...], nextLength);
 
-            if (exists n = next) { return st + n; }
+            if (exists n = next) { return CRes(s, maxLength, a of Res, n of Res); }
 
-            start = if (st > 0) then a.match(s, st - 1) else null;
+            aRes = (a of Res).backtrack;
         }
 
         return null;
@@ -104,23 +131,53 @@ class Concat<Char>(Regular<Char> a, Regular<Char> b) extends Regular<Char>()
 class Repeat<Char>(Regular<Char> r, Integer min, Integer? max)
         extends Regular<Char>()
         given Char satisfies Object {
-    shared actual Integer? match(List<Char> s, Integer? maxLength) {
-        variable Regular<Char> matching = r;
-        variable Integer count  = 0;
+    "Local match result"
+    class RRes(List<Char> s, Integer count, RRes? prev, Res cur)
+        extends Res((prev?.length else 0) + cur.length) {
 
-        variable Integer? matched = r.match(s, maxLength);
-        variable Integer last = 0;
-
-        while (exists m = matched) {
-            last = m;
-            count++;
-            if (exists max, count == max) { return m; }
-
-            matching = Concat(matching, r);
-            matched = matching.match(s, maxLength);
+        shared actual Res? backtrack {
+            if (exists c = cur.backtrack) {
+                return RRes(s, count, prev, c);
+            } else {
+                return prev?.advance(length - 1);
+            }
         }
 
-        if (count >= min) { return last; }
+        shared Res? advance(Integer? maxLength) {
+            if (exists maxLength, length > maxLength) {
+                value b = backtrack;
+                if (is RRes b) {
+                    return b.advance(maxLength);
+                }
+
+                return b;
+            }
+
+            if (exists maxLength, length == maxLength) {
+                return count >= outer.min then this;
+            }
+
+            if (exists m = outer.max, count == m) { return this; }
+            if (cur.length == 0) { return this; }
+
+            value target = s[cur.length...];
+            value next = outer.r.match(s[cur.length...], maxLength);
+
+            if (exists next) {
+                return RRes(target, count + 1, this, next of Res).advance(maxLength);
+            }
+
+            return count >= outer.min then this;
+        }
+    }
+
+    shared actual MatchResult? match(List<Char> s, Integer? maxLength) {
+        value start = r.match(s, maxLength);
+
+        if (exists start) {
+            return RRes(s, 1, null, start of Res).advance(maxLength);
+        }
+
         return null;
     }
 }
@@ -128,11 +185,48 @@ class Repeat<Char>(Regular<Char> r, Integer min, Integer? max)
 "Regular language that matches either of two other languages"
 class Disjoin<Char>(Regular<Char> a, Regular<Char> b) extends Regular<Char>()
         given Char satisfies Object {
-    shared actual Integer? match(List<Char> s, Integer? maxLength) {
-        Integer? m = a.match(s, maxLength);
 
-        if (exists m) { return m; }
-        return b.match(s, maxLength);
+    "Special result for disjoins"
+    class DRes(Res aRes, Res bRes) extends Res(max{aRes.length, bRes.length}) {
+        shared actual Res? backtrack {
+            if (aRes.length > bRes.length) {
+                value back = aRes.backtrack;
+
+                if (exists back) {
+                    return DRes(back, bRes);
+                }
+
+                return bRes;
+            }
+
+            if (aRes.length < bRes.length) {
+                value back = bRes.backtrack;
+
+                if (exists back) {
+                    return DRes(aRes, back);
+                }
+
+                return aRes;
+            }
+
+            value aBack = aRes.backtrack;
+            value bBack = bRes.backtrack;
+
+            if (exists aBack, exists bBack) {
+                return DRes(aBack, bBack);
+            }
+
+            return aBack else bBack;
+        }
+    }
+
+    shared actual MatchResult? match(List<Char> s, Integer? maxLength) {
+        value aRes = a.match(s, maxLength);
+        value bRes = b.match(s, maxLength);
+
+        if (exists aRes, exists bRes) { return DRes(aRes of Res, bRes of Res); }
+
+        return aRes else bRes;
     }
 }
 
