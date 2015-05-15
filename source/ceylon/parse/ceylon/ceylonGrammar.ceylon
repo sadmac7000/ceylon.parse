@@ -1,5 +1,5 @@
 import ceylon.parse { Grammar, Token, rule, omniRule, genericRule,
-    tokenizer, lassoc }
+    tokenizer, lassoc, rassoc }
 import ceylon.language.meta.model { Class }
 import ceylon.ast.core { ... }
 import ceylon.collection { ArrayList }
@@ -1829,6 +1829,49 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared ObjectExpression objectExpression(ObjectTok o, ExtendedType? e,
             SatisfiedTypes? s, ClassBody b)
             => astNode(`ObjectExpression`, [b, e, s], o, e, s, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared ElementOrSubrangeExpression elementOrSubrangeExpression(Primary p,
+            SqOpen o, Subscript s, SqClose c)
+            => astNode(`ElementOrSubrangeExpression`, [p, s], p, o, s, c);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared KeySubscript keySubscript(AddingExpression a)
+            => astNode(`KeySubscript`, [a], a);
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<DotDot>? dotDot(String input, Object? prev)
+            => literal(`DotDot`, input, prev, "..");
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared SpanSubscript spanSubscript(AddingExpression a, DotDot d,
+            AddingExpression b)
+            => astNode(`SpanSubscript`, [a, b], a, d, b);
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<Colon>? colon(String input, Object? prev)
+            => literal(`Colon`, input, prev, ":");
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared MeasureSubscript measureSubscript(AddingExpression a, Colon d,
+            AddingExpression b)
+            => astNode(`MeasureSubscript`, [a, b], a, d, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared SpanFromSubscript spanFromSubscript(AddingExpression a, Ellipsis d)
+            => astNode(`SpanFromSubscript`, [a], a, d);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared SpanToSubscript spanToSubscript(Ellipsis d, AddingExpression a)
+            => astNode(`SpanToSubscript`, [a], d, a);
 
     "Section 7.1.1 of the specification"
     rule
