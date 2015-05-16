@@ -1,6 +1,5 @@
 import ceylon.parse { Grammar, Token, rule, omniRule, genericRule,
     tokenizer, lassoc, rassoc }
-import ceylon.language.meta.model { Class }
 import ceylon.ast.core { ... }
 import ceylon.collection { ArrayList }
 
@@ -32,7 +31,7 @@ Character[] whitespaceChars = [ ' ', '\{FORM FEED (FF)}',
 }
 
 "Literal token"
-Token<TypeArg>? literal<TypeArg>(Class<TypeArg, [Integer,Integer,Integer,Integer]> t,
+Token<TypeArg>? literal<TypeArg>(Callable<TypeArg, [Integer,Integer,Integer,Integer]> t,
         String input, Object? prev, String+ wants)
         given TypeArg satisfies Object {
     value [start_line, start_col] = extractStartPos(prev);
@@ -48,7 +47,7 @@ Token<TypeArg>? literal<TypeArg>(Class<TypeArg, [Integer,Integer,Integer,Integer
 }
 
 "Keyword token"
-Token<TypeArg>? keyword<TypeArg>(Class<TypeArg, [Integer,Integer,Integer,Integer]> t,
+Token<TypeArg>? keyword<TypeArg>(Callable<TypeArg, [Integer,Integer,Integer,Integer]> t,
         String input, Object? prev, String wants)
         given TypeArg satisfies Object {
         value c = input[wants.size];
@@ -58,8 +57,8 @@ Token<TypeArg>? keyword<TypeArg>(Class<TypeArg, [Integer,Integer,Integer,Integer
 }
 
 "Parse a single-character token"
-Token<TypeArg>? takeCharToken<TypeArg>(Class<TypeArg, [Integer, Integer, Integer,
-        Integer]>|Class<TypeArg, [String, Integer, Integer, Integer,
+Token<TypeArg>? takeCharToken<TypeArg>(Callable<TypeArg, [Integer, Integer, Integer,
+        Integer]>|Callable<TypeArg, [String, Integer, Integer, Integer,
         Integer]> t, String input, Object? prev, Boolean(Character) test)
         given TypeArg satisfies Object {
     value [start_line, start_col] = extractStartPos(prev);
@@ -70,7 +69,7 @@ Token<TypeArg>? takeCharToken<TypeArg>(Class<TypeArg, [Integer, Integer, Integer
 
     if (! test(char)) { return null; }
 
-    if (is Class<TypeArg, [Integer, Integer, Integer, Integer]> t) {
+    if (is Callable<TypeArg, [Integer, Integer, Integer, Integer]> t) {
         return Token(t(start_line, start_col, start_line, start_col + 1), 1);
     } else {
         return Token(t(input[0:1], start_line, start_col, start_line, start_col
@@ -80,8 +79,8 @@ Token<TypeArg>? takeCharToken<TypeArg>(Class<TypeArg, [Integer, Integer, Integer
 
 "Parse a token that consists of all characters at the head of the string for
  which the test function returns true."
-Token<TypeArg>? takeTokenWhile<TypeArg,ScanClass>(Class<TypeArg, [Integer, Integer,
-        Integer, Integer]>|Class<TypeArg, [String, Integer, Integer, Integer,
+Token<TypeArg>? takeTokenWhile<TypeArg,ScanClass>(Callable<TypeArg, [Integer, Integer,
+        Integer, Integer]>|Callable<TypeArg, [String, Integer, Integer, Integer,
         Integer]> t, String input, Object? prev, Boolean(ScanClass) test)
         given TypeArg satisfies Object
         given ScanClass of String|Character {
@@ -101,7 +100,7 @@ Token<TypeArg>? takeTokenWhile<TypeArg,ScanClass>(Class<TypeArg, [Integer, Integ
 
     if (length == 0) { return null; }
 
-    if (is Class<TypeArg, [Integer, Integer, Integer, Integer]> t) {
+    if (is Callable<TypeArg, [Integer, Integer, Integer, Integer]> t) {
         return Token(t(start_line, start_col, end_line, end_col), length);
     } else {
         return Token(t(input[0:length], start_line, start_col, end_line,
@@ -110,7 +109,7 @@ Token<TypeArg>? takeTokenWhile<TypeArg,ScanClass>(Class<TypeArg, [Integer, Integ
 }
 
 "Meta token"
-TypeArg meta<TypeArg>(Class<TypeArg, [CeylonToken+]> t,
+TypeArg meta<TypeArg>(Callable<TypeArg, [CeylonToken+]> t,
         CeylonToken|{CeylonToken|Node*}|Node?* children) {
 
     assert( is [CeylonToken+] toks = tokenStream(*children));
@@ -121,7 +120,7 @@ TypeArg meta<TypeArg>(Class<TypeArg, [CeylonToken+]> t,
 variable Integer called = 0;
 
 "AST Node"
-NodeType astNode<NodeType, Arguments>(Class<NodeType, Arguments> t,
+NodeType astNode<NodeType, Arguments>(Callable<NodeType, Arguments> t,
         Arguments args, CeylonToken|{CeylonToken|Node*}|Node?* children)
         given NodeType satisfies Node
         given Arguments satisfies [Anything*] {
@@ -131,7 +130,7 @@ NodeType astNode<NodeType, Arguments>(Class<NodeType, Arguments> t,
 }
 
 "AST Text Node"
-NodeType astTextNode<NodeType>(Class<NodeType, [String]> t,
+NodeType astTextNode<NodeType>(Callable<NodeType, [String]> t,
         CeylonToken|{CeylonToken|Node*}|Node?* children)
         given NodeType satisfies Node {
     value tstream = tokenStream(*children);
@@ -207,7 +206,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 2.2 of the specification"
     tokenizer
     shared Token<Whitespace>? whitespace(String input, Object? prev)
-            => takeTokenWhile(`Whitespace`, input, prev,
+            => takeTokenWhile(Whitespace, input, prev,
                     (Character x) => whitespaceChars.contains(x));
 
     "Section 2.2 of the specification"
@@ -229,17 +228,17 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 2.2 of the specification"
     tokenizer
     shared Token<CommentStart>? commentStart(String input, Object? prev)
-            => literal(`CommentStart`, input, prev, "/*");
+            => literal(CommentStart, input, prev, "/*");
 
     "Section 2.2 of the specification"
     tokenizer
     shared Token<CommentEnd>? commentEnd(String input, Object? prev)
-            => literal(`CommentEnd`, input, prev, "*/");
+            => literal(CommentEnd, input, prev, "*/");
 
     "Section 2.2 of the specification"
     tokenizer
     shared Token<CommentBody>? commentBody(String input, Object? prev)
-            => takeTokenWhile(`CommentBody`, input, prev,
+            => takeTokenWhile(CommentBody, input, prev,
                     (String x) => ! (x.startsWith("/*") || x.startsWith(
                             "*/") || x == ""));
 
@@ -247,7 +246,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     rule
     shared BlockComment blockComment(CommentStart start,
             [CommentBody|BlockComment*] body, CommentEnd end)
-            => meta(`BlockComment`, start, body, end);
+            => meta(BlockComment, start, body, end);
 
     "Section 2.2 of the specification"
     omniRule
@@ -266,12 +265,12 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 2.3 of the specification"
     tokenizer
     shared Token<UIdentStart>? uIdentStart(String input, Object? prev)
-            => literal(`UIdentStart`, input, prev, "\\I");
+            => literal(UIdentStart, input, prev, "\\I");
 
     "Section 2.3 of the specification"
     tokenizer
     shared Token<LIdentStart>? lIdentStart(String input, Object? prev)
-            => literal(`LIdentStart`, input, prev, "\\i");
+            => literal(LIdentStart, input, prev, "\\i");
 
     "Section 2.3 of the specification"
     tokenizer
@@ -311,54 +310,54 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 2.3 of the specification"
     rule
     shared UIdentifier uident(UIdentStart? start, UIdentText text)
-            => astNode(`UIdentifier`, [text.text], start, text);
+            => astNode(UIdentifier, [text.text], start, text);
 
     "Section 2.3 of the specification"
     rule
     shared UIdentifier uidentEsc(UIdentStart start, LIdentText text)
-            => astNode(`UIdentifier`, [text.text, true], start, text);
+            => astNode(UIdentifier, [text.text, true], start, text);
 
     "Section 2.3 of the specification"
     rule
     shared LIdentifier lident(LIdentStart? start, LIdentText text)
-            => astNode(`LIdentifier`, [text.text], start, text);
+            => astNode(LIdentifier, [text.text], start, text);
 
     "Section 2.3 of the specification"
     rule
     shared LIdentifier lidentEsc(LIdentStart start,
             UIdentText text)
-            => astNode(`LIdentifier`, [text.text, true], start, text);
+            => astNode(LIdentifier, [text.text, true], start, text);
 
     "Section 2.4.1 of the specification"
     tokenizer
     shared Token<HashMark>? hashMark(String input, Object? prev)
-            => literal(`HashMark`, input, prev, "#");
+            => literal(HashMark, input, prev, "#");
 
     "Section 2.4.1 of the specification"
     tokenizer
     shared Token<DollarMark>? dollarMark(String input, Object? prev)
-            => literal(`DollarMark`, input, prev, "$");
+            => literal(DollarMark, input, prev, "$");
 
     "Section 2.4.1 of the specification"
     tokenizer
     shared Token<Underscore>? underscore(String input, Object? prev)
-            => literal(`Underscore`, input, prev, "_");
+            => literal(Underscore, input, prev, "_");
 
     "Section 2.4.1 of the specification"
     tokenizer
     shared Token<Digit>? digit(String input, Object? prev)
-            => takeCharToken(`Digit`, input, prev, (Character x) => x.digit);
+            => takeCharToken(Digit, input, prev, (Character x) => x.digit);
 
     "Section 2.4.1 of the specification"
     tokenizer
     shared Token<HexDigit>? hexDigit(String input, Object? prev)
-            => takeCharToken(`HexDigit`, input, prev, (x) => x.digit ||
+            => takeCharToken(HexDigit, input, prev, (x) => x.digit ||
                     "abcdefABCDEF".contains(x));
 
     "Section 2.4.1 of the specification"
     tokenizer
     shared Token<BinDigit>? binDigit(String input, Object? prev)
-            => takeCharToken(`BinDigit`, input, prev, "01".contains);
+            => takeCharToken(BinDigit, input, prev, "01".contains);
 
     "Section 2.4.1 of the specification"
     rule
@@ -373,7 +372,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     rule
     shared Digits clusteredDigits(Digit? a, Digit? b, Digit c,
             [DigitCluster+] clusters)
-            => meta(`Digits`, a, b, c, clusters);
+            => meta(Digits, a, b, c, clusters);
 
     "Section 2.4.1 of the specification"
     rule
@@ -384,7 +383,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     rule
     shared FracDigits fracDigits([FracDigitCluster+] clusters,
             Digit a, Digit? b, Digit? c)
-            => meta(`FracDigits`, clusters, a, b, c);
+            => meta(FracDigits, clusters, a, b, c);
 
     "Section 2.4.1 of the specification"
     rule
@@ -414,7 +413,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     rule
     shared BinDigits clusteredBinDigits(BinDigit? a, BinDigit? b, BinDigit? c,
             BinDigit d, [BinDigitCluster+] clusters)
-            => meta(`BinDigits`, a, b, c, d, clusters);
+            => meta(BinDigits, a, b, c, d, clusters);
 
     "Section 2.4.1 of the specification"
     rule
@@ -424,80 +423,80 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     rule
     shared HexDigits clusteredHexDigits(HexDigit? a, HexDigit? b, HexDigit? c,
             HexDigit d, [HexDigitCluster+] clusters)
-            => meta(`HexDigits`, a, b, c, d, clusters);
+            => meta(HexDigits, a, b, c, d, clusters);
 
     "Section 2.4.1 of the specification"
     rule
     shared HexDigits twoClusteredHexDigits(HexDigit? a, HexDigit b,
             [HexDigitTwoCluster+] clusters)
-            => meta(`HexDigits`, a, b, clusters);
+            => meta(HexDigits, a, b, clusters);
 
     "Section 2.4.1 of the specification"
     rule
     shared IntegerLiteral hexLiteral(HashMark h, [HexDigits+] digits)
-            => astTextNode(`IntegerLiteral`, h, digits);
+            => astTextNode(IntegerLiteral, h, digits);
 
     "Section 2.4.1 of the specification"
     rule
     shared IntegerLiteral binLiteral(DollarMark h, [BinDigits+] digits)
-            => astTextNode(`IntegerLiteral`, h, digits);
+            => astTextNode(IntegerLiteral, h, digits);
 
     "Section 2.4.1 of the specification"
     tokenizer
     shared Token<Magnitude>? magnitude(String input, Object? prev)
-            => takeCharToken(`Magnitude`, input, prev, "kMGTP".contains);
+            => takeCharToken(Magnitude, input, prev, "kMGTP".contains);
 
     "Section 2.4.1 of the specification"
     tokenizer
     shared Token<Minitude>? minitude(String input, Object? prev)
-            => takeCharToken(`Minitude`, input, prev, "munpf".contains);
+            => takeCharToken(Minitude, input, prev, "munpf".contains);
 
     "Section 2.4.1 of the specification"
     rule
     shared IntegerLiteral decLiteral([Digits+] digits,
             Magnitude? m)
-            => astTextNode(`IntegerLiteral`, digits, m);
+            => astTextNode(IntegerLiteral, digits, m);
 
     "Section 2.4.1 of the specification"
     tokenizer
     shared Token<ExpMarker>? expMarker(String input, Object? prev)
-            => takeCharToken(`ExpMarker`, input, prev, "eE".contains);
+            => takeCharToken(ExpMarker, input, prev, "eE".contains);
 
     "Section 2.4.1 of the specification"
     tokenizer
     shared Token<Plus>? plus(String input, Object? prev)
-            => literal(`Plus`, input, prev, "+");
+            => literal(Plus, input, prev, "+");
 
     "Section 2.4.1 of the specification"
     tokenizer
     shared Token<Minus>? minus(String input, Object? prev)
-            => literal(`Minus`, input, prev, "-");
+            => literal(Minus, input, prev, "-");
 
     "Section 2.4.1 of the specification"
     tokenizer
     shared Token<Dot>? dot(String input, Object? prev)
-            => literal(`Dot`, input, prev, ".");
+            => literal(Dot, input, prev, ".");
 
     "Section 2.4.1 of the specification"
     rule
     shared Exponent exponent(ExpMarker e, Plus|Minus? s, [Digit+] digits)
-            => meta(`Exponent`, e, s, digits);
+            => meta(Exponent, e, s, digits);
 
     "Section 2.4.1 of the specification"
     rule
     shared FloatLiteral floatLiteral([Digits+] digits, Dot dot,
             [FracDigits+] fracs, Magnitude|Minitude|Exponent? m)
-            => astTextNode(`FloatLiteral`, digits, dot, fracs, m);
+            => astTextNode(FloatLiteral, digits, dot, fracs, m);
 
     "Section 2.4.1 of the specification"
     rule
     shared FloatLiteral shortcutFloatLiteral([Digits+] digits, Minitude m)
-            => astTextNode(`FloatLiteral`, digits, m);
+            => astTextNode(FloatLiteral, digits, m);
 
     "Section 2.4.2 of the specification"
     tokenizer
     shared Token<Quote>? quote(String input, Object? prev)
-            => literal(`Quote`, input, prev, "'");
+            => literal(Quote, input, prev, "'");
 
     "Section 2.4.2 of the specification"
     tokenizer
@@ -527,12 +526,12 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     rule
     shared CharacterLiteral characterLiteral(Quote a,
             CharacterLiteralTok t, Quote b)
-            => astNode(`CharacterLiteral`, [t.text], a, t, b);
+            => astNode(CharacterLiteral, [t.text], a, t, b);
 
     "Section 2.4.3 of the specification"
     tokenizer
     shared Token<DoubleQuote>? doubleQuote(String input, Object? prev)
-            => literal(`DoubleQuote`, input, prev, "\"");
+            => literal(DoubleQuote, input, prev, "\"");
 
     "Section 2.4.3 of the specification"
     tokenizer
@@ -561,12 +560,12 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     rule
     shared StringLiteral stringLiteral(DoubleQuote a,
             StringLiteralTok t, DoubleQuote b)
-            => astNode(`StringLiteral`, [t.text], a, t, b);
+            => astNode(StringLiteral, [t.text], a, t, b);
 
     "Section 3.2.3 of the specification"
     tokenizer
     shared Token<Pipe>? pipe(String input, Object? prev)
-            => literal(`Pipe`, input, prev, "|");
+            => literal(Pipe, input, prev, "|");
 
     "Section 3.2.3 of the specification"
     rule(0, lassoc)
@@ -586,13 +585,13 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             right_children = [b];
         }
 
-        return astNode(`UnionType`, [left_children.append(right_children)], a, p, b);
+        return astNode(UnionType, [left_children.append(right_children)], a, p, b);
     }
 
     "Section 3.2.4 of the specification"
     tokenizer
     shared Token<Ampersand>? ampersand(String input, Object? prev)
-            => literal(`Ampersand`, input, prev, "&");
+            => literal(Ampersand, input, prev, "&");
 
     "Section 3.2.4 of the specification"
     rule(1, lassoc)
@@ -613,80 +612,80 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             right_children = [b];
         }
 
-        return astNode(`IntersectionType`, [left_children.append(right_children)], a, p, b);
+        return astNode(IntersectionType, [left_children.append(right_children)], a, p, b);
     }
 
     "Section 3.2.7 of the specification"
     tokenizer
     shared Token<LT>? lessThan(String input, Object? prev)
-            => literal(`LT`, input, prev, "<");
+            => literal(LT, input, prev, "<");
 
     "Section 3.2.7 of the specification"
     tokenizer
     shared Token<GT>? greaterThan(String input, Object? prev)
-            => literal(`GT`, input, prev, ">");
+            => literal(GT, input, prev, ">");
 
     "Section 3.2.7 of the specification"
     rule
     shared GroupedType groupedType(LT a, Type t, GT b)
-            => astNode(`GroupedType`, [t], a, t, b);
+            => astNode(GroupedType, [t], a, t, b);
 
     "Section 3.2.7 of the specification"
     rule
     shared TypeNameWithTypeArguments typeNameWithArguments(TypeName name,
             TypeArguments? args)
-            => astNode(`TypeNameWithTypeArguments`, [name, args], name, args);
+            => astNode(TypeNameWithTypeArguments, [name, args], name, args);
 
     "Section 3.2.7 of the specification"
     rule
     shared BaseType baseType(TypeNameWithTypeArguments type)
-            => astNode(`BaseType`, [type], type);
+            => astNode(BaseType, [type], type);
 
     "Section 3.2.7 of the specification"
     rule
     shared QualifiedType qualifiedType(SimpleType|GroupedType base,
             TypeNameWithTypeArguments type)
-            => astNode(`QualifiedType`, [base, type], base, type);
+            => astNode(QualifiedType, [base, type], base, type);
 
     "Section 3.2.8 of the specification"
     tokenizer
     shared Token<Question>? question(String input, Object? prev)
-            => literal(`Question`, input, prev, "?");
+            => literal(Question, input, prev, "?");
 
     "Section 3.2.8 of the specification"
     rule
     shared OptionalType optionalType(PrimaryType type, Question q)
-            => astNode(`OptionalType`, [type], type, q);
+            => astNode(OptionalType, [type], type, q);
 
     "Section 3.2.8 of the specification"
     tokenizer
     shared Token<SqOpen>? sqOpen(String input, Object? prev)
-            => literal(`SqOpen`, input, prev, "[");
+            => literal(SqOpen, input, prev, "[");
 
     "Section 3.2.8 of the specification"
     tokenizer
     shared Token<SqClose>? sqClose(String input, Object? prev)
-            => literal(`SqClose`, input, prev, "]");
+            => literal(SqClose, input, prev, "]");
 
     "Section 3.2.8 of the specification"
     tokenizer
     shared Token<ParOpen>? parOpen(String input, Object? prev)
-            => literal(`ParOpen`, input, prev, "(");
+            => literal(ParOpen, input, prev, "(");
 
     "Section 3.2.8 of the specification"
     tokenizer
     shared Token<ParClose>? parClose(String input, Object? prev)
-            => literal(`ParClose`, input, prev, ")");
+            => literal(ParClose, input, prev, ")");
 
     "Section 3.2.8 of the specification"
     tokenizer
     shared Token<Comma>? comma(String input, Object? prev)
-            => literal(`Comma`, input, prev, ",");
+            => literal(Comma, input, prev, ",");
 
     "Section 3.2.8 of the specification"
     rule
     shared SequentialType sequentialType(PrimaryType type,
-            SqOpen a, SqClose b) => astNode(`SequentialType`, [type], a, b);
+            SqOpen a, SqClose b) => astNode(SequentialType, [type], a, b);
 
     "Section 3.2.8 of the specification"
     genericRule(`class CommaSepList`)
@@ -699,228 +698,228 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 3.2.8 of the specification"
     rule
     shared TypeList typeList(CommaSepList<Type|DefaultedType> items)
-            => astNode(`TypeList`, [items.nodes, null], *items.tokens);
+            => astNode(TypeList, [items.nodes, null], *items.tokens);
 
     "Section 3.2.8 of the specification"
     rule
     shared TypeList typeListVar(CommaSepList<Type|DefaultedType> items,
             Comma c, VariadicType v)
-            => astNode(`TypeList`, [items.nodes, v], *items.tokens.chain({c, v}));
+            => astNode(TypeList, [items.nodes, v], *items.tokens.chain({c, v}));
 
     "Section 3.2.8 of the specification"
     rule
     shared TypeList emptyTypeList()
-            => astNode(`TypeList`, [[], null]);
+            => astNode(TypeList, [[], null]);
 
     "Section 3.2.8 of the specification"
     rule
     shared CallableType callableType(PrimaryType ret, ParOpen a,
             TypeList types, ParClose b)
-            => astNode(`CallableType`, [ret, types], ret, a, types, b);
+            => astNode(CallableType, [ret, types], ret, a, types, b);
 
     "Section 3.2.8 of the specification"
     tokenizer
     shared Token<CurlOpen>? curlOpen(String input, Object? prev)
-            => literal(`CurlOpen`, input, prev, "{");
+            => literal(CurlOpen, input, prev, "{");
 
     "Section 3.2.8 of the specification"
     tokenizer
     shared Token<CurlClose>? curlClose(String input, Object? prev)
-            => literal(`CurlClose`, input, prev, "}");
+            => literal(CurlClose, input, prev, "}");
 
     "Section 3.2.8 of the specification"
     tokenizer
     shared Token<Star>? star(String input, Object? prev)
-            => literal(`Star`, input, prev, "*");
+            => literal(Star, input, prev, "*");
 
     "Section 3.2.8 of the specification"
     rule
     shared IterableType iterableType(CurlOpen a, VariadicType? type,
             CurlClose b)
-            => astNode(`IterableType`, [type], a, type, b);
+            => astNode(IterableType, [type], a, type, b);
 
     "Section 3.2.8 of the specification"
     rule
     shared TupleType tupleType(SqOpen a, TypeList types, SqClose b)
-            => astNode(`TupleType`, [types], a, types, b);
+            => astNode(TupleType, [types], a, types, b);
 
     "Section 3.2.8 of the specification"
     rule
     shared VariadicType variadicType(MainType type, Plus|Star quality)
-            => astNode(`VariadicType`, [type, quality is Plus], type, quality);
+            => astNode(VariadicType, [type, quality is Plus], type, quality);
 
     "Section 3.2.8 of the specification"
     tokenizer
     shared Token<Eq>? eq(String input, Object? prev)
-            => literal(`Eq`, input, prev, "=");
+            => literal(Eq, input, prev, "=");
 
     "Section 3.2.8 of the specification"
     rule
     shared DefaultedType defaultedType(Type type, Eq e)
-            => astNode(`DefaultedType`, [type], type, e);
+            => astNode(DefaultedType, [type], type, e);
 
     "Section 3.2.8 of the specification"
     tokenizer
     shared Token<Arrow>? arrow(String input, Object? prev)
-            => literal(`Arrow`, input, prev, "->");
+            => literal(Arrow, input, prev, "->");
 
     "Section 3.2.8 of the specification"
     rule
     shared EntryType entryType(MainType key, Arrow a, MainType item)
-            => astNode(`EntryType`, [key, item], key, a, item);
+            => astNode(EntryType, [key, item], key, a, item);
 
     "Section 3.3.2 of the specification"
     tokenizer
     shared Token<Extends>? extends_(String input, Object? prev)
-            => keyword(`Extends`, input, prev, "extends");
+            => keyword(Extends, input, prev, "extends");
 
     "Section 3.3.2 of the specification"
     tokenizer
     shared Token<SuperTok>? superTok(String input, Object? prev)
-            => keyword(`SuperTok`, input, prev, "super");
+            => keyword(SuperTok, input, prev, "super");
 
     "Section 3.3.2 of the specification"
     rule
     shared ClassInstantiation classInstantiation([SuperTok, Dot]? sup,
             TypeNameWithTypeArguments type, PositionalArguments args)
-            => astNode(`ClassInstantiation`, [type, args, if (exists sup) then
+            => astNode(ClassInstantiation, [type, args, if (exists sup) then
             Super() else null], sup, type, args);
 
     "Section 3.3.2 of the specification"
     rule
     shared ExtendedType extendedType(Extends e, ClassInstantiation inst)
-            => astNode(`ExtendedType`, [inst], e, inst);
+            => astNode(ExtendedType, [inst], e, inst);
 
     "Section 3.3.3 of the specification"
     tokenizer
     shared Token<Satisfies>? satisfies_(String input, Object? prev)
-            => keyword(`Satisfies`, input, prev, "satisfies");
+            => keyword(Satisfies, input, prev, "satisfies");
 
     "Section 3.3.3 of the specification"
     rule
     shared SatisfiedTypes satisfiedTypes(Satisfies s, PrimaryType p,
             [Ampersand,PrimaryType]* more)
-            => astNode(`SatisfiedTypes`, [[p, *more.map((x) => x[1])]], s, p,
+            => astNode(SatisfiedTypes, [[p, *more.map((x) => x[1])]], s, p,
                     *more);
 
     "Section 3.4.2 of the specification"
     tokenizer
     shared Token<Of>? of_(String input, Object? prev)
-            => keyword(`Of`, input, prev, "of");
+            => keyword(Of, input, prev, "of");
 
     "Section 3.4.2 of the specification"
     rule
     shared CaseTypes caseTypes(Of o, PrimaryType|MemberName p,
             [Pipe,PrimaryType|MemberName]* more)
-            => astNode(`CaseTypes`, [[p, *more.map((x) => x[1])]], p, *more);
+            => astNode(CaseTypes, [[p, *more.map((x) => x[1])]], p, *more);
 
     "Section 3.5 of the specification"
     rule
     shared TypeParameters typeParameters(LT a, CommaSepList<TypeParameter>
             list, GT b)
-            => astNode(`TypeParameters`, [list.nodes], a, list.tokens, b);
+            => astNode(TypeParameters, [list.nodes], a, list.tokens, b);
 
     "Section 3.5.1 of the specification"
     rule
     shared TypeParameter typeParameter(Variance? var, TypeName name,
             [Eq,Type]? eq)
-            => astNode(`TypeParameter`, [name, var, if (exists eq) then
+            => astNode(TypeParameter, [name, var, if (exists eq) then
                     eq[1] else null], var, name, eq);
 
     "Section 3.5.1 of the specification"
     tokenizer
     shared Token<In>? in_(String input, Object? prev)
-            => keyword(`In`, input, prev, "in");
+            => keyword(In, input, prev, "in");
 
     "Section 3.5.1 of the specification"
     tokenizer
     shared Token<Out>? out_(String input, Object? prev)
-            => keyword(`Out`, input, prev, "out");
+            => keyword(Out, input, prev, "out");
 
     "Section 3.5.1 of the specification"
     rule
     shared InModifier inModifier(In t)
-            => astNode(`InModifier`, [], t);
+            => astNode(InModifier, [], t);
 
     "Section 3.5.1 of the specification"
     rule
     shared OutModifier outModifier(Out t)
-            => astNode(`OutModifier`, [], t);
+            => astNode(OutModifier, [], t);
 
     "Section 3.5.3 of the specification"
     tokenizer
     shared Token<Given>? given_(String input, Object? prev)
-            => keyword(`Given`, input, prev, "given");
+            => keyword(Given, input, prev, "given");
 
     "Section 3.5.3 of the specification"
     rule
     shared TypeConstraint typeConstraint(Given g, TypeName name,
             CaseTypes? cases, SatisfiedTypes? satisfieds)
-            => astNode(`TypeConstraint`, [name, cases, satisfieds], g, name,
+            => astNode(TypeConstraint, [name, cases, satisfieds], g, name,
                     cases, satisfieds);
 
     "Section 3.6 of the specification"
     rule
     shared TypeArguments typeArguments(LT a, CommaSepList<TypeArgument> types,
             GT b)
-            => astNode(`TypeArguments`, [types.nodes], a,
+            => astNode(TypeArguments, [types.nodes], a,
                     *types.tokens.chain({b}));
 
     "Section 3.6 of the specification"
     rule
     shared TypeArgument typeArgument(Variance? var, Type type)
-            => astNode(`TypeArgument`, [type, var], var, type);
+            => astNode(TypeArgument, [type, var], var, type);
 
     "Section 4.1 of the specification"
     rule
     shared CompilationUnit compilationUnit([Import *] imports,
             [Declaration *] declarations)
-            => astNode(`CompilationUnit`, [declarations, imports], imports,
+            => astNode(CompilationUnit, [declarations, imports], imports,
                     declarations);
 
     "Section 4.1 of the specification"
     rule
     shared ModuleCompilationUnit moduleCompilationUnit([Import *] imports,
             ModuleDescriptor m)
-            => astNode(`ModuleCompilationUnit`, [m, imports], imports, m);
+            => astNode(ModuleCompilationUnit, [m, imports], imports, m);
 
     "Section 4.1 of the specification"
     rule
     shared PackageCompilationUnit packageCompilationUnit([Import *] imports,
             PackageDescriptor m)
-            => astNode(`PackageCompilationUnit`, [m, imports], imports, m);
+            => astNode(PackageCompilationUnit, [m, imports], imports, m);
 
     "Section 4.1.2 of the specification"
     rule
     shared FullPackageName fullPackageName(PackageName name,
             [Dot,PackageName]* dotNames)
-            => astNode(`FullPackageName`,
+            => astNode(FullPackageName,
                     [[name, *dotNames.map((x) => x[1])]], name, *dotNames);
 
     "Section 4.2 of the specification"
     tokenizer
     shared Token<ImportTok>? importTok(String input, Object? prev)
-            => keyword(`ImportTok`, input, prev, "import");
+            => keyword(ImportTok, input, prev, "import");
 
     "Section 4.2 of the specification"
     rule
     shared Import import_(ImportTok imp, FullPackageName name,
             ImportElements elements)
-            => astNode(`Import`, [name, elements], imp, name, elements);
+            => astNode(Import, [name, elements], imp, name, elements);
 
     "Section 4.2 of the specification"
     rule
     shared ImportElements importElements(CurlOpen a,
             CommaSepList<ImportElement> elements, ImportWildcard? wild,
             CurlClose b)
-            => astNode(`ImportElements`, [elements.nodes, wild], a,
+            => astNode(ImportElements, [elements.nodes, wild], a,
                     elements.tokens, wild, b);
 
     "Section 4.2.1 of the specification"
     rule
     shared ImportTypeElement importTypeElement(ImportTypeAlias? alias_,
             TypeName name, ImportElements? nested)
-            => astNode(`ImportTypeElement`, [name, alias_, nested], alias_,
+            => astNode(ImportTypeElement, [name, alias_, nested], alias_,
                     name, nested);
 
     "Section 4.2.2 of the specification"
@@ -928,134 +927,134 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared ImportFunctionValueElement
     importFunctionValueElement(ImportFunctionValueAlias? alias_,
             MemberName name, ImportElements? nested)
-            => astNode(`ImportFunctionValueElement`, [name, alias_, nested],
+            => astNode(ImportFunctionValueElement, [name, alias_, nested],
                     alias_, name);
 
     "Section 4.2.3 of the specification"
     rule
     shared ImportTypeAlias importTypeAlias(TypeName type, Eq e)
-            => astNode(`ImportTypeAlias`, [type], type, e);
+            => astNode(ImportTypeAlias, [type], type, e);
 
     "Section 4.2.3 of the specification"
     rule
     shared ImportFunctionValueAlias importFunctionValueAlias(MemberName m,
             Eq e)
-            => astNode(`ImportFunctionValueAlias`, [m], m, e);
+            => astNode(ImportFunctionValueAlias, [m], m, e);
 
     "Section 4.2.4 of the specification"
     tokenizer
     shared Token<Ellipsis>? ellipsis(String input, Object? prev)
-            => literal(`Ellipsis`, input, prev, "...");
+            => literal(Ellipsis, input, prev, "...");
 
     "Section 4.2.5 of the specification"
     rule
     shared ImportWildcard importWildcard(Ellipsis e)
-            => astNode(`ImportWildcard`, [], e);
+            => astNode(ImportWildcard, [], e);
 
     "Section 4.3.1 of the specification"
     rule
     shared Parameters parametersEmpty(ParOpen o, ParClose c)
-            => astNode(`Parameters`, [[]], o, c);
+            => astNode(Parameters, [[]], o, c);
 
     "Section 4.3.1 of the specification"
     rule
     shared Parameters parameters(ParOpen o, CommaSepList<Parameter> p,
             ParClose c)
-            => astNode(`Parameters`, [p.nodes], o, p.tokens, c);
+            => astNode(Parameters, [p.nodes], o, p.tokens, c);
 
     "Section 4.3.3 of the specification"
     rule
     shared DefaultedValueParameter defaultedValue(ValueParameter v,
             Specifier p)
-            => astNode(`DefaultedValueParameter`, [v, p], v, p);
+            => astNode(DefaultedValueParameter, [v, p], v, p);
 
     "Section 4.3.3 of the specification"
     rule
     shared DefaultedCallableParameter defaultedCallable(CallableParameter v,
             LazySpecifier p)
-            => astNode(`DefaultedCallableParameter`, [v, p], v, p);
+            => astNode(DefaultedCallableParameter, [v, p], v, p);
 
     "Section 4.3.3 of the specification"
     rule
     shared DefaultedParameterReference defaultedParameter(ParameterReference v,
             Specifier p)
-            => astNode(`DefaultedParameterReference`, [v, p], v, p);
+            => astNode(DefaultedParameterReference, [v, p], v, p);
 
     "Section 4.3.3 of the specification"
     rule
     shared ParameterReference parameterReference(MemberName m)
-            => astNode(`ParameterReference`, [m], m);
+            => astNode(ParameterReference, [m], m);
 
     "Section 4.3.3 of the specification"
     rule
     shared Specifier specifier(Eq e, Expression expr)
-            => astNode(`Specifier`, [expr], e, expr);
+            => astNode(Specifier, [expr], e, expr);
 
     "Section 4.3.3 of the specification"
     tokenizer
     shared Token<DArrow>? dArrow(String input, Object? prev)
-            => literal(`DArrow`, input, prev, "=>");
+            => literal(DArrow, input, prev, "=>");
 
     "Section 4.3.3 of the specification"
     rule
     shared LazySpecifier lazySpecifier(DArrow d, Expression e)
-            => astNode(`LazySpecifier`, [e], d, e);
+            => astNode(LazySpecifier, [e], d, e);
 
     "Section 4.3.4 of the specification"
     tokenizer
     shared Token<Dynamic>? dynamic_(String input, Object? prev)
-            => keyword(`Dynamic`, input, prev, "dynamic");
+            => keyword(Dynamic, input, prev, "dynamic");
 
     "Section 4.3.4 of the specification"
     rule
     shared DynamicModifier dynamicModifier(Dynamic d)
-            => astNode(`DynamicModifier`, [], d);
+            => astNode(DynamicModifier, [], d);
 
     "Section 4.3.4 of the specification"
     rule
     shared ValueParameter valueParameter(Annotations a, Type|DynamicModifier d,
             MemberName m)
-            => astNode(`ValueParameter`, [d, m, a], a, d, m);
+            => astNode(ValueParameter, [d, m, a], a, d, m);
 
     "Section 4.3.5 of the specification"
     tokenizer
     shared Token<Void>? void_(String input, Object? prev)
-            => keyword(`Void`, input, prev, "void");
+            => keyword(Void, input, prev, "void");
 
     "Section 4.3.5 of the specification"
     rule
     shared VoidModifier voidModifier(Void d)
-            => astNode(`VoidModifier`, [], d);
+            => astNode(VoidModifier, [], d);
 
     "Section 4.3.5 of the specification"
     rule
     shared CallableParameter callableParameter(Annotations a,
             Type|VoidModifier v, MemberName m, Parameters+ p)
-            => astNode(`CallableParameter`, [v, m, p, a], a, v, m, p);
+            => astNode(CallableParameter, [v, m, p, a], a, v, m, p);
 
     "Section 4.3.6 of the specification"
     rule
     shared VariadicParameter variadicParameter(Annotations a, VariadicType t, MemberName m)
-            => astNode(`VariadicParameter`, [t, m, a], a, t, m);
+            => astNode(VariadicParameter, [t, m, a], a, t, m);
 
     "Section 4.4 of the specification"
     tokenizer
     shared Token<Interface>? interface_(String input, Object? prev)
-            => keyword(`Interface`, input, prev, "interface");
+            => keyword(Interface, input, prev, "interface");
 
     "Section 4.4 of the specification"
     rule
     shared InterfaceDefinition interfaceDefinition(Annotations a, Interface i,
             TypeName n, TypeParameters? p, CaseTypes? c, SatisfiedTypes? s,
             [TypeConstraint *] t, InterfaceBody b)
-            => astNode(`InterfaceDefinition`,
+            => astNode(InterfaceDefinition,
                     [n, b, c, s, p, t, a],
                     a, i, n, p, c, s, t, b);
 
     "Section 4.4 of the specification"
     tokenizer
     shared Token<Semicolon>? semicolon(String input, Object? prev)
-            => literal(`Semicolon`, input, prev, ";");
+            => literal(Semicolon, input, prev, ";");
 
     "Section 4.4 of the specification"
     rule
@@ -1063,7 +1062,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             Interface i, TypeName n, TypeParameters? p, CaseTypes? c,
             SatisfiedTypes? s, [TypeConstraint *] t, TypeSpecifier b,
             Semicolon end)
-            => astNode(`InterfaceAliasDefinition`,
+            => astNode(InterfaceAliasDefinition,
                     [n, b, c, s, p, t, a],
                     a, i, n, p, c, s, t, b, end);
 
@@ -1072,7 +1071,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared DynamicInterfaceDefinition dynamicInterfaceDefinition(Annotations a, Dynamic i,
             TypeName n, TypeParameters? p, CaseTypes? c, SatisfiedTypes? s,
             [TypeConstraint *] t, InterfaceBody b)
-            => astNode(`DynamicInterfaceDefinition`,
+            => astNode(DynamicInterfaceDefinition,
                     [n, b, c, s, p, t, a],
                     a, i, n, p, c, s, t, b);
 
@@ -1080,17 +1079,17 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     rule
     shared InterfaceBody interfaceBody(CurlOpen a, [Declaration *] d,
             CurlClose b)
-            => astNode(`InterfaceBody`, [d], a, d, b);
+            => astNode(InterfaceBody, [d], a, d, b);
 
     "Section 4.4.5 of the specification"
     rule
     shared TypeSpecifier typeSpecifier(DArrow d, Type t)
-            => astNode(`TypeSpecifier`, [t], d, t);
+            => astNode(TypeSpecifier, [t], d, t);
 
     "Section 4.5 of the specification"
     tokenizer
     shared Token<ClassTok>? class_(String input, Object? prev)
-            => keyword(`ClassTok`, input, prev, "class");
+            => keyword(ClassTok, input, prev, "class");
 
     "Section 4.5 of the specification"
     rule
@@ -1098,7 +1097,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             TypeName n, TypeParameters? p, Parameters? pr, CaseTypes? c,
             ExtendedType? e, SatisfiedTypes? s, [TypeConstraint *] t,
             ClassBody b)
-            => astNode(`ClassDefinition`,
+            => astNode(ClassDefinition,
                     [n, pr, b, c, e, s, p, t, a],
                     a, i, n, p, pr, c, e, s, t, b);
 
@@ -1108,7 +1107,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             TypeName n, TypeParameters? p, Parameters pr, CaseTypes? c,
             ExtendedType? e, SatisfiedTypes? s,
             [TypeConstraint *] t, ClassSpecifier b, Semicolon end)
-            => astNode(`ClassAliasDefinition`,
+            => astNode(ClassAliasDefinition,
                     [n, pr, b, c, e, s, p, t, a],
                     a, i, n, p, pr, c, e, s, t, b, end);
 
@@ -1117,35 +1116,35 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared ClassBody classBody(CurlOpen a,
             [Declaration|Statement *] d,
             CurlClose b)
-            => astNode(`ClassBody`, [d], a, d, b);
+            => astNode(ClassBody, [d], a, d, b);
 
     "Section 4.5.7 of the specification"
     tokenizer
     shared Token<ObjectTok>? object_(String input, Object? prev)
-            => keyword(`ObjectTok`, input, prev, "object");
+            => keyword(ObjectTok, input, prev, "object");
 
     "Section 4.5.7 of the specification"
     rule
     shared ObjectDefinition objectDefinition(Annotations a, ObjectTok i,
             MemberName n, ExtendedType? e, SatisfiedTypes? s, ClassBody b)
-            => astNode(`ObjectDefinition`, [n, b, e, s, a], a, i, n, e, s, b);
+            => astNode(ObjectDefinition, [n, b, e, s, a], a, i, n, e, s, b);
 
     "Section 4.5.9 of the specification"
     rule
     shared ClassSpecifier classSpecifier(DArrow d, ClassInstantiation t)
-            => astNode(`ClassSpecifier`, [t], d, t);
+            => astNode(ClassSpecifier, [t], d, t);
 
     "Section 4.6 of the specification"
     tokenizer
     shared Token<Alias>? alias_(String input, Object? prev)
-            => keyword(`Alias`, input, prev, "alias");
+            => keyword(Alias, input, prev, "alias");
 
     "Section 4.6 of the specification"
     rule
     shared TypeAliasDefinition typeAliasDefinition(Annotations a, Alias al,
             TypeName n, TypeParameters? tp, [TypeConstraint *] tc,
             TypeSpecifier s, Semicolon end)
-            => astNode(`TypeAliasDefinition`, [n, s, tp, tc, a],
+            => astNode(TypeAliasDefinition, [n, s, tp, tc, a],
                     a, al, n, tp, tc, s, end);
 
     "Section 4.7 of the specification"
@@ -1153,7 +1152,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared FunctionDeclaration functionDeclaration(Annotations a, MemberName m,
             Type|DynamicModifier|VoidModifier t, TypeParameters? tp,
             [Parameters+] p, [TypeConstraint*] tc, Semicolon end)
-            => astNode(`FunctionDeclaration`, [m, t, p, tp, tc, a],
+            => astNode(FunctionDeclaration, [m, t, p, tp, tc, a],
                     a, m, t, tp, p, tc, end);
 
     "Section 4.7 of the specification"
@@ -1161,7 +1160,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared FunctionDefinition functionDefinition(Annotations a, MemberName m,
             Type|DynamicModifier|VoidModifier t, TypeParameters? tp,
             [Parameters+] p, [TypeConstraint*] tc, Block b)
-            => astNode(`FunctionDefinition`, [m, t, p, b, tp, tc, a],
+            => astNode(FunctionDefinition, [m, t, p, b, tp, tc, a],
                     a, m, t, tp, p, tc, b);
 
     "Section 4.7 of the specification"
@@ -1170,14 +1169,14 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             MemberName m, Type|DynamicModifier|VoidModifier t,
             TypeParameters? tp, [Parameters+] p, [TypeConstraint*] tc,
             LazySpecifier b, Semicolon end)
-            => astNode(`FunctionShortcutDefinition`, [m, t, p, b, tp, tc, a],
+            => astNode(FunctionShortcutDefinition, [m, t, p, b, tp, tc, a],
                     a, m, t, tp, p, tc, b, end);
 
     "Section 4.8 of the specification"
     rule
     shared ValueDeclaration valueDeclaration(Annotations a,
             MemberName m, Type|VariadicType|DynamicModifier t, Semicolon end)
-            => astNode(`ValueDeclaration`, [m, t, a],
+            => astNode(ValueDeclaration, [m, t, a],
                     a, m, t, end);
 
     "Section 4.8 of the specification"
@@ -1185,229 +1184,229 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared ValueDefinition valueDefinition(Annotations a,
             Type|ValueModifier|DynamicModifier t, MemberName m,
             AnySpecifier s, Semicolon end)
-            => astNode(`ValueDefinition`, [m, t, s, a],
+            => astNode(ValueDefinition, [m, t, s, a],
                     a, t, m, s, end);
 
     "Section 4.8 of the specification"
     tokenizer
     shared Token<Value>? value_(String input, Object? prev)
-            => keyword(`Value`, input, prev, "value");
+            => keyword(Value, input, prev, "value");
 
     "Section 4.8 of the specification"
     rule
     shared ValueModifier valueModifier(Value d)
-            => astNode(`ValueModifier`, [], d);
+            => astNode(ValueModifier, [], d);
 
     "Section 4.8 of the specification"
     rule
     shared ValueGetterDefinition valueGetterDefinition(Annotations a,
             Type|ValueModifier|DynamicModifier t, MemberName m,
             Block s)
-            => astNode(`ValueGetterDefinition`, [m, t, s, a],
+            => astNode(ValueGetterDefinition, [m, t, s, a],
                     a, m, t, s);
 
     "Section 4.9 of the specification"
     tokenizer
     shared Token<New>? new_(String input, Object? prev)
-            => keyword(`New`, input, prev, "new");
+            => keyword(New, input, prev, "new");
 
     "Section 4.9 of the specification"
     rule
     shared ConstructorDefinition constructorDefinition(Annotations a,
             New nk, TypeName? n, Parameters p, ExtendedType e, Block b)
-            => astNode(`ConstructorDefinition`, [n, p, b, e, a],
+            => astNode(ConstructorDefinition, [n, p, b, e, a],
                     a, nk, n, p, e, b);
 
     "Section 5.2.1 of the specification"
     rule
     shared TypedVariable typedVariable(Type t, MemberName m, Specifier? s)
-            => astNode(`TypedVariable`, [m, t, s], t, m, s);
+            => astNode(TypedVariable, [m, t, s], t, m, s);
 
     "Section 5.2.1 of the specification"
     rule
     shared SpecifiedVariable specifiedVariable(Type|ValueModifier? t,
             MemberName m, Specifier s)
-            => astNode(`SpecifiedVariable`, [m, s, t], t, m, s);
+            => astNode(SpecifiedVariable, [m, s, t], t, m, s);
 
     "Section 5.2.3 of the specification"
     rule
     shared VariadicVariable variadicVariable(UnionType? u, Star s,
             MemberName m)
-            => astNode(`VariadicVariable`, [m, u], u, s, m);
+            => astNode(VariadicVariable, [m, u], u, s, m);
 
     "Section 5.2.4 of the specification"
     rule
     shared TuplePattern tuplePattern(SqOpen o, CommaSepList<Pattern> l,
             [Comma, VariadicVariable]? v, SqClose c)
-            =>astNode(`TuplePattern`, [l.nodes, if (exists v) then v[1] else null],
+            =>astNode(TuplePattern, [l.nodes, if (exists v) then v[1] else null],
                     o, *l.nodes.chain([v, c]));
 
     "Section 5.2.5 of the specification"
     rule
     shared EntryPattern entryPattern(VariablePattern|TuplePattern k, Arrow a,
             VariablePattern|TuplePattern v)
-            =>astNode(`EntryPattern`, [k, v], k, a, v);
+            =>astNode(EntryPattern, [k, v], k, a, v);
 
     "Unknown/Future revision"
     rule
     shared VariablePattern variablePattern(UnspecifiedVariable u)
-            =>astNode(`VariablePattern`, [u], u);
+            =>astNode(VariablePattern, [u], u);
 
     "Unknown/Future revision"
     rule
     shared UnspecifiedVariable unspecifiedVariable(Type|ValueModifier? t,
             MemberName m)
-            => astNode(`UnspecifiedVariable`, [m, t], t, m);
+            => astNode(UnspecifiedVariable, [m, t], t, m);
 
     "Section 5.3 of the specification"
     rule
     shared Block block(CurlOpen o, [Declaration|Statement *] s, CurlClose c)
-            => astNode(`Block`, [s], o, s, c);
+            => astNode(Block, [s], o, s, c);
 
     "Section 5.3.1 of the specificaton"
     rule
     shared AssignmentStatement assignmentStatement(AssignmentOperation a,
             Semicolon s)
-            => astNode(`AssignmentStatement`, [a], a, s);
+            => astNode(AssignmentStatement, [a], a, s);
 
     "Section 5.3.1 of the specificaton"
     rule
     shared PrefixPostfixStatement
     prefixPostfixStatement(PrefixOperation|PostfixOperation a, Semicolon s)
-            => astNode(`PrefixPostfixStatement`, [a], a, s);
+            => astNode(PrefixPostfixStatement, [a], a, s);
 
     "Section 5.3.1 of the specificaton"
     rule
     shared InvocationStatement invocationStatement(Invocation a, Semicolon s)
-            => astNode(`InvocationStatement`, [a], a, s);
+            => astNode(InvocationStatement, [a], a, s);
 
     "Section 5.3.2 of the specification"
     tokenizer
     shared Token<ReturnTok>? returnTok(String input, Object? prev)
-            => keyword(`ReturnTok`, input, prev, "return");
+            => keyword(ReturnTok, input, prev, "return");
 
     "Section 5.3.2 of the specification"
     rule
     shared Return return_(ReturnTok t, Expression? e, Semicolon s)
-            => astNode(`Return`, [e], t, e, s);
+            => astNode(Return, [e], t, e, s);
 
     "Section 5.3.2 of the specification"
     tokenizer
     shared Token<ThrowTok>? throwTok(String input, Object? prev)
-            => keyword(`ThrowTok`, input, prev, "throw");
+            => keyword(ThrowTok, input, prev, "throw");
 
     "Section 5.3.2 of the specification"
     rule
     shared Throw throw_(ThrowTok t, Expression? e, Semicolon s)
-            => astNode(`Throw`, [e], t, e, s);
+            => astNode(Throw, [e], t, e, s);
 
     "Section 5.3.2 of the specification"
     tokenizer
     shared Token<BreakTok>? breakTok(String input, Object? prev)
-            => keyword(`BreakTok`, input, prev, "break");
+            => keyword(BreakTok, input, prev, "break");
 
     "Section 5.3.2 of the specification"
     rule
     shared Break break_(BreakTok t, Semicolon s)
-            => astNode(`Break`, [], t, s);
+            => astNode(Break, [], t, s);
 
     "Section 5.3.2 of the specification"
     tokenizer
     shared Token<ContinueTok>? continueTok(String input, Object? prev)
-            => keyword(`ContinueTok`, input, prev, "continue");
+            => keyword(ContinueTok, input, prev, "continue");
 
     "Section 5.3.2 of the specification"
     rule
     shared Continue continue_(ContinueTok t, Semicolon s)
-            => astNode(`Continue`, [], t, s);
+            => astNode(Continue, [], t, s);
 
     "Section 5.3.3 of the specification"
     tokenizer
     shared Token<ThisTok>? thisTok(String input, Object? prev)
-            => keyword(`ThisTok`, input, prev, "this");
+            => keyword(ThisTok, input, prev, "this");
 
     "Section 5.3.3 of the specification"
     rule
     shared This this_(ThisTok t)
-            => astNode(`This`, [], t);
+            => astNode(This, [], t);
 
     "Section 5.3.3 of the specification"
     rule
     shared ValueSpecification valueSpecification([This, Dot]? t, MemberName m,
             Specifier s, Semicolon e)
-            => astNode(`ValueSpecification`, [m, s, if (exists t) then t[0]
+            => astNode(ValueSpecification, [m, s, if (exists t) then t[0]
                     else null], t, m, s, e);
 
     "Section 5.3.3 of the specification"
     rule
     shared LazySpecification lazySpecification([This, Dot]? t,
             MemberName m, [Parameters*] p, LazySpecifier s, Semicolon e)
-            => astNode(`LazySpecification`, [m, s, p, if (exists t) then t[0]
+            => astNode(LazySpecification, [m, s, p, if (exists t) then t[0]
                     else null], t, m, p, s, e);
 
     "Section 5.3.4 of the specification"
     rule
     shared Destructure destructure(ValueModifier v, TuplePattern|EntryPattern p,
             Specifier s, Semicolon e)
-            => astNode(`Destructure`, [p, s, v], v, p, s, e);
+            => astNode(Destructure, [p, s, v], v, p, s, e);
 
     "Section 5.3.5 of the specification"
     rule
     shared DynamicBlock dynamicBlock(Dynamic d, Block b)
-            => astNode(`DynamicBlock`, [b], d, b);
+            => astNode(DynamicBlock, [b], d, b);
 
     "Section 5.4 of the specification"
     rule
     shared Conditions conditions(ParOpen o, CommaSepList<Condition> l,
             ParClose c)
-            => astNode(`Conditions`, [l.nodes], *l.nodes);
+            => astNode(Conditions, [l.nodes], *l.nodes);
 
     "Section 5.4.1 of the specification"
     rule
     shared BooleanCondition booleanCondition(Expression e)
-            => astNode(`BooleanCondition`, [e], e);
+            => astNode(BooleanCondition, [e], e);
 
     "Section 5.4.2 of the specification"
     tokenizer
     shared Token<Is>? is_(String input, Object? prev)
-            => keyword(`Is`, input, prev, "is");
+            => keyword(Is, input, prev, "is");
 
     "Section 5.4.2 of the specification"
     tokenizer
     shared Token<Bang>? bang(String input, Object? prev)
-            => literal(`Bang`, input, prev, "!");
+            => literal(Bang, input, prev, "!");
 
     "Section 5.4.2 of the specification"
     rule
     shared IsCondition isCondition(Bang? b, Is i, TypedVariable tv)
-            => astNode(`IsCondition`, [tv, b exists], b, i, tv);
+            => astNode(IsCondition, [tv, b exists], b, i, tv);
 
     "Section 5.4.3 of the specification"
     tokenizer
     shared Token<Exists>? exists_(String input, Object? prev)
-            => keyword(`Exists`, input, prev, "exists");
+            => keyword(Exists, input, prev, "exists");
 
     "Section 5.4.3 of the specification"
     tokenizer
     shared Token<Nonempty>? nonempty_(String input, Object? prev)
-            => keyword(`Nonempty`, input, prev, "nonempty");
+            => keyword(Nonempty, input, prev, "nonempty");
 
     "Section 5.4.3 of the specification"
     rule
     shared SpecifiedPattern specifiedPattern(Pattern p, Specifier s)
-            => astNode(`SpecifiedPattern`, [p, s], p, s);
+            => astNode(SpecifiedPattern, [p, s], p, s);
 
     "Section 5.4.3 of the specification"
     rule
     shared ExistsCondition existsCondition(Bang? b, Exists i,
             SpecifiedPattern|LIdentifier tv)
-            => astNode(`ExistsCondition`, [tv, b exists], b, i, tv);
+            => astNode(ExistsCondition, [tv, b exists], b, i, tv);
 
     "Section 5.4.3 of the specification"
     rule
     shared NonemptyCondition nonemptyCondition(Bang? b, Nonempty i,
             SpecifiedPattern|LIdentifier tv)
-            => astNode(`NonemptyCondition`, [tv, b exists], b, i, tv);
+            => astNode(NonemptyCondition, [tv, b exists], b, i, tv);
 
     "Section 5.4.4 of the specification"
     shared alias MatchCaseBase =>
@@ -1416,174 +1415,174 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     "Section 5.4.4 of the specification"
     rule
     shared MatchCase matchCase(MatchCaseBase b, [[Pipe,MatchCaseBase] *] cont)
-            => astNode(`MatchCase`, [ [b, *cont.narrow<MatchCaseBase>()] ], b,
+            => astNode(MatchCase, [ [b, *cont.narrow<MatchCaseBase>()] ], b,
                     *cont.map((x) => x[1]));
 
     "Section 5.4.4 of the specification"
     rule
     shared IsCase isCase(Is i, Type t)
-            => astNode(`IsCase`, [t], i, t);
+            => astNode(IsCase, [t], i, t);
 
     "Section 5.5.1 of the specification"
     tokenizer
     shared Token<IfTok>? ifTok(String input, Object? prev)
-            => keyword(`IfTok`, input, prev, "if");
+            => keyword(IfTok, input, prev, "if");
 
     "Section 5.5.1 of the specification"
     tokenizer
     shared Token<ElseTok>? elseTok(String input, Object? prev)
-            => keyword(`ElseTok`, input, prev, "else");
+            => keyword(ElseTok, input, prev, "else");
 
     "Section 5.5.1 of the specification"
     rule
     shared IfElse ifElse(IfClause i, ElseClause? e)
-            => astNode(`IfElse`, [i, e], i, e);
+            => astNode(IfElse, [i, e], i, e);
 
     "Section 5.5.1 of the specification"
     rule
     shared IfClause ifClause(IfTok i, Conditions c, Block b)
-            => astNode(`IfClause`, [c, b], i, c, b);
+            => astNode(IfClause, [c, b], i, c, b);
 
     "Section 5.5.1 of the specification"
     rule
     shared ElseClause elseClause(ElseTok i, Block|IfElse b)
-            => astNode(`ElseClause`, [b], i, b);
+            => astNode(ElseClause, [b], i, b);
 
     "Section 5.5.2 of the specification"
     tokenizer
     shared Token<SwitchTok>? switchTok(String input, Object? prev)
-            => keyword(`SwitchTok`, input, prev, "switch");
+            => keyword(SwitchTok, input, prev, "switch");
 
     "Section 5.5.2 of the specification"
     tokenizer
     shared Token<CaseTok>? caseTok(String input, Object? prev)
-            => keyword(`CaseTok`, input, prev, "case");
+            => keyword(CaseTok, input, prev, "case");
 
     "Section 5.5.2 of the specification"
     rule
     shared SwitchCaseElse switchCaseElse(SwitchClause c, SwitchCases s)
-            => astNode(`SwitchCaseElse`, [c, s], c, s);
+            => astNode(SwitchCaseElse, [c, s], c, s);
 
     "Section 5.5.2 of the specification"
     rule
     shared SwitchClause switchClause(SwitchTok t, ParOpen o,
             Expression|SpecifiedVariable e, ParClose p)
-            => astNode(`SwitchClause`, [e], t, o, e, p);
+            => astNode(SwitchClause, [e], t, o, e, p);
 
     "Section 5.5.2 of the specification"
     rule
     shared SwitchCases switchCases([CaseClause +] c, ElseCaseClause? e)
-            => astNode(`SwitchCases`, [c, e], c, e);
+            => astNode(SwitchCases, [c, e], c, e);
 
     "Section 5.5.2 of the specification"
     rule
     shared ElseCaseClause elseCaseClause(ElseTok i, Block b)
-            => astNode(`ElseCaseClause`, [b], i, b);
+            => astNode(ElseCaseClause, [b], i, b);
 
     "Section 5.5.2 of the specification"
     rule
     shared CaseClause caseClause(CaseTok ct, ParOpen o, CaseItem c,
             ParClose cl, Block b)
-            => astNode(`CaseClause`, [c, b], ct, o, c, cl, b);
+            => astNode(CaseClause, [c, b], ct, o, c, cl, b);
 
     "Section 5.5.3 of the specification"
     tokenizer
     shared Token<ForTok>? forTok(String input, Object? prev)
-            => keyword(`ForTok`, input, prev, "for");
+            => keyword(ForTok, input, prev, "for");
 
     "Section 5.5.3 of the specification"
     rule
     shared ForFail forFail(ForClause f, FailClause? c)
-            => astNode(`ForFail`, [f, c], f, c);
+            => astNode(ForFail, [f, c], f, c);
 
     "Section 5.5.3 of the specification"
     rule
     shared ForClause forClause(ForTok t, ForIterator f, Block b)
-            => astNode(`ForClause`, [f, b], t, f, b);
+            => astNode(ForClause, [f, b], t, f, b);
 
     "Section 5.5.3 of the specification"
     rule
     shared ForIterator forIterator(ParOpen o, Pattern p, In i, Expression e,
             ParClose c)
-            => astNode(`ForIterator`, [p, e], o, p, i, e, c);
+            => astNode(ForIterator, [p, e], o, p, i, e, c);
 
     "Section 5.5.3 of the specification"
     rule
     shared FailClause failClause(ElseTok e, Block b)
-            => astNode(`FailClause`, [b], e, b);
+            => astNode(FailClause, [b], e, b);
 
     "Section 5.5.4 of the specification"
     tokenizer
     shared Token<WhileTok>? whileTok(String input, Object? prev)
-            => keyword(`WhileTok`, input, prev, "while");
+            => keyword(WhileTok, input, prev, "while");
 
     "Section 5.5.4 of the specification"
     rule
     shared While while_(WhileTok w, Conditions c, Block b)
-            => astNode(`While`, [c, b], w, c, b);
+            => astNode(While, [c, b], w, c, b);
 
     "Section 5.5.5 of the specification"
     tokenizer
     shared Token<TryTok>? tryTok(String input, Object? prev)
-            => keyword(`TryTok`, input, prev, "try");
+            => keyword(TryTok, input, prev, "try");
 
     "Section 5.5.5 of the specification"
     tokenizer
     shared Token<CatchTok>? catchTok(String input, Object? prev)
-            => keyword(`CatchTok`, input, prev, "catch");
+            => keyword(CatchTok, input, prev, "catch");
 
     "Section 5.5.5 of the specification"
     tokenizer
     shared Token<FinallyTok>? finallyTok(String input, Object? prev)
-            => keyword(`FinallyTok`, input, prev, "finally");
+            => keyword(FinallyTok, input, prev, "finally");
 
     "Section 5.5.5 of the specification"
     rule
     shared TryCatchFinally tryCatchFinally(TryClause t, CatchClause[] c,
             FinallyClause? f)
-            => astNode(`TryCatchFinally`, [t, c, f], t, c, f);
+            => astNode(TryCatchFinally, [t, c, f], t, c, f);
 
     "Section 5.5.5 of the specification"
     rule
     shared TryClause tryClause(TryTok t, Resources? r, Block b)
-            => astNode(`TryClause`, [b, r], t, r, b);
+            => astNode(TryClause, [b, r], t, r, b);
 
     "Section 5.5.5 of the specification"
     rule
     shared Resources resources(ParOpen o, CommaSepList<Resource> r, ParClose c)
-            => astNode(`Resources`, [r.nodes], o, *r.nodes.withTrailing(c));
+            => astNode(Resources, [r.nodes], o, *r.nodes.withTrailing(c));
 
     "Section 5.5.5 of the specification"
     rule
     shared Resource resource(Expression|SpecifiedVariable r)
-            => astNode(`Resource`, [r], r);
+            => astNode(Resource, [r], r);
 
     "Section 5.5.5 of the specification"
     rule
     shared CatchClause catchClause(CatchTok t, ParOpen o,
             UnspecifiedVariable u, ParClose c, Block b)
-            => astNode(`CatchClause`, [u, b], t, o, u, c, b);
+            => astNode(CatchClause, [u, b], t, o, u, c, b);
 
     "Section 5.5.5 of the specification"
     rule
     shared FinallyClause finallyClause(FinallyTok t, Block b)
-            => astNode(`FinallyClause`, [b], t, b);
+            => astNode(FinallyClause, [b], t, b);
 
     "Section 5.5.6 of the specification"
     tokenizer
     shared Token<AssertTok>? assertTok(String input, Object? prev)
-            => keyword(`AssertTok`, input, prev, "assert");
+            => keyword(AssertTok, input, prev, "assert");
 
     "Section 5.5.6 of the specification"
     rule
     shared Assertion assertion(Annotations a, AssertTok t, Conditions c,
             Semicolon s)
-            => astNode(`Assertion`, [c, a], a, t, c, s);
+            => astNode(Assertion, [c, a], a, t, c, s);
 
     "Section 6.2 of the specification"
     tokenizer
     shared Token<TickTick>? tickTick(String input, Object? prev)
-            => literal(`TickTick`, input, prev, "\``");
+            => literal(TickTick, input, prev, "\``");
 
     "Section 6.2 of the specification"
     rule
@@ -1592,212 +1591,212 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     {
         value stringLits = [*{StringLiteral(a.text)}.chain(b.map((x) => StringLiteral(x[3].text)))];
         value exprs = [*b.map((x) => x[1])];
-        return astNode(`StringTemplate`, [stringLits, exprs], s, a,
+        return astNode(StringTemplate, [stringLits, exprs], s, a,
                 *b.withTrailing(e));
     }
 
     "Section 6.3 of the specification"
     tokenizer
     shared Token<OuterTok>? outerTok(String input, Object? prev)
-            => keyword(`OuterTok`, input, prev, "outer");
+            => keyword(OuterTok, input, prev, "outer");
 
     "Section 6.3 of the specification"
     tokenizer
     shared Token<PackageTok>? packageTok(String input, Object? prev)
-            => keyword(`PackageTok`, input, prev, "package");
+            => keyword(PackageTok, input, prev, "package");
 
     "Section 6.3 of the specification"
     rule
-    shared Super super_(SuperTok t) => astNode(`Super`, [], t);
+    shared Super super_(SuperTok t) => astNode(Super, [], t);
 
     "Section 6.3 of the specification"
     rule
-    shared Outer outer_(OuterTok t) => astNode(`Outer`, [], t);
+    shared Outer outer_(OuterTok t) => astNode(Outer, [], t);
 
     "Section 6.3 of the specification"
     rule
-    shared Package package_(PackageTok t) => astNode(`Package`, [], t);
+    shared Package package_(PackageTok t) => astNode(Package, [], t);
 
     "Section 6.4 of the specification"
     tokenizer
     shared Token<FunctionTok>? functionTok(String input, Object? prev)
-            => keyword(`FunctionTok`, input, prev, "function");
+            => keyword(FunctionTok, input, prev, "function");
 
     "Section 6.4 of the specification"
     rule
     shared FunctionModifier functionModifier(FunctionTok t)
-            => astNode(`FunctionModifier`, [], t);
+            => astNode(FunctionModifier, [], t);
 
     "Section 6.4 of the specification"
     rule
     shared FunctionExpression functionExpression(FunctionModifier|VoidModifier? m,
             [Parameters+] p, Block|LazySpecifier l)
-            => astNode(`FunctionExpression`, [p, l, m], m, p, l);
+            => astNode(FunctionExpression, [p, l, m], m, p, l);
 
     "Section 6.5 of the specification"
     rule
     shared GroupedExpression groupedExpression(ParOpen o, Expression e,
             ParClose c)
-            => astNode(`GroupedExpression`, [e], o, e, c);
+            => astNode(GroupedExpression, [e], o, e, c);
 
     "Section 6.5.1 of the specification"
     rule
     shared BaseExpression baseExpression(NameWithTypeArguments n)
-            => astNode(`BaseExpression`, [n], n);
+            => astNode(BaseExpression, [n], n);
 
     "Section 6.5.1 of the specification"
     rule
     shared MemberNameWithTypeArguments memberNameWithArguments(
             MemberName name, TypeArguments? args)
-            => astNode(`MemberNameWithTypeArguments`, [name, args],
+            => astNode(MemberNameWithTypeArguments, [name, args],
                     name, args);
 
     "Section 6.5.2 of the specification"
     rule
     shared QualifiedExpression qualifiedExpression(Primary p,
             AnyMemberOperator o, NameWithTypeArguments n)
-            => astNode(`QualifiedExpression`, [p, n, o], p, o, n);
+            => astNode(QualifiedExpression, [p, n, o], p, o, n);
 
     "Section 6.5.2 of the specification"
     rule
     shared MemberOperator memberOperator(Dot d)
-            => astNode(`MemberOperator`, [], d);
+            => astNode(MemberOperator, [], d);
 
     "Section 6.5.2 of the specification"
     tokenizer
     shared Token<QDot>? qdot(String input, Object? prev)
-            => literal(`QDot`, input, prev, "?.");
+            => literal(QDot, input, prev, "?.");
 
     "Section 6.5.2 of the specification"
     tokenizer
     shared Token<SDot>? sdot(String input, Object? prev)
-            => literal(`SDot`, input, prev, "*.");
+            => literal(SDot, input, prev, "*.");
 
     "Section 6.5.2 of the specification"
     rule
     shared SafeMemberOperator safeMemberOperator(QDot d)
-            => astNode(`SafeMemberOperator`, [], d);
+            => astNode(SafeMemberOperator, [], d);
 
     "Section 6.5.2 of the specification"
     rule
     shared SpreadMemberOperator spreadMemberOperator(SDot d)
-            => astNode(`SpreadMemberOperator`, [], d);
+            => astNode(SpreadMemberOperator, [], d);
 
     "Section 6.6 of the specification"
     rule
     shared Invocation invocation(Primary p, Arguments a)
-            => astNode(`Invocation`, [p, a], p, a);
+            => astNode(Invocation, [p, a], p, a);
 
     "Section 6.6.3 of the specification"
     rule
     shared ArgumentList argumentList(CommaSepList<Expression> l,
             [Comma,SpreadArgument|Comprehension]? c)
-            => astNode(`ArgumentList`, [l.nodes, if (exists c) then c[1] else
+            => astNode(ArgumentList, [l.nodes, if (exists c) then c[1] else
                     null],
                     *l.nodes.chain({c}));
 
     "Section 6.6.3 of the specification"
     rule
     shared ArgumentList argumentList2(SpreadArgument|Comprehension? c)
-            => astNode(`ArgumentList`, [[], c], c);
+            => astNode(ArgumentList, [[], c], c);
 
     "Section 6.6.5 of the specification"
     rule
     shared SpreadArgument spreadArgument(Star s, UnioningExpression e)
-            => astNode(`SpreadArgument`, [e], s, e);
+            => astNode(SpreadArgument, [e], s, e);
 
     "Section 6.6.6 of the specification"
     rule
     shared Comprehension comprehension(InitialComprehensionClause i)
-            => astNode(`Comprehension`, [i], i);
+            => astNode(Comprehension, [i], i);
 
     "Section 6.6.6 of the specification"
     rule
     shared ForComprehensionClause forComprehensionClause(ForTok t,
             ForIterator f, ComprehensionClause c)
-            => astNode(`ForComprehensionClause`, [f, c], t, f, c);
+            => astNode(ForComprehensionClause, [f, c], t, f, c);
 
     "Section 6.6.6 of the specification"
     rule
     shared IfComprehensionClause ifComprehensionClause(IfTok t,
             Conditions f, ComprehensionClause c)
-            => astNode(`IfComprehensionClause`, [f, c], t, f, c);
+            => astNode(IfComprehensionClause, [f, c], t, f, c);
 
     "Section 6.6.7 of the specification"
     rule
     shared PositionalArguments positionalArguments(ParOpen p, ArgumentList a,
             ParClose c)
-            => astNode(`PositionalArguments`, [a], p, a, c);
+            => astNode(PositionalArguments, [a], p, a, c);
 
     "Section 6.6.8 of the specification"
     rule
     shared NamedArguments namedArguments(CurlOpen p,
             NamedArgument[] n, ArgumentList a, CurlClose c)
-            => astNode(`NamedArguments`, [n, a], p, n, a, c);
+            => astNode(NamedArguments, [n, a], p, n, a, c);
 
     "Section 6.6.9 of the specification"
     rule
     shared AnonymousArgument anonymousArgument(Expression e, Semicolon s)
-            => astNode(`AnonymousArgument`, [e], e, s);
+            => astNode(AnonymousArgument, [e], e, s);
 
     "Section 6.6.10 of the specification"
     rule
     shared SpecifiedArgument specifiedArgument(Specification s)
-            => astNode(`SpecifiedArgument`, [s], s);
+            => astNode(SpecifiedArgument, [s], s);
 
     "Section 6.6.11 of the specification"
     rule
     shared ValueArgument valueArgument(Type|ValueModifier|DynamicModifier t,
             LIdentifier n, [AnySpecifier,Semicolon]|[Block] b)
-            => astNode(`ValueArgument`, [n,t,b[0]], t, n, b);
+            => astNode(ValueArgument, [n,t,b[0]], t, n, b);
 
     "Section 6.6.11 of the specification"
     rule
     shared FunctionArgument functionArgument(
             Type|VoidModifier|FunctionModifier|DynamicModifier t,
             LIdentifier n, [Parameters+] p, [LazySpecifier,Semicolon]|[Block] b)
-            => astNode(`FunctionArgument`, [n,t,p,b[0]], t, n, p, b);
+            => astNode(FunctionArgument, [n,t,p,b[0]], t, n, p, b);
 
     "Section 6.6.11 of the specification"
     rule
     shared ObjectArgument objectArgument(ObjectTok o, MemberName n,
             ExtendedType? e, SatisfiedTypes? s, ClassBody c)
-            => astNode(`ObjectArgument`, [n, c, e, s], o, n, e, s, c);
+            => astNode(ObjectArgument, [n, c, e, s], o, n, e, s, c);
 
     "Section 6.6.12 of the specification"
     rule
     shared Iterable iterable(CurlOpen o, ArgumentList a, CurlClose c)
-            => astNode(`Iterable`, [a], o, a, c);
+            => astNode(Iterable, [a], o, a, c);
 
     "Section 6.6.12 of the specification"
     rule
     shared Tuple tuple(SqOpen o, ArgumentList a, SqClose c)
-            => astNode(`Tuple`, [a], o, a, c);
+            => astNode(Tuple, [a], o, a, c);
 
     "Section 6.6.13 of the specification"
     rule
     shared DynamicValue dynamicValue(Dynamic d, SqOpen o,
             NamedArgument[] n, ArgumentList a, SqClose c)
-            => astNode(`DynamicValue`, [n, a], d, o, n, a, c);
+            => astNode(DynamicValue, [n, a], d, o, n, a, c);
 
     "Section 6.7.1 of the specification"
     tokenizer
     shared Token<ThenTok>? thenTok(String input, Object? prev)
-            => keyword(`ThenTok`, input, prev, "then");
+            => keyword(ThenTok, input, prev, "then");
 
     "Section 6.7.1 of the specification"
     rule
     shared IfElseExpression ifElseExpression(IfTok i, Conditions c,
             ThenTok t, DisjoiningExpression|IfElseExpression|LetExpression h,
             ElseTok e, DisjoiningExpression|IfElseExpression|LetExpression x)
-            => astNode(`IfElseExpression`, [c, h, x], i, c, t, h, e, x);
+            => astNode(IfElseExpression, [c, h, x], i, c, t, h, e, x);
 
     "Section 6.7.2 of the specification"
     rule
     shared SwitchCaseElseExpression switchCaseElseExpression(SwitchClause s,
             [CaseExpression +] c, [ElseTok,
             DisjoiningExpression|IfElseExpression|LetExpression]? e)
-            => astNode(`SwitchCaseElseExpression`, [s, c, if (exists e) then e[1] else
+            => astNode(SwitchCaseElseExpression, [s, c, if (exists e) then e[1] else
             null], s, c, e);
 
     "Section 6.7.2 of the specification"
@@ -1805,81 +1804,81 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared CaseExpression caseExpression(CaseTok t, ParOpen o, CaseItem c,
             ParClose e,
             DisjoiningExpression|IfElseExpression|LetExpression x)
-            => astNode(`CaseExpression`, [c, x], t, o, c, e, x);
+            => astNode(CaseExpression, [c, x], t, o, c, e, x);
 
     "Section 6.7.3 of the specification"
     tokenizer
     shared Token<LetTok>? letTok(String input, Object? prev)
-            => keyword(`LetTok`, input, prev, "let");
+            => keyword(LetTok, input, prev, "let");
 
     "Section 6.7.3 of the specification"
     rule
     shared LetExpression letExpression(LetTok l, PatternList p,
             DisjoiningExpression|IfElseExpression|LetExpression x)
-            => astNode(`LetExpression`, [p, x], l, p, x);
+            => astNode(LetExpression, [p, x], l, p, x);
 
     "Section 6.7.3 of the specification"
     rule
     shared PatternList patternList(ParOpen o, CommaSepList<SpecifiedPattern> p,
             ParClose c)
-            => astNode(`PatternList`, [p.nodes], o, p.nodes.chain({c}));
+            => astNode(PatternList, [p.nodes], o, p.nodes.chain({c}));
 
     "Section 6.7.4 of the specification"
     rule
     shared ObjectExpression objectExpression(ObjectTok o, ExtendedType? e,
             SatisfiedTypes? s, ClassBody b)
-            => astNode(`ObjectExpression`, [b, e, s], o, e, s, b);
+            => astNode(ObjectExpression, [b, e, s], o, e, s, b);
 
     "Section 6.8.1 of the specification"
     rule
     shared ElementOrSubrangeExpression elementOrSubrangeExpression(Primary p,
             SqOpen o, Subscript s, SqClose c)
-            => astNode(`ElementOrSubrangeExpression`, [p, s], p, o, s, c);
+            => astNode(ElementOrSubrangeExpression, [p, s], p, o, s, c);
 
     "Section 6.8.1 of the specification"
     rule
     shared KeySubscript keySubscript(AddingExpression a)
-            => astNode(`KeySubscript`, [a], a);
+            => astNode(KeySubscript, [a], a);
 
     "Section 6.8.1 of the specification"
     tokenizer
     shared Token<DotDot>? dotDot(String input, Object? prev)
-            => literal(`DotDot`, input, prev, "..");
+            => literal(DotDot, input, prev, "..");
 
     "Section 6.8.1 of the specification"
     rule
     shared SpanSubscript spanSubscript(AddingExpression a, DotDot d,
             AddingExpression b)
-            => astNode(`SpanSubscript`, [a, b], a, d, b);
+            => astNode(SpanSubscript, [a, b], a, d, b);
 
     "Section 6.8.1 of the specification"
     tokenizer
     shared Token<Colon>? colon(String input, Object? prev)
-            => literal(`Colon`, input, prev, ":");
+            => literal(Colon, input, prev, ":");
 
     "Section 6.8.1 of the specification"
     rule
     shared MeasureSubscript measureSubscript(AddingExpression a, Colon d,
             AddingExpression b)
-            => astNode(`MeasureSubscript`, [a, b], a, d, b);
+            => astNode(MeasureSubscript, [a, b], a, d, b);
 
     "Section 6.8.1 of the specification"
     rule
     shared SpanFromSubscript spanFromSubscript(AddingExpression a, Ellipsis d)
-            => astNode(`SpanFromSubscript`, [a], a, d);
+            => astNode(SpanFromSubscript, [a], a, d);
 
     "Section 6.8.1 of the specification"
     rule
     shared SpanToSubscript spanToSubscript(Ellipsis d, AddingExpression a)
-            => astNode(`SpanToSubscript`, [a], d, a);
+            => astNode(SpanToSubscript, [a], d, a);
 
     "Section 7.1.1 of the specification"
     rule
     shared Annotations annotations(StringLiteral? s, [Annotation *] a)
-            => astNode(`Annotations`, [s, a], s, a);
+            => astNode(Annotations, [s, a], s, a);
 
     "Section 7.1.1 of the specification"
     rule
     shared Annotation annotation(MemberName m, Arguments? a)
-            => astNode(`Annotation`, [m, a], m, a);
+            => astNode(Annotation, [m, a], m, a);
 }
