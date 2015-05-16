@@ -223,6 +223,131 @@ shared class Colon(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends Punctuation(":", ls, cs, le, ce) {}
 
+"A ++"
+shared class PlusPlus(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("++", ls, cs, le, ce) {}
+
+"A --"
+shared class MinusMinus(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("--", ls, cs, le, ce) {}
+
+"A ^"
+shared class Caret(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("^", ls, cs, le, ce) {}
+
+"A ~"
+shared class Tilde(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("~", ls, cs, le, ce) {}
+
+"A /"
+shared class Slash(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("/", ls, cs, le, ce) {}
+
+"A %"
+shared class Percent(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("%", ls, cs, le, ce) {}
+
+"A **"
+shared class StarStar(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("**", ls, cs, le, ce) {}
+
+"A <="
+shared class LTE(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("<=", ls, cs, le, ce) {}
+
+"A >="
+shared class GTE(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation(">=", ls, cs, le, ce) {}
+
+"A <=>"
+shared class Spaceship(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("<=>", ls, cs, le, ce) {}
+
+"A =="
+shared class AbsEq(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("==", ls, cs, le, ce) {}
+
+"A !="
+shared class NEq(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("!=", ls, cs, le, ce) {}
+
+"A ==="
+shared class Identical(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("===", ls, cs, le, ce) {}
+
+"A &&"
+shared class AndOp(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("&&", ls, cs, le, ce) {}
+
+"A ||"
+shared class OrOp(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("||", ls, cs, le, ce) {}
+
+"A +="
+shared class PlusEq(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("+=", ls, cs, le, ce) {}
+
+"A -="
+shared class MinusEq(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("-=", ls, cs, le, ce) {}
+
+"A *="
+shared class StarEq(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("*=", ls, cs, le, ce) {}
+
+"A /="
+shared class SlashEq(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("/=", ls, cs, le, ce) {}
+
+"A %="
+shared class PercentEq(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("%=", ls, cs, le, ce) {}
+
+"A &="
+shared class AmpersandEq(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("&=", ls, cs, le, ce) {}
+
+"A |="
+shared class PipeEq(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("|=", ls, cs, le, ce) {}
+
+"A ~="
+shared class TildeEq(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("~=", ls, cs, le, ce) {}
+
+"A &&="
+shared class AndEq(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("&&=", ls, cs, le, ce) {}
+
+"A ||="
+shared class OrEq(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Punctuation("||=", ls, cs, le, ce) {}
+
 "'super'"
 shared class SuperTok(Integer ls, Integer cs,
         Integer le, Integer ce)

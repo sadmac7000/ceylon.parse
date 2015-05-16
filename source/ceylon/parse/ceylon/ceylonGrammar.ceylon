@@ -1872,6 +1872,131 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared SpanToSubscript spanToSubscript(Ellipsis d, AddingExpression a)
             => astNode(SpanToSubscript, [a], d, a);
 
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<PlusPlus>? plusPlus(String input, Object? prev)
+            => literal(PlusPlus, input, prev, "++");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<MinusMinus>? minusMinus(String input, Object? prev)
+            => literal(MinusMinus, input, prev, "--");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<Caret>? caret(String input, Object? prev)
+            => literal(Caret, input, prev, "^");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<Tilde>? tilde(String input, Object? prev)
+            => literal(Tilde, input, prev, "~");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<Slash>? slash(String input, Object? prev)
+            => literal(Slash, input, prev, "/");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<Percent>? percent(String input, Object? prev)
+            => literal(Percent, input, prev, "%");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<StarStar>? starStar(String input, Object? prev)
+            => literal(StarStar, input, prev, "**");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<LTE>? lte(String input, Object? prev)
+            => literal(LTE, input, prev, "<=");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<GTE>? gte(String input, Object? prev)
+            => literal(GTE, input, prev, ">=");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<Spaceship>? spaceship(String input, Object? prev)
+            => literal(Spaceship, input, prev, "<=>");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<AbsEq>? absEq(String input, Object? prev)
+            => literal(AbsEq, input, prev, "==");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<NEq>? neq(String input, Object? prev)
+            => literal(NEq, input, prev, "!=");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<Identical>? identical(String input, Object? prev)
+            => literal(Identical, input, prev, "===");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<AndOp>? andOp(String input, Object? prev)
+            => literal(AndOp, input, prev, "&&");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<OrOp>? orOp(String input, Object? prev)
+            => literal(OrOp, input, prev, "||");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<PlusEq>? plusEq(String input, Object? prev)
+            => literal(PlusEq, input, prev, "+=");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<MinusEq>? minusEq(String input, Object? prev)
+            => literal(MinusEq, input, prev, "-=");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<StarEq>? starEq(String input, Object? prev)
+            => literal(StarEq, input, prev, "*=");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<SlashEq>? slashEq(String input, Object? prev)
+            => literal(SlashEq, input, prev, "/=");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<PercentEq>? percentEq(String input, Object? prev)
+            => literal(PercentEq, input, prev, "%=");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<AmpersandEq>? ampersandEq(String input, Object? prev)
+            => literal(AmpersandEq, input, prev, "&=");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<PipeEq>? pipeEq(String input, Object? prev)
+            => literal(PipeEq, input, prev, "|=");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<TildeEq>? tildeEq(String input, Object? prev)
+            => literal(TildeEq, input, prev, "~=");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<AndEq>? andEq(String input, Object? prev)
+            => literal(AndEq, input, prev, "&&=");
+
+    "Section 6.8.1 of the specification"
+    tokenizer
+    shared Token<OrEq>? orEq(String input, Object? prev)
+            => literal(OrEq, input, prev, "||=");
+
     "Section 7.1.1 of the specification"
     rule
     shared Annotations annotations(StringLiteral? s, [Annotation *] a)
