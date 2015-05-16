@@ -1997,6 +1997,60 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
     shared Token<OrEq>? orEq(String input, Object? prev)
             => literal(OrEq, input, prev, "||=");
 
+    "Section 6.8.1 of the specification"
+    rule
+    shared PostfixIncrementOperation postfixIncrementOperation(Primary p,
+            PlusPlus o)
+            => astNode(PostfixIncrementOperation, [p], p, o);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared PostfixDecrementOperation postfixDecrementOperation(Primary p,
+            MinusMinus o)
+            => astNode(PostfixDecrementOperation, [p], p, o);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared PrefixIncrementOperation prefixIncrementOperation(PlusPlus o,
+            Primary p)
+            => astNode(PrefixIncrementOperation, [p], o, p);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared PrefixDecrementOperation prefixDecrementOperation(MinusMinus o,
+            Primary p)
+            => astNode(PrefixDecrementOperation, [p], o, p);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared IdentityOperation identityOperation(Plus o,
+            Primary p)
+            => astNode(IdentityOperation, [p], o, p);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared NegationOperation negationOperation(Minus o,
+            Primary p)
+            => astNode(NegationOperation, [p], o, p);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared ExistsOperation existsOperation(SpanningExpression p,
+            Exists o)
+            => astNode(ExistsOperation, [p], p, o);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared NonemptyOperation nonemptyOperation(SpanningExpression p,
+            Nonempty o)
+            => astNode(NonemptyOperation, [p], p, o);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared NotOperation notOperation(Bang o,
+            NegatingExpression p)
+            => astNode(NotOperation, [p], o, p);
+
     "Section 7.1.1 of the specification"
     rule
     shared Annotations annotations(StringLiteral? s, [Annotation *] a)
