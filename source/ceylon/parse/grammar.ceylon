@@ -222,14 +222,6 @@ shared class Rule {
         this.g = g;
     }
 
-    shared actual Boolean equals(Object other) {
-        if (is Rule other) {
-            return other.consumes == consumes && other.produces == produces;
-        } else {
-            return false;
-        }
-    }
-
     shared Boolean precedenceConflict(Rule other) {
         if (precedence >= other.precedence) { return false; }
         if (produces != other.produces) { return false; }
