@@ -249,7 +249,7 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             => meta(BlockComment, start, body, end);
 
     "Section 2.2 of the specification"
-    omniRule
+    omniRule(0, lassoc)
     shared AnySym separator<AnySym>(
             [BlockComment|LineComment|Whitespace+] before,
             AnySym sym)

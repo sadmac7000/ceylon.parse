@@ -318,11 +318,14 @@ class EPState {
 
     shared actual Boolean equals(Object other) {
         if (is EPState other) {
+            if (other === this) { return true; }
+
             if (other.start != start) { return false; }
             if (other.pos != pos) { return false; }
             if (other.rule != rule) { return false; }
             if (other.matchPos != matchPos) { return false; }
 
+            if (other.children.size != children.size) { return false; }
             if (other.children != children) { return false; }
 
             return true;
