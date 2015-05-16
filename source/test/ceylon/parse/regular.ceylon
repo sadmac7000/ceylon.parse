@@ -52,7 +52,7 @@ shared void repeatTest() {
     assert(exp.match("aaa") exists);
     assert(exp.match("aaaa") exists);
     assert(exp.match("aaaaa") exists);
-    assert(exists k = exp.match("aaaaaa"), k == 5);
+    assert(exists k = exp.match("aaaaaa"), k.length == 5);
 }
 
 test
