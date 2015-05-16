@@ -132,11 +132,11 @@ class Repeat<Char>(Regular<Char> r, Integer min, Integer? max)
         extends Regular<Char>()
         given Char satisfies Object {
     "Local match result"
-    class RRes(List<Char> s, Integer count, RRes? prev, Res cur)
-        extends Res((prev?.length else 0) + cur.length) {
+    class RRes(List<Char> s, Integer count, RRes? prev, Res? cur)
+        extends Res((prev?.length else 0) + (cur?.length else 0)) {
 
         shared actual Res? backtrack {
-            if (exists c = cur.backtrack) {
+            if (exists c = cur?.backtrack) {
                 return RRes(s, count, prev, c);
             } else {
                 return prev?.advance(length - 1);
@@ -158,10 +158,10 @@ class Repeat<Char>(Regular<Char> r, Integer min, Integer? max)
             }
 
             if (exists m = outer.max, count == m) { return this; }
-            if (cur.length == 0) { return this; }
+            if (exists c = cur?.length, c == 0) { return this; }
 
-            value target = s[cur.length...];
-            value next = outer.r.match(s[cur.length...], maxLength);
+            value target = s[(cur?.length else 0)...];
+            value next = outer.r.match(target, maxLength);
 
             if (exists next) {
                 return RRes(target, count + 1, this, next of Res).advance(maxLength);
@@ -171,15 +171,8 @@ class Repeat<Char>(Regular<Char> r, Integer min, Integer? max)
         }
     }
 
-    shared actual MatchResult? match(List<Char> s, Integer? maxLength) {
-        value start = r.match(s, maxLength);
-
-        if (exists start) {
-            return RRes(s, 1, null, start of Res).advance(maxLength);
-        }
-
-        return null;
-    }
+    shared actual MatchResult? match(List<Char> s, Integer? maxLength)
+            => RRes(s, 0, null, null).advance(maxLength);
 }
 
 "Regular language that matches either of two other languages"
