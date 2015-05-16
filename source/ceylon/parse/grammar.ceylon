@@ -152,6 +152,7 @@ shared class ProductionClause(shared Boolean variadic,
             )];
 
         predictedCache = p;
+        for (r in p) { r.predictAll(); }
     }
 }
 
