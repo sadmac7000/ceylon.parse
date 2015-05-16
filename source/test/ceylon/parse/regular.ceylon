@@ -27,11 +27,11 @@ shared void andTest() {
     assert(exp.match("abcd") exists);
     assert(! exp.match("abc") exists);
     assert(! exp.match("abdd") exists);
-    assert(exists k = exp.match("abcd"), k == 4);
+    assert(exists k = exp.match("abcd"), k.length == 4);
 
     value exp2 = lit("abc").and(any("abcd").repeat(2));
 
-    assert(exists k2 = exp2.match("abc"), k2 == 2);
+    assert(exists k2 = exp2.match("abc"), k2.length == 2);
 }
 
 test
