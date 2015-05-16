@@ -64,7 +64,7 @@ class Any<Char>({Char *} valuesIn) extends Regular<Char>()
 
     shared actual MatchResult? match(List<Char> s, Integer? maxLength) {
         if (exists maxLength, maxLength < 1) { return null; }
-        if (exists c = s[0], values.contains(c)) { Res(1); }
+        if (exists c = s[0], values.contains(c)) { return Res(1); }
         return null;
     }
 }
