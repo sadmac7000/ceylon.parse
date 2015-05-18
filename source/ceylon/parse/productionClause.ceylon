@@ -8,11 +8,12 @@ import ceylon.language.meta.declaration {
     FunctionOrValueDeclaration
 }
 import ceylon.collection {
-    HashSet
+    HashSet,
+    ArrayList
 }
 
+"Portion of a rule that matches for a single position"
 shared class ProductionClause satisfies Iterable<Atom> {
-
     shared Boolean variadic;
     shared Boolean once;
     shared AnyGrammar g;
@@ -31,12 +32,13 @@ shared class ProductionClause satisfies Iterable<Atom> {
     value allIterables = productionClauses.chain({localAtoms});
     value atomIterator = allIterables.reduce<{Atom *}>((x,y) => x.chain(y));
     value allAtoms = HashSet{*atomIterator};
+    value allAtomsList = ArrayList{*allAtoms};
 
     shared actual Boolean contains(Object type) => allAtoms.contains(type);
 
-    shared actual Iterator<Atom> iterator() => allAtoms.iterator();
+    shared actual Iterator<Atom> iterator() => allAtomsList.iterator();
 
-    shared actual Integer hash => variadic.hash ^ 3 + once.hash ^ 2 +
+    shared actual Integer hash = variadic.hash ^ 3 + once.hash ^ 2 +
         values.hash;
 
     shared actual Boolean equals(Object that) {
@@ -73,7 +75,7 @@ shared class ProductionClause satisfies Iterable<Atom> {
     shared void predict() {
         if (exists p = predictedCache) { return; }
 
-        value p = [*{
+        value p = ArrayList{*{
             for (other in g.rules)
                 if ((this.select(other.produces.subtypeOf)).size > 0)
                     other
@@ -83,7 +85,7 @@ shared class ProductionClause satisfies Iterable<Atom> {
                 localAtoms.map((x) =>
                     x.type).narrow<Type<Tuple<Anything,Anything,Anything[]>>>()
                     .map((x) => Rule.TupleRule(x, g))
-            )];
+            )};
 
         predictedCache = p;
         for (r in p) { r.predictAll(); }
