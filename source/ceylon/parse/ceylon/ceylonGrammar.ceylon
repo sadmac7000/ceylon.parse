@@ -2051,6 +2051,150 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             NegatingExpression p)
             => astNode(NotOperation, [p], o, p);
 
+    "Section 6.8.1 of the specification"
+    rule
+    shared ExponentiationOperation exponentiatingOperation(
+            PrePostfixingExpression b, Caret c, ExponentiatingExpression e)
+            => astNode(ExponentiationOperation, [b, e], b, c, e);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared IntersectionOperation intersectionOperation(
+            IntersectingExpression a, Ampersand o, InvertingExpression b)
+            => astNode(IntersectionOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared UnionOperation unionOperation(
+            UnioningExpression a, Pipe o, IntersectingExpression b)
+            => astNode(UnionOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared ComplementOperation complementOperation(
+            UnioningExpression a, Tilde o, IntersectingExpression b)
+            => astNode(ComplementOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared ProductOperation productOperation(
+            MultiplyingExpression a, Star o, UnioningExpression b)
+            => astNode(ProductOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared QuotientOperation quotientOperation(
+            MultiplyingExpression a, Slash o, UnioningExpression b)
+            => astNode(QuotientOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared RemainderOperation remainderOperation(
+            MultiplyingExpression a, Percent o, UnioningExpression b)
+            => astNode(RemainderOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared ScaleOperation scaleOperation(
+            MultiplyingExpression a, StarStar o, ScalingExpression b)
+            => astNode(ScaleOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared SumOperation sumOperation(
+            AddingExpression a, Plus o, ScalingExpression b)
+            => astNode(SumOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared DifferenceOperation differenceOperation(
+            AddingExpression a, Minus o, ScalingExpression b)
+            => astNode(DifferenceOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared SpanOperation spanOperation(
+            AddingExpression a, DotDot o, AddingExpression b)
+            => astNode(SpanOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared MeasureOperation measureOperation(
+            AddingExpression a, Colon o, AddingExpression b)
+            => astNode(MeasureOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared EntryOperation entryOperation(
+            AddingExpression a, Arrow o, AddingExpression b)
+            => astNode(EntryOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared LargerOperation largerOperation(
+            ExistsNonemptyExpression a, GT o, ExistsNonemptyExpression b)
+            => astNode(LargerOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared SmallerOperation smallerOperation(
+            ExistsNonemptyExpression a, LT o, ExistsNonemptyExpression b)
+            => astNode(SmallerOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared LargeAsOperation largeAsOperation(
+            ExistsNonemptyExpression a, GTE o, ExistsNonemptyExpression b)
+            => astNode(LargeAsOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared SmallAsOperation smallAsOperation(
+            ExistsNonemptyExpression a, LTE o, ExistsNonemptyExpression b)
+            => astNode(SmallAsOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared InOperation inOperation(
+            ExistsNonemptyExpression a, In o, ExistsNonemptyExpression b)
+            => astNode(InOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared IsOperation isOperation(
+            ExistsNonemptyExpression a, Is o, Type b)
+            => astNode(IsOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared OfOperation ofOperation(
+            ExistsNonemptyExpression a, Of o, Type b)
+            => astNode(OfOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared CompareOperation compareOperation(
+            ExistsNonemptyExpression a, Spaceship o, ExistsNonemptyExpression b)
+            => astNode(CompareOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared EqualOperation equalOperation(
+            ComparingExpression a, AbsEq o, ComparingExpression b)
+            => astNode(EqualOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared NotEqualOperation notEqualOperation(
+            ComparingExpression a, NEq o, ComparingExpression b)
+            => astNode(NotEqualOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared IdenticalOperation identicalOperation(
+            ComparingExpression a, Identical o, ComparingExpression b)
+            => astNode(IdenticalOperation, [a, b], a, o, b);
+
     "Section 7.1.1 of the specification"
     rule
     shared Annotations annotations(StringLiteral? s, [Annotation *] a)
