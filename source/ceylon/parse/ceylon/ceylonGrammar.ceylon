@@ -2279,6 +2279,29 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             ThenElseExpression a, OrEq o, AssigningExpression b)
             => astNode(OrAssignmentOperation, [a, b], a, o, b);
 
+    "Section 6.8.4 of the specification"
+    rule
+    shared WithinOperation withinOperator(ExistsNonemptyExpression a, LT|LTE b,
+            ExistsNonemptyExpression c, LT|LTE d, ExistsNonemptyExpression e)
+    {
+        Bound aBound;
+        Bound eBound;
+
+        if (is LTE b) {
+            aBound = ClosedBound(a);
+        } else {
+            aBound = OpenBound(a);
+        }
+
+        if (is LTE d) {
+            eBound = ClosedBound(e);
+        } else {
+            eBound = OpenBound(e);
+        }
+
+        return astNode(WithinOperation, [c, aBound, eBound], a, b, c, d, e);
+    }
+
     "Section 7.1.1 of the specification"
     rule
     shared Annotations annotations(StringLiteral? s, [Annotation *] a)
