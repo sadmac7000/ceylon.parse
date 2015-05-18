@@ -289,17 +289,26 @@ class EPState {
         assert(exists want = rule.consumes[matchPos]);
 
         if (is Symbol other) {
-            value intersects = want.select(other.type.subtypeOf);
-            if (intersects.size == 0) { return null; }
+            for (w in want) {
+                if (other.type.subtypeOf(w)) {
+                    return EPState.Derived(this, pos + other.length, other);
+                }
+            }
 
-            return EPState.Derived(this, pos + other.length, other);
+            return null;
         } else if (! exists other){
             if (! want.contains(nullAtom)) { return null; }
 
             return EPState.Derived(this, pos, null);
         } else {
-            value intersects = want.select(other.rule.produces.subtypeOf);
-            if (intersects.size == 0) { return null; }
+            for (w in want) {
+                if (other.rule.produces.subtypeOf(w)) {
+                    break;
+                }
+            } else {
+                return null;
+            }
+
             if (rule.precedenceConflict(other.rule)) { return null; }
             if (exists p = rule.forbidPosition(other.rule),
                 p == matchPos) { return null; }
