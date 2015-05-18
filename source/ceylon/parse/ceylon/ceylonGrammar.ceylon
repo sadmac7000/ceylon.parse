@@ -738,7 +738,7 @@ shared object ceylonGrammar extends Grammar<Character>() {
 
     "Section 3.2.8 of the specification"
     rule
-    shared IterableType iterableType(CurlOpen a, VariadicType? type,
+    shared IterableType iterableType(CurlOpen a, VariadicType type,
             CurlClose b)
             => astNode(IterableType, [type], a, type, b);
 
