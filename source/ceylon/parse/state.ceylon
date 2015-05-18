@@ -289,23 +289,14 @@ class EPState {
         assert(exists want = rule.consumes[matchPos]);
 
         if (is Symbol other) {
-            for (w in want) {
-                if (other.type.subtypeOf(w)) {
-                    return EPState.Derived(this, pos + other.length, other);
-                }
-            }
-
-            return null;
+            return want.any(other.type.subtypeOf) then
+                    EPState.Derived(this, pos + other.length, other);
         } else if (! exists other){
             if (! want.contains(nullAtom)) { return null; }
 
             return EPState.Derived(this, pos, null);
         } else {
-            for (w in want) {
-                if (other.rule.produces.subtypeOf(w)) {
-                    break;
-                }
-            } else {
+            if (! want.any(other.rule.produces.subtypeOf)) {
                 return null;
             }
 
