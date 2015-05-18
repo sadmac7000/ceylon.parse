@@ -27,7 +27,7 @@ shared void andTest() {
     assert(exp.match("abcd") exists);
     assert(! exp.match("abc") exists);
     assert(! exp.match("abdd") exists);
-    assert(exists k = exp.match("abcd"), k.length == 4);
+    assert(exists k = exp.match("abcd"), k.matched == "abcd");
 
     value exp2 = lit("abc").and(any("abcd").repeat(2));
 
@@ -52,7 +52,7 @@ shared void repeatTest() {
     assert(exp.match("aaa") exists);
     assert(exp.match("aaaa") exists);
     assert(exp.match("aaaaa") exists);
-    assert(exists k = exp.match("aaaaaa"), k.length == 5);
+    assert(exists k = exp.match("aaaaaa"), k.matched == "aaaaa");
 }
 
 test

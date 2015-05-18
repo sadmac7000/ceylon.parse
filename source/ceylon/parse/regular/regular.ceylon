@@ -3,6 +3,14 @@ import ceylon.collection { HashSet }
 "Concatenate two lists of objects. If they are strings use string
  concatenation."
 List<Char> cat<Char>(List<Char> a, List<Char> b) {
+    if (is String a, b.size == 0) {
+        return a;
+    }
+
+    if (is String b, a.size == 0) {
+        return b;
+    }
+
     if (is String a, is String b) {
         assert(is List<Char>  r = a + b);
         return r;
