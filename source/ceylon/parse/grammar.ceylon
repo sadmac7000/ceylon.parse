@@ -25,11 +25,20 @@ import ceylon.collection {
 class BadTokenConstructorException()
         extends Exception("Could not construct invalid token") {}
 
-shared class ProductionClause(shared Boolean variadic,
-        shared Boolean once,
-        shared AnyGrammar g,
-        shared Atom|ProductionClause *values)
-        satisfies Iterable<Atom> {
+shared class ProductionClause satisfies Iterable<Atom> {
+
+    shared Boolean variadic;
+    shared Boolean once;
+    shared AnyGrammar g;
+    shared <Atom|ProductionClause>[] values;
+
+    shared new(Boolean variadic, Boolean once,
+        AnyGrammar g, Atom|ProductionClause *values) {
+        this.variadic = variadic;
+        this.once = once;
+        this.g = g;
+        this.values = values;
+    }
 
     value localAtoms = {for (x in values) if (is Atom x) x};
     value productionClauses = {for (x in values) if (is ProductionClause x) x};
