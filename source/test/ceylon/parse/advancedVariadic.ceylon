@@ -3,7 +3,7 @@ import ceylon.test { test, assertEquals }
 
 "A parse tree that accepts the string babab with the first a repeating one or
  more times and the second a repeating zero or more times"
-object advancedVariadicGrammar extends ABGrammar<S>() {
+object advancedVariadicGrammar extends ABGrammar() {
     rule
     shared S rule1(A a, B b, BTerm t) {
         return S(a.position, a, b, t);
@@ -22,7 +22,7 @@ object advancedVariadicGrammar extends ABGrammar<S>() {
 
 test
 shared void advancedVariadic() {
-    value root = advancedVariadicGrammar.unambiguousParse("bbb");
+    value root = advancedVariadicGrammar.unambiguousParse<S>("bbb");
     value expect = S (0,
                 A(0,
                     BTerm(0),

@@ -25,8 +25,7 @@ class MMulA(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
 class ParenBox(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
 
 "A grammar on the alphabet of 'a' and 'b'"
-class ABGrammar<K>() extends Grammar<K, String>()
-        given K satisfies Object {
+class ABGrammar() extends Grammar<String>() {
     tokenizer
     shared Token<ATerm>? aTerm(String input, Object? last) {
         Integer position;

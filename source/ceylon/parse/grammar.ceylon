@@ -28,15 +28,14 @@ shared class AmbiguityException()
         extends Exception("Parser generated ambiguous results") {}
 
 "Alias for any type of grammar"
-shared alias AnyGrammar => Grammar<Object, Nothing>;
+shared alias AnyGrammar => Grammar<Nothing>;
 
 "A [[Grammar]] is defined by a series of BNF-style production rules. The rules
  are specifed by defining methods with the `rule` annotation.  The parser will
  create an appropriate production rule and call the annotated method in order
  to reduce the value."
-shared abstract class Grammar<out Root, in Data>()
-        given Data satisfies List<Object>
-        given Root satisfies Object {
+shared abstract class Grammar<in Data>()
+        given Data satisfies List<Object> {
     "A list of rules for this grammar"
     shared variable Rule[] rules = [];
 
@@ -77,15 +76,9 @@ shared abstract class Grammar<out Root, in Data>()
     "Generic rule initial values"
     variable GenericInfo[] genericInfos = [];
 
-    "The result symbol we expect from this tree"
-    shared Atom result = Atom(`Root`);
-
     "Error constructors"
     shared Map<Atom, Object(Object?, Object?)> errorConstructors =
         HashMap<Atom, Object(Object?, Object?)>();
-
-    "Cached result for startRules"
-    variable {Rule *}? startRulesCache = null;
 
     "Tokenizers"
     shared Map<Atom, Token?(Data, Object?)> tokenizers =
@@ -150,12 +143,9 @@ shared abstract class Grammar<out Root, in Data>()
     }
 
     "Starting rules"
-    shared {Rule *} startRules {
-        if (exists k = startRulesCache) { return k; }
-
-        value cl = ProductionClause(false, true, this, result).predicted;
-        startRulesCache = cl;
-        return cl;
+    shared {Rule *} startRules<Root>()
+        given Root satisfies Object {
+        return ProductionClause(false, true, this, Atom(`Root`)).predicted;
     }
 
     "Get dynamic and omni rules"
@@ -222,11 +212,14 @@ shared abstract class Grammar<out Root, in Data>()
     }
 
     "Parse a stream"
-    shared Set<Root> parse(Data data) => ParseTree(this, data).ast;
+    shared Set<Root> parse<Root>(Data data)
+        given Root satisfies Object
+        => ParseTree<Root, Data>(this, data).ast;
 
     "Parse a stream. Throw an exception if the parse is ambiguous"
-    shared Root unambiguousParse(Data data) {
-        value result = parse(data);
+    shared Root unambiguousParse<Root>(Data data)
+        given Root satisfies Object {
+        value result = parse<Root>(data);
 
         if (result.size != 1) {
             throw AmbiguityException();

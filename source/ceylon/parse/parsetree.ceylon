@@ -6,7 +6,8 @@ import ceylon.collection {
 }
 
 "A queue of states"
-class StateQueue(AnyGrammar g) {
+class StateQueue<Root>(AnyGrammar g)
+    given Root satisfies Object {
     g.populateRules();
 
     value queue = ArrayList<EPState>();
@@ -76,7 +77,7 @@ class StateQueue(AnyGrammar g) {
         }
     }
 
-    for (rule in g.startRules) {
+    for (rule in g.startRules<Root>()) {
         value newState = EPState(rule);
         offer(newState);
     }
@@ -117,15 +118,14 @@ class StateQueue(AnyGrammar g) {
  are specifed by defining methods with the `rule` annotation.  The parser will
  create an appropriate production rule and call the annotated method in order
  to reduce the value."
-shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
-                                                   Data data)
+shared class ParseTree<out Root, in Data>(Grammar<Data> g, Data data)
         given Data satisfies List<Object>
         given Root satisfies Object {
 
     value tokenCache = HashMap<Integer, Set<Token>>();
 
     "Queue of states to process"
-    value stateQueue = StateQueue(g);
+    value stateQueue = StateQueue<Root>(g);
 
     "Process queued states"
     void pumpStateQueue() {
@@ -274,7 +274,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
 
         for (i in endsPair.item) {
             if (! i.complete) { continue; }
-            if (! g.result.supertypeOf(i.rule.produces)) { continue; }
+            if (! Atom(`Root`).supertypeOf(i.rule.produces)) { continue; }
             if (i.start != 0) { continue; }
 
             if (! exists k = minLsd) {

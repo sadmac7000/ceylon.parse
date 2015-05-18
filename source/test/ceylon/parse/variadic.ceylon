@@ -2,7 +2,7 @@ import ceylon.parse { ... }
 import ceylon.test { test, assertEquals }
 
 "A parse tree that accepts any string of A's and B's using variadic matching."
-object variadicGrammar extends ABGrammar<S>() {
+object variadicGrammar extends ABGrammar() {
     rule
     shared S rule1(ATerm|BTerm* a) {
         assert(exists first=a.first);
@@ -12,7 +12,7 @@ object variadicGrammar extends ABGrammar<S>() {
 
 test
 shared void variadic() {
-    value root = variadicGrammar.unambiguousParse("abababaa");
+    value root = variadicGrammar.unambiguousParse<S>("abababaa");
     value expect = S (0,
                 ATerm(0),
                 BTerm(1),

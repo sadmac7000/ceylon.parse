@@ -2,7 +2,7 @@ import ceylon.parse { ... }
 import ceylon.test { test, assertEquals }
 
 "Grammar to test generics that apply broadly"
-object broadGenericGrammar extends ABGrammar<[S*]>() {
+object broadGenericGrammar extends ABGrammar() {
     tokenizer
     shared Token<Spc>? spc(String input, Object? last) {
         Integer position;
@@ -117,7 +117,7 @@ object broadGenericGrammar extends ABGrammar<[S*]>() {
 test
 void broadGeneric() {
     value text = "a a*a ( a ) a a*a ( a ) a a*a ( a )";
-    value root = broadGenericGrammar.unambiguousParse(text);
+    value root = broadGenericGrammar.unambiguousParse<[S*]>(text);
     value expect = [S(0,
             ATerm(0),
             MMulA(2,

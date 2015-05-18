@@ -13,7 +13,7 @@ class Div(Integer pos = 0, shared actual Object? prevError = null) extends Sym(p
 class LParen(Integer pos = 0, shared actual Object? prevError = null) extends Sym(pos) {}
 class RParen(Integer pos = 0, shared actual Object? prevError = null) extends Sym(pos) {}
 
-class AlgebraGrammar() extends Grammar<Expr, String>() {
+class AlgebraGrammar() extends Grammar<String>() {
     tokenizer
     shared Token<Var>? var(String input, Object? last) {
         String varChars = "abcdefghijklmnopqrstuvwxyz";

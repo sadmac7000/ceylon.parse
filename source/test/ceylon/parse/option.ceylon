@@ -2,7 +2,7 @@ import ceylon.parse { ... }
 import ceylon.test { test, assertEquals }
 
 "A parse tree that accepts any string of A's and AB's using option matching."
-object optionGrammar extends ABGrammar<S>() {
+object optionGrammar extends ABGrammar() {
     rule
     shared S rule1(A a) => S(a.position, a);
 
@@ -21,7 +21,7 @@ object optionGrammar extends ABGrammar<S>() {
 
 test
 shared void option() {
-    value root = optionGrammar.unambiguousParse("abababaa");
+    value root = optionGrammar.unambiguousParse<S>("abababaa");
     value expect = S (0,
         S (0,
             S(0,

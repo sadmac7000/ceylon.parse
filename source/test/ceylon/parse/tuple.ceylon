@@ -1,7 +1,7 @@
 import ceylon.parse { ... }
 import ceylon.test { test, assertEquals }
 
-object tupleGrammar extends ABGrammar<S>() {
+object tupleGrammar extends ABGrammar() {
     rule
     shared S tupleMatcher([ATerm,BTerm]+ terms) {
         variable [ATerm|BTerm*] vals = [];
@@ -16,7 +16,7 @@ object tupleGrammar extends ABGrammar<S>() {
 
 test
 void tuple() {
-    value root = tupleGrammar.unambiguousParse("abababab");
+    value root = tupleGrammar.unambiguousParse<S>("abababab");
     value expect = S (0,
                 ATerm(0),
                 BTerm(1),
