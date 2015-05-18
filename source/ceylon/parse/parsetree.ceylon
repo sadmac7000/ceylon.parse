@@ -286,7 +286,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Root,Data> g,
                 resultNodes.clear();
             }
 
-            assert(is Root t = i.astNode.sym);
+            assert(is Root t = i.astNode);
             resultNodes.add(t);
         }
 

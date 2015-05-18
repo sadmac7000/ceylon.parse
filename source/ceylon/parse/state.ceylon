@@ -191,7 +191,7 @@ class EPState {
     shared Boolean complete => rule.consumes.size == matchPos;
 
     "The AST node for this state"
-    shared Symbol astNode {
+    shared Object astNode {
         assert(complete);
 
         variable Object?[] sym = [];
@@ -200,7 +200,7 @@ class EPState {
             if (is Symbol c) {
                 sym = sym.withTrailing(c.sym);
             } else if (is EPState c) {
-                sym = sym.withTrailing(c.astNode.sym);
+                sym = sym.withTrailing(c.astNode);
             } else if (! exists c) {
                 sym = sym.withTrailing(null);
             } else if (is ErrorInsert c) {
@@ -210,8 +210,7 @@ class EPState {
             }
         }
 
-        value s = Symbol(rule.produces, rule.consume(*sym), pos - start);
-        return s;
+        return rule.consume(*sym);
     }
 
     "Stop matching the current variadic (if the current production clause is a
