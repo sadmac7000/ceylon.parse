@@ -2,9 +2,11 @@ import ceylon.ast.core { Node }
 import ceylon.language.meta { type }
 
 "Base class for Ceylon token objects."
-shared class CeylonToken(shared String text, shared Integer line_start, shared
+shared class CeylonToken(List<Character> textIn, shared Integer line_start, shared
         Integer col_start, shared Integer line_end, shared Integer col_end) {
 
+    shared String text = if (is String textIn) then textIn else
+        String{*textIn};
     shared actual Integer hash = text.hash * line_start ^ 2 * col_start ^ 3;
 
     shared actual Boolean equals(Object other) {
@@ -18,11 +20,11 @@ shared class CeylonToken(shared String text, shared Integer line_start, shared
 
 
 "Token for keywords"
-shared class Keyword(String t, Integer ls, Integer cs, Integer le, Integer ce)
+shared class Keyword(List<Character> t, Integer ls, Integer cs, Integer le, Integer ce)
         extends CeylonToken(t, ls, cs, le, ce) {}
 
 "Token for keywords"
-shared class Punctuation(String t, Integer ls, Integer cs, Integer le, Integer ce)
+shared class Punctuation(List<Character> t, Integer ls, Integer cs, Integer le, Integer ce)
         extends CeylonToken(t, ls, cs, le, ce) {}
 
 "A single-line comment"
@@ -54,7 +56,7 @@ shared class LIdentStart(Integer ls, Integer cs, Integer le, Integer ce)
         extends CeylonToken("\\i", ls, cs, le, ce) {}
 
 "Text of a UIdentifier"
-shared class UIdentText(String text, Integer ls, Integer cs,
+shared class UIdentText(List<Character> text, Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken(text, ls, cs, le, ce) {}
 
@@ -544,32 +546,32 @@ shared class LetTok(Integer ls, Integer cs,
         extends Keyword("let", ls, cs, le, ce) {}
 
 "Text of an LIdentifier"
-shared class LIdentText(String text, Integer ls, Integer cs,
+shared class LIdentText(List<Character> text, Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken(text, ls, cs, le, ce) {}
 
 "A decimal digit"
-shared class Digit(String text, Integer ls, Integer cs,
+shared class Digit(List<Character> text, Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken(text, ls, cs, le, ce) {}
 
 "A hexadecimal digit"
-shared class HexDigit(String text, Integer ls, Integer cs,
+shared class HexDigit(List<Character> text, Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken(text, ls, cs, le, ce) {}
 
 "A binary digit"
-shared class BinDigit(String text, Integer ls, Integer cs,
+shared class BinDigit(List<Character> text, Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken(text, ls, cs, le, ce) {}
 
 "A magnitude suffix"
-shared class Magnitude(String text, Integer ls, Integer cs,
+shared class Magnitude(List<Character> text, Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken(text, ls, cs, le, ce) {}
 
 "A fractional magnitude suffix"
-shared class Minitude(String text, Integer ls, Integer cs,
+shared class Minitude(List<Character> text, Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken(text, ls, cs, le, ce) {}
 
@@ -579,12 +581,12 @@ shared class ExpMarker(Integer ls, Integer cs,
         extends CeylonToken("e", ls, cs, le, ce) {}
 
 "A character literal"
-shared class CharacterLiteralTok(String text, Integer ls, Integer cs,
+shared class CharacterLiteralTok(List<Character> text, Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken(text, ls, cs, le, ce) {}
 
 "A string literal"
-shared class StringLiteralTok(String text, Integer ls, Integer cs,
+shared class StringLiteralTok(List<Character> text, Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken(text, ls, cs, le, ce) {}
 
@@ -666,6 +668,6 @@ shared class CommaSepList<out NodeType>([NodeType+] nodes, CeylonToken* tokens)
         given NodeType satisfies Node {}
 
 "The bad token. Used to box up unparseable input"
-shared class Crap(String contents, Integer ls, Integer cs,
+shared class Crap(List<Character> contents, Integer ls, Integer cs,
         Integer le, Integer ce)
         extends CeylonToken(contents, ls, cs, le, ce) {}

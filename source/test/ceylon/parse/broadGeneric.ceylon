@@ -4,7 +4,7 @@ import ceylon.test { test, assertEquals }
 "Grammar to test generics that apply broadly"
 object broadGenericGrammar extends ABGrammar() {
     tokenizer
-    shared Token<Spc>? spc(String input, Object? last) {
+    shared Token<Spc>? spc(List<Character> input, Object? last) {
         Integer position;
         Object? prevError;
 
@@ -27,7 +27,7 @@ object broadGenericGrammar extends ABGrammar() {
     }
 
     tokenizer
-    shared Token<LParen>? lparen(String input, Object? last) {
+    shared Token<LParen>? lparen(List<Character> input, Object? last) {
         Integer position;
         Object? prevError;
 
@@ -50,7 +50,7 @@ object broadGenericGrammar extends ABGrammar() {
     }
 
     tokenizer
-    shared Token<RParen>? rparen(String input, Object? last) {
+    shared Token<RParen>? rparen(List<Character> input, Object? last) {
         Integer position;
         Object? prevError;
 
@@ -73,7 +73,7 @@ object broadGenericGrammar extends ABGrammar() {
     }
 
     tokenizer
-    shared Token<Mul>? mull(String input, Object? last) {
+    shared Token<Mul>? mull(List<Character> input, Object? last) {
         Integer position;
         Object? prevError;
 

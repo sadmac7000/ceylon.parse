@@ -34,8 +34,8 @@ shared alias AnyGrammar => Grammar<Nothing>;
  are specifed by defining methods with the `rule` annotation.  The parser will
  create an appropriate production rule and call the annotated method in order
  to reduce the value."
-shared abstract class Grammar<in Data>()
-        given Data satisfies List<Object> {
+shared abstract class Grammar<in Char>()
+        given Char satisfies Object {
     "A list of rules for this grammar"
     shared variable Rule[] rules = [];
 
@@ -81,14 +81,14 @@ shared abstract class Grammar<in Data>()
         HashMap<Atom, Object(Object?, Object?)>();
 
     "Tokenizers"
-    shared Map<Atom, Token?(Data, Object?)> tokenizers =
-    HashMap<Atom, Token?(Data, Object?)>();
+    shared Map<Atom, Token?(List<Char>, Object?)> tokenizers =
+    HashMap<Atom, Token?(List<Char>, Object?)>();
 
     variable Boolean populated = false;
 
     "Set up the list of rules"
     shared void populateRules() {
-        assert(is HashMap<Atom, Token?(Data, Object?)> tokenizers);
+        assert(is HashMap<Atom, Token?(List<Char>, Object?)> tokenizers);
         assert(is HashMap<Atom, Object(Object?, Object?)> errorConstructors);
 
         if (populated) { return; }
@@ -98,7 +98,7 @@ shared abstract class Grammar<in Data>()
         value errConMeths =
             _type(this).getMethods<Nothing, Object, [Object?, Object?]>(`GrammarErrorConstructor`);
         value tokenizerMeths =
-            _type(this).getMethods<Nothing, Token<Object>?, [Data, Object?]>(`Tokenizer`);
+            _type(this).getMethods<Nothing, Token<Object>?, [List<Char>, Object?]>(`Tokenizer`);
 
         for (t in tokenizerMeths) {
             value tokenizer = t.bind(this);
@@ -207,17 +207,17 @@ shared abstract class Grammar<in Data>()
 
     "Returns a token to represent an unparseable region. The input data is
      exactly the contents of that region."
-    shared default Object badTokenConstructor(Data data, Object? previous) {
+    shared default Object badTokenConstructor(List<Char> data, Object? previous) {
         throw BadTokenConstructorException();
     }
 
     "Parse a stream"
-    shared Set<Root> parse<Root>(Data data)
+    shared Set<Root> parse<Root>(List<Char> data)
         given Root satisfies Object
-        => ParseTree<Root, Data>(this, data).ast;
+        => ParseTree<Root, Char>(this, data).ast;
 
     "Parse a stream. Throw an exception if the parse is ambiguous"
-    shared Root unambiguousParse<Root>(Data data)
+    shared Root unambiguousParse<Root>(List<Char> data)
         given Root satisfies Object {
         value result = parse<Root>(data);
 

@@ -118,8 +118,8 @@ class StateQueue<Root>(AnyGrammar g)
  are specifed by defining methods with the `rule` annotation.  The parser will
  create an appropriate production rule and call the annotated method in order
  to reduce the value."
-shared class ParseTree<out Root, in Data>(Grammar<Data> g, Data data)
-        given Data satisfies List<Object>
+shared class ParseTree<out Root, in Char>(Grammar<Char> g, List<Char> data)
+        given Char satisfies Object
         given Root satisfies Object {
 
     value tokenCache = HashMap<Integer, Set<Token>>();
@@ -147,7 +147,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Data> g, Data data)
             return cached;
         }
 
-        assert(is Data tail = data[loc...]);
+        value tail = data[loc...];
         value ret = HashSet{elements={ for (t in g.tokenizers.items)
             if (exists r = t(tail, last)) r};};
 
@@ -160,10 +160,10 @@ shared class ParseTree<out Root, in Data>(Grammar<Data> g, Data data)
         /* FIXME: This method is the performance bottleneck */
         assert(exists wants = state.rule.consumes[state.matchPos]);
 
-        assert(is Data tail = data[state.pos...]);
+        value tail = data[state.pos...];
 
         for (t in wants.scanners) {
-            assert(is Token?(Data,Object?) t);
+            assert(is Token?(List<Char>,Object?) t);
             if (exists sym = t(tail, state.lastToken),
                 exists s = state.feed(sym)) {
                 stateQueue.offer(s);
@@ -205,7 +205,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Data> g, Data data)
 
             while (i <= data.size && getTokens(i, state.lastToken).size == 0) { i++; }
 
-            assert(is Data tokenData = data[state.pos..(i - 1)]);
+            value tokenData = data[state.pos..(i - 1)];
             value tok = constructBadToken(tokenData, state.lastToken);
 
             for (s in state.failPropagate({tok}, true, g.errorConstructors)) {
@@ -229,7 +229,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Data> g, Data data)
                         continue;
                     }
 
-                    assert(is Data tokenData = data[state.pos..(i - 1)]);
+                    value tokenData = data[state.pos..(i - 1)];
                     value bad = constructBadToken(tokenData, state.lastToken);
 
                     resultSet.add(bad);
@@ -313,7 +313,7 @@ shared class ParseTree<out Root, in Data>(Grammar<Data> g, Data data)
         return v;
     }
 
-    Token constructBadToken(Data data, Object? previous) {
+    Token constructBadToken(List<Char> data, Object? previous) {
         return Token(g.badTokenConstructor(data, previous), data.size);
     }
 }

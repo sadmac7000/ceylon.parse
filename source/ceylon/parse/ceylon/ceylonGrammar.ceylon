@@ -32,7 +32,7 @@ Character[] whitespaceChars = [ ' ', '\{FORM FEED (FF)}',
 
 "Literal token"
 Token<TypeArg>? literal<TypeArg>(Callable<TypeArg, [Integer,Integer,Integer,Integer]> t,
-        String input, Object? prev, String+ wants)
+        List<Character> input, Object? prev, String+ wants)
         given TypeArg satisfies Object {
     value [start_line, start_col] = extractStartPos(prev);
 
@@ -48,7 +48,7 @@ Token<TypeArg>? literal<TypeArg>(Callable<TypeArg, [Integer,Integer,Integer,Inte
 
 "Keyword token"
 Token<TypeArg>? keyword<TypeArg>(Callable<TypeArg, [Integer,Integer,Integer,Integer]> t,
-        String input, Object? prev, String wants)
+        List<Character> input, Object? prev, String wants)
         given TypeArg satisfies Object {
         value c = input[wants.size];
 
@@ -58,8 +58,8 @@ Token<TypeArg>? keyword<TypeArg>(Callable<TypeArg, [Integer,Integer,Integer,Inte
 
 "Parse a single-character token"
 Token<TypeArg>? takeCharToken<TypeArg>(Callable<TypeArg, [Integer, Integer, Integer,
-        Integer]>|Callable<TypeArg, [String, Integer, Integer, Integer,
-        Integer]> t, String input, Object? prev, Boolean(Character) test)
+        Integer]>|Callable<TypeArg, [List<Character>, Integer, Integer, Integer,
+        Integer]> t, List<Character> input, Object? prev, Boolean(Character) test)
         given TypeArg satisfies Object {
     value [start_line, start_col] = extractStartPos(prev);
     value char = input[0];
@@ -80,15 +80,15 @@ Token<TypeArg>? takeCharToken<TypeArg>(Callable<TypeArg, [Integer, Integer, Inte
 "Parse a token that consists of all characters at the head of the string for
  which the test function returns true."
 Token<TypeArg>? takeTokenWhile<TypeArg,ScanClass>(Callable<TypeArg, [Integer, Integer,
-        Integer, Integer]>|Callable<TypeArg, [String, Integer, Integer, Integer,
-        Integer]> t, String input, Object? prev, Boolean(ScanClass) test)
+        Integer, Integer]>|Callable<TypeArg, [List<Character>, Integer, Integer, Integer,
+        Integer]> t, List<Character> input, Object? prev, Boolean(ScanClass) test)
         given TypeArg satisfies Object
-        given ScanClass of String|Character {
+        given ScanClass of List<Character>|Character {
     value [start_line, start_col] = extractStartPos(prev);
 
     variable value length = 0;
 
-    if (is Boolean(String) test) {
+    if (is Boolean(List<Character>) test) {
         while (test(input[length...])) { length++; }
     } else {
         assert(is Boolean(Character) test);
@@ -140,9 +140,12 @@ NodeType astTextNode<NodeType>(Callable<NodeType, [String]> t,
 }
 
 "Text from a stream of tokens"
-String tokenText(CeylonToken* token) {
-    return (token*.text).fold("")((x,y)=>x+y);
-}
+String tokenText(CeylonToken* token)
+        =>(token*.text).fold("")((x,y)=>x+asString(y));
+
+"Convert a character list to a string"
+String asString(List<Character> l)
+        => if (is String l) then l else String{*l};
 
 "Extract all tokens from a series of arguments to a production"
 List<CeylonToken> tokenStream(CeylonToken|{CeylonToken|Node*}|Node?* args) {
@@ -169,7 +172,7 @@ List<CeylonToken> tokenStream(CeylonToken|{CeylonToken|Node*}|Node?* args) {
 "Calculate the ending line and column given the starting line and column and
  the intervening text"
 [Integer, Integer] calculateStopPos(Integer start_line, Integer start_col,
-        String text) {
+        List<Character> text) {
     variable value line = start_line;
     variable value col = start_col;
     variable value i = 0;
@@ -194,8 +197,9 @@ List<CeylonToken> tokenStream(CeylonToken|{CeylonToken|Node*}|Node?* args) {
 
 "A parse tree for the Ceylon language"
 by("Casey Dahlin")
-shared object ceylonGrammar extends Grammar<String>() {
-    shared actual Crap badTokenConstructor(String data, Object? prev) {
+shared object ceylonGrammar extends Grammar<Character>() {
+    shared actual Crap badTokenConstructor(List<Character> data, Object? prev) {
+        assert(is String data);
         value [start_line, start_col] = extractStartPos(prev);
         value [end_line, end_col] = calculateStopPos(start_line, start_col,
                 data);
@@ -205,13 +209,13 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 2.2 of the specification"
     tokenizer
-    shared Token<Whitespace>? whitespace(String input, Object? prev)
+    shared Token<Whitespace>? whitespace(List<Character> input, Object? prev)
             => takeTokenWhile(Whitespace, input, prev,
                     (Character x) => whitespaceChars.contains(x));
 
     "Section 2.2 of the specification"
     tokenizer
-    shared Token<LineComment>? lineComment(String input, Object? prev) {
+    shared Token<LineComment>? lineComment(List<Character> input, Object? prev) {
         value [start_line, start_col] = extractStartPos(prev);
         if (! (input.startsWith("//") || input.startsWith("#!"))) {
             return null;
@@ -227,17 +231,17 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 2.2 of the specification"
     tokenizer
-    shared Token<CommentStart>? commentStart(String input, Object? prev)
+    shared Token<CommentStart>? commentStart(List<Character> input, Object? prev)
             => literal(CommentStart, input, prev, "/*");
 
     "Section 2.2 of the specification"
     tokenizer
-    shared Token<CommentEnd>? commentEnd(String input, Object? prev)
+    shared Token<CommentEnd>? commentEnd(List<Character> input, Object? prev)
             => literal(CommentEnd, input, prev, "*/");
 
     "Section 2.2 of the specification"
     tokenizer
-    shared Token<CommentBody>? commentBody(String input, Object? prev)
+    shared Token<CommentBody>? commentBody(List<Character> input, Object? prev)
             => takeTokenWhile(CommentBody, input, prev,
                     (String x) => ! (x.startsWith("/*") || x.startsWith(
                             "*/") || x == ""));
@@ -264,17 +268,17 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 2.3 of the specification"
     tokenizer
-    shared Token<UIdentStart>? uIdentStart(String input, Object? prev)
+    shared Token<UIdentStart>? uIdentStart(List<Character> input, Object? prev)
             => literal(UIdentStart, input, prev, "\\I");
 
     "Section 2.3 of the specification"
     tokenizer
-    shared Token<LIdentStart>? lIdentStart(String input, Object? prev)
+    shared Token<LIdentStart>? lIdentStart(List<Character> input, Object? prev)
             => literal(LIdentStart, input, prev, "\\i");
 
     "Section 2.3 of the specification"
     tokenizer
-    shared Token<UIdentText>? uIdentText(String input, Object? prev) {
+    shared Token<UIdentText>? uIdentText(List<Character> input, Object? prev) {
         value [start_line, start_col] = extractStartPos(prev);
         variable value i = 0;
 
@@ -291,7 +295,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 2.3 of the specification"
     tokenizer
-    shared Token<LIdentText>? lIdentText(String input, Object? prev) {
+    shared Token<LIdentText>? lIdentText(List<Character> input, Object? prev) {
         value [start_line, start_col] = extractStartPos(prev);
         variable value i = 0;
 
@@ -330,33 +334,33 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 2.4.1 of the specification"
     tokenizer
-    shared Token<HashMark>? hashMark(String input, Object? prev)
+    shared Token<HashMark>? hashMark(List<Character> input, Object? prev)
             => literal(HashMark, input, prev, "#");
 
     "Section 2.4.1 of the specification"
     tokenizer
-    shared Token<DollarMark>? dollarMark(String input, Object? prev)
+    shared Token<DollarMark>? dollarMark(List<Character> input, Object? prev)
             => literal(DollarMark, input, prev, "$");
 
     "Section 2.4.1 of the specification"
     tokenizer
-    shared Token<Underscore>? underscore(String input, Object? prev)
+    shared Token<Underscore>? underscore(List<Character> input, Object? prev)
             => literal(Underscore, input, prev, "_");
 
     "Section 2.4.1 of the specification"
     tokenizer
-    shared Token<Digit>? digit(String input, Object? prev)
+    shared Token<Digit>? digit(List<Character> input, Object? prev)
             => takeCharToken(Digit, input, prev, (Character x) => x.digit);
 
     "Section 2.4.1 of the specification"
     tokenizer
-    shared Token<HexDigit>? hexDigit(String input, Object? prev)
+    shared Token<HexDigit>? hexDigit(List<Character> input, Object? prev)
             => takeCharToken(HexDigit, input, prev, (x) => x.digit ||
                     "abcdefABCDEF".contains(x));
 
     "Section 2.4.1 of the specification"
     tokenizer
-    shared Token<BinDigit>? binDigit(String input, Object? prev)
+    shared Token<BinDigit>? binDigit(List<Character> input, Object? prev)
             => takeCharToken(BinDigit, input, prev, "01".contains);
 
     "Section 2.4.1 of the specification"
@@ -443,12 +447,12 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 2.4.1 of the specification"
     tokenizer
-    shared Token<Magnitude>? magnitude(String input, Object? prev)
+    shared Token<Magnitude>? magnitude(List<Character> input, Object? prev)
             => takeCharToken(Magnitude, input, prev, "kMGTP".contains);
 
     "Section 2.4.1 of the specification"
     tokenizer
-    shared Token<Minitude>? minitude(String input, Object? prev)
+    shared Token<Minitude>? minitude(List<Character> input, Object? prev)
             => takeCharToken(Minitude, input, prev, "munpf".contains);
 
     "Section 2.4.1 of the specification"
@@ -459,22 +463,22 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 2.4.1 of the specification"
     tokenizer
-    shared Token<ExpMarker>? expMarker(String input, Object? prev)
+    shared Token<ExpMarker>? expMarker(List<Character> input, Object? prev)
             => takeCharToken(ExpMarker, input, prev, "eE".contains);
 
     "Section 2.4.1 of the specification"
     tokenizer
-    shared Token<Plus>? plus(String input, Object? prev)
+    shared Token<Plus>? plus(List<Character> input, Object? prev)
             => literal(Plus, input, prev, "+");
 
     "Section 2.4.1 of the specification"
     tokenizer
-    shared Token<Minus>? minus(String input, Object? prev)
+    shared Token<Minus>? minus(List<Character> input, Object? prev)
             => literal(Minus, input, prev, "-");
 
     "Section 2.4.1 of the specification"
     tokenizer
-    shared Token<Dot>? dot(String input, Object? prev)
+    shared Token<Dot>? dot(List<Character> input, Object? prev)
             => literal(Dot, input, prev, ".");
 
     "Section 2.4.1 of the specification"
@@ -495,12 +499,12 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 2.4.2 of the specification"
     tokenizer
-    shared Token<Quote>? quote(String input, Object? prev)
+    shared Token<Quote>? quote(List<Character> input, Object? prev)
             => literal(Quote, input, prev, "'");
 
     "Section 2.4.2 of the specification"
     tokenizer
-    shared Token<CharacterLiteralTok>? characterLiteralTok(String input, Object? prev) {
+    shared Token<CharacterLiteralTok>? characterLiteralTok(List<Character> input, Object? prev) {
         value [start_line, start_col] = extractStartPos(prev);
 
         if (! input[0] exists) { return null; }
@@ -530,12 +534,12 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 2.4.3 of the specification"
     tokenizer
-    shared Token<DoubleQuote>? doubleQuote(String input, Object? prev)
+    shared Token<DoubleQuote>? doubleQuote(List<Character> input, Object? prev)
             => literal(DoubleQuote, input, prev, "\"");
 
     "Section 2.4.3 of the specification"
     tokenizer
-    shared Token<StringLiteralTok>? stringLiteralTok(String input, Object? prev) {
+    shared Token<StringLiteralTok>? stringLiteralTok(List<Character> input, Object? prev) {
         value [start_line, start_col] = extractStartPos(prev);
 
         if (! input[0] exists) { return null; }
@@ -564,7 +568,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 3.2.3 of the specification"
     tokenizer
-    shared Token<Pipe>? pipe(String input, Object? prev)
+    shared Token<Pipe>? pipe(List<Character> input, Object? prev)
             => literal(Pipe, input, prev, "|");
 
     "Section 3.2.3 of the specification"
@@ -590,7 +594,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 3.2.4 of the specification"
     tokenizer
-    shared Token<Ampersand>? ampersand(String input, Object? prev)
+    shared Token<Ampersand>? ampersand(List<Character> input, Object? prev)
             => literal(Ampersand, input, prev, "&");
 
     "Section 3.2.4 of the specification"
@@ -617,12 +621,12 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 3.2.7 of the specification"
     tokenizer
-    shared Token<LT>? lessThan(String input, Object? prev)
+    shared Token<LT>? lessThan(List<Character> input, Object? prev)
             => literal(LT, input, prev, "<");
 
     "Section 3.2.7 of the specification"
     tokenizer
-    shared Token<GT>? greaterThan(String input, Object? prev)
+    shared Token<GT>? greaterThan(List<Character> input, Object? prev)
             => literal(GT, input, prev, ">");
 
     "Section 3.2.7 of the specification"
@@ -649,7 +653,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 3.2.8 of the specification"
     tokenizer
-    shared Token<Question>? question(String input, Object? prev)
+    shared Token<Question>? question(List<Character> input, Object? prev)
             => literal(Question, input, prev, "?");
 
     "Section 3.2.8 of the specification"
@@ -659,27 +663,27 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 3.2.8 of the specification"
     tokenizer
-    shared Token<SqOpen>? sqOpen(String input, Object? prev)
+    shared Token<SqOpen>? sqOpen(List<Character> input, Object? prev)
             => literal(SqOpen, input, prev, "[");
 
     "Section 3.2.8 of the specification"
     tokenizer
-    shared Token<SqClose>? sqClose(String input, Object? prev)
+    shared Token<SqClose>? sqClose(List<Character> input, Object? prev)
             => literal(SqClose, input, prev, "]");
 
     "Section 3.2.8 of the specification"
     tokenizer
-    shared Token<ParOpen>? parOpen(String input, Object? prev)
+    shared Token<ParOpen>? parOpen(List<Character> input, Object? prev)
             => literal(ParOpen, input, prev, "(");
 
     "Section 3.2.8 of the specification"
     tokenizer
-    shared Token<ParClose>? parClose(String input, Object? prev)
+    shared Token<ParClose>? parClose(List<Character> input, Object? prev)
             => literal(ParClose, input, prev, ")");
 
     "Section 3.2.8 of the specification"
     tokenizer
-    shared Token<Comma>? comma(String input, Object? prev)
+    shared Token<Comma>? comma(List<Character> input, Object? prev)
             => literal(Comma, input, prev, ",");
 
     "Section 3.2.8 of the specification"
@@ -719,17 +723,17 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 3.2.8 of the specification"
     tokenizer
-    shared Token<CurlOpen>? curlOpen(String input, Object? prev)
+    shared Token<CurlOpen>? curlOpen(List<Character> input, Object? prev)
             => literal(CurlOpen, input, prev, "{");
 
     "Section 3.2.8 of the specification"
     tokenizer
-    shared Token<CurlClose>? curlClose(String input, Object? prev)
+    shared Token<CurlClose>? curlClose(List<Character> input, Object? prev)
             => literal(CurlClose, input, prev, "}");
 
     "Section 3.2.8 of the specification"
     tokenizer
-    shared Token<Star>? star(String input, Object? prev)
+    shared Token<Star>? star(List<Character> input, Object? prev)
             => literal(Star, input, prev, "*");
 
     "Section 3.2.8 of the specification"
@@ -750,7 +754,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 3.2.8 of the specification"
     tokenizer
-    shared Token<Eq>? eq(String input, Object? prev)
+    shared Token<Eq>? eq(List<Character> input, Object? prev)
             => literal(Eq, input, prev, "=");
 
     "Section 3.2.8 of the specification"
@@ -760,7 +764,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 3.2.8 of the specification"
     tokenizer
-    shared Token<Arrow>? arrow(String input, Object? prev)
+    shared Token<Arrow>? arrow(List<Character> input, Object? prev)
             => literal(Arrow, input, prev, "->");
 
     "Section 3.2.8 of the specification"
@@ -770,12 +774,12 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 3.3.2 of the specification"
     tokenizer
-    shared Token<Extends>? extends_(String input, Object? prev)
+    shared Token<Extends>? extends_(List<Character> input, Object? prev)
             => keyword(Extends, input, prev, "extends");
 
     "Section 3.3.2 of the specification"
     tokenizer
-    shared Token<SuperTok>? superTok(String input, Object? prev)
+    shared Token<SuperTok>? superTok(List<Character> input, Object? prev)
             => keyword(SuperTok, input, prev, "super");
 
     "Section 3.3.2 of the specification"
@@ -792,7 +796,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 3.3.3 of the specification"
     tokenizer
-    shared Token<Satisfies>? satisfies_(String input, Object? prev)
+    shared Token<Satisfies>? satisfies_(List<Character> input, Object? prev)
             => keyword(Satisfies, input, prev, "satisfies");
 
     "Section 3.3.3 of the specification"
@@ -804,7 +808,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 3.4.2 of the specification"
     tokenizer
-    shared Token<Of>? of_(String input, Object? prev)
+    shared Token<Of>? of_(List<Character> input, Object? prev)
             => keyword(Of, input, prev, "of");
 
     "Section 3.4.2 of the specification"
@@ -828,12 +832,12 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 3.5.1 of the specification"
     tokenizer
-    shared Token<In>? in_(String input, Object? prev)
+    shared Token<In>? in_(List<Character> input, Object? prev)
             => keyword(In, input, prev, "in");
 
     "Section 3.5.1 of the specification"
     tokenizer
-    shared Token<Out>? out_(String input, Object? prev)
+    shared Token<Out>? out_(List<Character> input, Object? prev)
             => keyword(Out, input, prev, "out");
 
     "Section 3.5.1 of the specification"
@@ -848,7 +852,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 3.5.3 of the specification"
     tokenizer
-    shared Token<Given>? given_(String input, Object? prev)
+    shared Token<Given>? given_(List<Character> input, Object? prev)
             => keyword(Given, input, prev, "given");
 
     "Section 3.5.3 of the specification"
@@ -898,7 +902,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 4.2 of the specification"
     tokenizer
-    shared Token<ImportTok>? importTok(String input, Object? prev)
+    shared Token<ImportTok>? importTok(List<Character> input, Object? prev)
             => keyword(ImportTok, input, prev, "import");
 
     "Section 4.2 of the specification"
@@ -943,7 +947,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 4.2.4 of the specification"
     tokenizer
-    shared Token<Ellipsis>? ellipsis(String input, Object? prev)
+    shared Token<Ellipsis>? ellipsis(List<Character> input, Object? prev)
             => literal(Ellipsis, input, prev, "...");
 
     "Section 4.2.5 of the specification"
@@ -992,7 +996,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 4.3.3 of the specification"
     tokenizer
-    shared Token<DArrow>? dArrow(String input, Object? prev)
+    shared Token<DArrow>? dArrow(List<Character> input, Object? prev)
             => literal(DArrow, input, prev, "=>");
 
     "Section 4.3.3 of the specification"
@@ -1002,7 +1006,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 4.3.4 of the specification"
     tokenizer
-    shared Token<Dynamic>? dynamic_(String input, Object? prev)
+    shared Token<Dynamic>? dynamic_(List<Character> input, Object? prev)
             => keyword(Dynamic, input, prev, "dynamic");
 
     "Section 4.3.4 of the specification"
@@ -1018,7 +1022,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 4.3.5 of the specification"
     tokenizer
-    shared Token<Void>? void_(String input, Object? prev)
+    shared Token<Void>? void_(List<Character> input, Object? prev)
             => keyword(Void, input, prev, "void");
 
     "Section 4.3.5 of the specification"
@@ -1039,7 +1043,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 4.4 of the specification"
     tokenizer
-    shared Token<Interface>? interface_(String input, Object? prev)
+    shared Token<Interface>? interface_(List<Character> input, Object? prev)
             => keyword(Interface, input, prev, "interface");
 
     "Section 4.4 of the specification"
@@ -1053,7 +1057,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 4.4 of the specification"
     tokenizer
-    shared Token<Semicolon>? semicolon(String input, Object? prev)
+    shared Token<Semicolon>? semicolon(List<Character> input, Object? prev)
             => literal(Semicolon, input, prev, ";");
 
     "Section 4.4 of the specification"
@@ -1088,7 +1092,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 4.5 of the specification"
     tokenizer
-    shared Token<ClassTok>? class_(String input, Object? prev)
+    shared Token<ClassTok>? class_(List<Character> input, Object? prev)
             => keyword(ClassTok, input, prev, "class");
 
     "Section 4.5 of the specification"
@@ -1120,7 +1124,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 4.5.7 of the specification"
     tokenizer
-    shared Token<ObjectTok>? object_(String input, Object? prev)
+    shared Token<ObjectTok>? object_(List<Character> input, Object? prev)
             => keyword(ObjectTok, input, prev, "object");
 
     "Section 4.5.7 of the specification"
@@ -1136,7 +1140,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 4.6 of the specification"
     tokenizer
-    shared Token<Alias>? alias_(String input, Object? prev)
+    shared Token<Alias>? alias_(List<Character> input, Object? prev)
             => keyword(Alias, input, prev, "alias");
 
     "Section 4.6 of the specification"
@@ -1189,7 +1193,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 4.8 of the specification"
     tokenizer
-    shared Token<Value>? value_(String input, Object? prev)
+    shared Token<Value>? value_(List<Character> input, Object? prev)
             => keyword(Value, input, prev, "value");
 
     "Section 4.8 of the specification"
@@ -1207,7 +1211,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 4.9 of the specification"
     tokenizer
-    shared Token<New>? new_(String input, Object? prev)
+    shared Token<New>? new_(List<Character> input, Object? prev)
             => keyword(New, input, prev, "new");
 
     "Section 4.9 of the specification"
@@ -1282,7 +1286,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 5.3.2 of the specification"
     tokenizer
-    shared Token<ReturnTok>? returnTok(String input, Object? prev)
+    shared Token<ReturnTok>? returnTok(List<Character> input, Object? prev)
             => keyword(ReturnTok, input, prev, "return");
 
     "Section 5.3.2 of the specification"
@@ -1292,7 +1296,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 5.3.2 of the specification"
     tokenizer
-    shared Token<ThrowTok>? throwTok(String input, Object? prev)
+    shared Token<ThrowTok>? throwTok(List<Character> input, Object? prev)
             => keyword(ThrowTok, input, prev, "throw");
 
     "Section 5.3.2 of the specification"
@@ -1302,7 +1306,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 5.3.2 of the specification"
     tokenizer
-    shared Token<BreakTok>? breakTok(String input, Object? prev)
+    shared Token<BreakTok>? breakTok(List<Character> input, Object? prev)
             => keyword(BreakTok, input, prev, "break");
 
     "Section 5.3.2 of the specification"
@@ -1312,7 +1316,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 5.3.2 of the specification"
     tokenizer
-    shared Token<ContinueTok>? continueTok(String input, Object? prev)
+    shared Token<ContinueTok>? continueTok(List<Character> input, Object? prev)
             => keyword(ContinueTok, input, prev, "continue");
 
     "Section 5.3.2 of the specification"
@@ -1322,7 +1326,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 5.3.3 of the specification"
     tokenizer
-    shared Token<ThisTok>? thisTok(String input, Object? prev)
+    shared Token<ThisTok>? thisTok(List<Character> input, Object? prev)
             => keyword(ThisTok, input, prev, "this");
 
     "Section 5.3.3 of the specification"
@@ -1368,12 +1372,12 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 5.4.2 of the specification"
     tokenizer
-    shared Token<Is>? is_(String input, Object? prev)
+    shared Token<Is>? is_(List<Character> input, Object? prev)
             => keyword(Is, input, prev, "is");
 
     "Section 5.4.2 of the specification"
     tokenizer
-    shared Token<Bang>? bang(String input, Object? prev)
+    shared Token<Bang>? bang(List<Character> input, Object? prev)
             => literal(Bang, input, prev, "!");
 
     "Section 5.4.2 of the specification"
@@ -1383,12 +1387,12 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 5.4.3 of the specification"
     tokenizer
-    shared Token<Exists>? exists_(String input, Object? prev)
+    shared Token<Exists>? exists_(List<Character> input, Object? prev)
             => keyword(Exists, input, prev, "exists");
 
     "Section 5.4.3 of the specification"
     tokenizer
-    shared Token<Nonempty>? nonempty_(String input, Object? prev)
+    shared Token<Nonempty>? nonempty_(List<Character> input, Object? prev)
             => keyword(Nonempty, input, prev, "nonempty");
 
     "Section 5.4.3 of the specification"
@@ -1425,12 +1429,12 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 5.5.1 of the specification"
     tokenizer
-    shared Token<IfTok>? ifTok(String input, Object? prev)
+    shared Token<IfTok>? ifTok(List<Character> input, Object? prev)
             => keyword(IfTok, input, prev, "if");
 
     "Section 5.5.1 of the specification"
     tokenizer
-    shared Token<ElseTok>? elseTok(String input, Object? prev)
+    shared Token<ElseTok>? elseTok(List<Character> input, Object? prev)
             => keyword(ElseTok, input, prev, "else");
 
     "Section 5.5.1 of the specification"
@@ -1450,12 +1454,12 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 5.5.2 of the specification"
     tokenizer
-    shared Token<SwitchTok>? switchTok(String input, Object? prev)
+    shared Token<SwitchTok>? switchTok(List<Character> input, Object? prev)
             => keyword(SwitchTok, input, prev, "switch");
 
     "Section 5.5.2 of the specification"
     tokenizer
-    shared Token<CaseTok>? caseTok(String input, Object? prev)
+    shared Token<CaseTok>? caseTok(List<Character> input, Object? prev)
             => keyword(CaseTok, input, prev, "case");
 
     "Section 5.5.2 of the specification"
@@ -1487,7 +1491,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 5.5.3 of the specification"
     tokenizer
-    shared Token<ForTok>? forTok(String input, Object? prev)
+    shared Token<ForTok>? forTok(List<Character> input, Object? prev)
             => keyword(ForTok, input, prev, "for");
 
     "Section 5.5.3 of the specification"
@@ -1513,7 +1517,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 5.5.4 of the specification"
     tokenizer
-    shared Token<WhileTok>? whileTok(String input, Object? prev)
+    shared Token<WhileTok>? whileTok(List<Character> input, Object? prev)
             => keyword(WhileTok, input, prev, "while");
 
     "Section 5.5.4 of the specification"
@@ -1523,17 +1527,17 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 5.5.5 of the specification"
     tokenizer
-    shared Token<TryTok>? tryTok(String input, Object? prev)
+    shared Token<TryTok>? tryTok(List<Character> input, Object? prev)
             => keyword(TryTok, input, prev, "try");
 
     "Section 5.5.5 of the specification"
     tokenizer
-    shared Token<CatchTok>? catchTok(String input, Object? prev)
+    shared Token<CatchTok>? catchTok(List<Character> input, Object? prev)
             => keyword(CatchTok, input, prev, "catch");
 
     "Section 5.5.5 of the specification"
     tokenizer
-    shared Token<FinallyTok>? finallyTok(String input, Object? prev)
+    shared Token<FinallyTok>? finallyTok(List<Character> input, Object? prev)
             => keyword(FinallyTok, input, prev, "finally");
 
     "Section 5.5.5 of the specification"
@@ -1570,7 +1574,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 5.5.6 of the specification"
     tokenizer
-    shared Token<AssertTok>? assertTok(String input, Object? prev)
+    shared Token<AssertTok>? assertTok(List<Character> input, Object? prev)
             => keyword(AssertTok, input, prev, "assert");
 
     "Section 5.5.6 of the specification"
@@ -1581,7 +1585,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 6.2 of the specification"
     tokenizer
-    shared Token<TickTick>? tickTick(String input, Object? prev)
+    shared Token<TickTick>? tickTick(List<Character> input, Object? prev)
             => literal(TickTick, input, prev, "\``");
 
     "Section 6.2 of the specification"
@@ -1597,12 +1601,12 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 6.3 of the specification"
     tokenizer
-    shared Token<OuterTok>? outerTok(String input, Object? prev)
+    shared Token<OuterTok>? outerTok(List<Character> input, Object? prev)
             => keyword(OuterTok, input, prev, "outer");
 
     "Section 6.3 of the specification"
     tokenizer
-    shared Token<PackageTok>? packageTok(String input, Object? prev)
+    shared Token<PackageTok>? packageTok(List<Character> input, Object? prev)
             => keyword(PackageTok, input, prev, "package");
 
     "Section 6.3 of the specification"
@@ -1619,7 +1623,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 6.4 of the specification"
     tokenizer
-    shared Token<FunctionTok>? functionTok(String input, Object? prev)
+    shared Token<FunctionTok>? functionTok(List<Character> input, Object? prev)
             => keyword(FunctionTok, input, prev, "function");
 
     "Section 6.4 of the specification"
@@ -1664,12 +1668,12 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 6.5.2 of the specification"
     tokenizer
-    shared Token<QDot>? qdot(String input, Object? prev)
+    shared Token<QDot>? qdot(List<Character> input, Object? prev)
             => literal(QDot, input, prev, "?.");
 
     "Section 6.5.2 of the specification"
     tokenizer
-    shared Token<SDot>? sdot(String input, Object? prev)
+    shared Token<SDot>? sdot(List<Character> input, Object? prev)
             => literal(SDot, input, prev, "*.");
 
     "Section 6.5.2 of the specification"
@@ -1781,7 +1785,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 6.7.1 of the specification"
     tokenizer
-    shared Token<ThenTok>? thenTok(String input, Object? prev)
+    shared Token<ThenTok>? thenTok(List<Character> input, Object? prev)
             => keyword(ThenTok, input, prev, "then");
 
     "Section 6.7.1 of the specification"
@@ -1808,7 +1812,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 6.7.3 of the specification"
     tokenizer
-    shared Token<LetTok>? letTok(String input, Object? prev)
+    shared Token<LetTok>? letTok(List<Character> input, Object? prev)
             => keyword(LetTok, input, prev, "let");
 
     "Section 6.7.3 of the specification"
@@ -1842,7 +1846,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<DotDot>? dotDot(String input, Object? prev)
+    shared Token<DotDot>? dotDot(List<Character> input, Object? prev)
             => literal(DotDot, input, prev, "..");
 
     "Section 6.8.1 of the specification"
@@ -1853,7 +1857,7 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<Colon>? colon(String input, Object? prev)
+    shared Token<Colon>? colon(List<Character> input, Object? prev)
             => literal(Colon, input, prev, ":");
 
     "Section 6.8.1 of the specification"
@@ -1874,127 +1878,127 @@ shared object ceylonGrammar extends Grammar<String>() {
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<PlusPlus>? plusPlus(String input, Object? prev)
+    shared Token<PlusPlus>? plusPlus(List<Character> input, Object? prev)
             => literal(PlusPlus, input, prev, "++");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<MinusMinus>? minusMinus(String input, Object? prev)
+    shared Token<MinusMinus>? minusMinus(List<Character> input, Object? prev)
             => literal(MinusMinus, input, prev, "--");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<Caret>? caret(String input, Object? prev)
+    shared Token<Caret>? caret(List<Character> input, Object? prev)
             => literal(Caret, input, prev, "^");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<Tilde>? tilde(String input, Object? prev)
+    shared Token<Tilde>? tilde(List<Character> input, Object? prev)
             => literal(Tilde, input, prev, "~");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<Slash>? slash(String input, Object? prev)
+    shared Token<Slash>? slash(List<Character> input, Object? prev)
             => literal(Slash, input, prev, "/");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<Percent>? percent(String input, Object? prev)
+    shared Token<Percent>? percent(List<Character> input, Object? prev)
             => literal(Percent, input, prev, "%");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<StarStar>? starStar(String input, Object? prev)
+    shared Token<StarStar>? starStar(List<Character> input, Object? prev)
             => literal(StarStar, input, prev, "**");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<LTE>? lte(String input, Object? prev)
+    shared Token<LTE>? lte(List<Character> input, Object? prev)
             => literal(LTE, input, prev, "<=");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<GTE>? gte(String input, Object? prev)
+    shared Token<GTE>? gte(List<Character> input, Object? prev)
             => literal(GTE, input, prev, ">=");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<Spaceship>? spaceship(String input, Object? prev)
+    shared Token<Spaceship>? spaceship(List<Character> input, Object? prev)
             => literal(Spaceship, input, prev, "<=>");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<AbsEq>? absEq(String input, Object? prev)
+    shared Token<AbsEq>? absEq(List<Character> input, Object? prev)
             => literal(AbsEq, input, prev, "==");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<NEq>? neq(String input, Object? prev)
+    shared Token<NEq>? neq(List<Character> input, Object? prev)
             => literal(NEq, input, prev, "!=");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<Identical>? identical(String input, Object? prev)
+    shared Token<Identical>? identical(List<Character> input, Object? prev)
             => literal(Identical, input, prev, "===");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<AndOp>? andOp(String input, Object? prev)
+    shared Token<AndOp>? andOp(List<Character> input, Object? prev)
             => literal(AndOp, input, prev, "&&");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<OrOp>? orOp(String input, Object? prev)
+    shared Token<OrOp>? orOp(List<Character> input, Object? prev)
             => literal(OrOp, input, prev, "||");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<PlusEq>? plusEq(String input, Object? prev)
+    shared Token<PlusEq>? plusEq(List<Character> input, Object? prev)
             => literal(PlusEq, input, prev, "+=");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<MinusEq>? minusEq(String input, Object? prev)
+    shared Token<MinusEq>? minusEq(List<Character> input, Object? prev)
             => literal(MinusEq, input, prev, "-=");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<StarEq>? starEq(String input, Object? prev)
+    shared Token<StarEq>? starEq(List<Character> input, Object? prev)
             => literal(StarEq, input, prev, "*=");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<SlashEq>? slashEq(String input, Object? prev)
+    shared Token<SlashEq>? slashEq(List<Character> input, Object? prev)
             => literal(SlashEq, input, prev, "/=");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<PercentEq>? percentEq(String input, Object? prev)
+    shared Token<PercentEq>? percentEq(List<Character> input, Object? prev)
             => literal(PercentEq, input, prev, "%=");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<AmpersandEq>? ampersandEq(String input, Object? prev)
+    shared Token<AmpersandEq>? ampersandEq(List<Character> input, Object? prev)
             => literal(AmpersandEq, input, prev, "&=");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<PipeEq>? pipeEq(String input, Object? prev)
+    shared Token<PipeEq>? pipeEq(List<Character> input, Object? prev)
             => literal(PipeEq, input, prev, "|=");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<TildeEq>? tildeEq(String input, Object? prev)
+    shared Token<TildeEq>? tildeEq(List<Character> input, Object? prev)
             => literal(TildeEq, input, prev, "~=");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<AndEq>? andEq(String input, Object? prev)
+    shared Token<AndEq>? andEq(List<Character> input, Object? prev)
             => literal(AndEq, input, prev, "&&=");
 
     "Section 6.8.1 of the specification"
     tokenizer
-    shared Token<OrEq>? orEq(String input, Object? prev)
+    shared Token<OrEq>? orEq(List<Character> input, Object? prev)
             => literal(OrEq, input, prev, "||=");
 
     "Section 6.8.1 of the specification"

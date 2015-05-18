@@ -25,9 +25,9 @@ class MMulA(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
 class ParenBox(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
 
 "A grammar on the alphabet of 'a' and 'b'"
-class ABGrammar() extends Grammar<String>() {
+class ABGrammar() extends Grammar<Character>() {
     tokenizer
-    shared Token<ATerm>? aTerm(String input, Object? last) {
+    shared Token<ATerm>? aTerm(List<Character> input, Object? last) {
         Integer position;
         Crap? prevError;
 
@@ -46,7 +46,7 @@ class ABGrammar() extends Grammar<String>() {
     }
 
     tokenizer
-    shared Token<BTerm>? bTerm(String input, Object? last) {
+    shared Token<BTerm>? bTerm(List<Character> input, Object? last) {
         Integer position;
         Crap? prevError;
 
@@ -76,7 +76,8 @@ class ABGrammar() extends Grammar<String>() {
         }
     }
 
-    shared actual Crap badTokenConstructor(String data, Object? last) {
+    shared actual Crap badTokenConstructor(List<Character> data, Object? last) {
+        assert(is String data);
         if (is Sym last) {
             return Crap(data, last.position + 1);
         } else if (is Crap last) {
