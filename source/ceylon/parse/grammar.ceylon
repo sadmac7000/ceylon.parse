@@ -121,9 +121,6 @@ ProductionClause[] clausesFromTupleType(Type<[Anything*]>&Generic clauses,
         [ProductionClause(true, once, g, typeAtom)];
 }
 
-"Give the arguments list back as a sequence"
-[Anything*] argsToSequence(Anything* ret) => ret;
-
 "A rule. Specifies produced and consumed symbols and a method to execute them"
 shared class Rule {
     shared Object(Object?*) consume;
@@ -152,7 +149,7 @@ shared class Rule {
     shared new TupleRule(Type<Tuple<Anything,Anything,Anything[]>> tuple,
             AnyGrammar g) {
         this.produces = Atom(tuple);
-        this.consume = argsToSequence;
+        this.consume = (Anything * a) => a;
         this.precedence = 0;
         this.associativity = nonassoc;
 
