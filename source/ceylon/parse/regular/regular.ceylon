@@ -1,5 +1,16 @@
 import ceylon.collection { HashSet }
 
+"Concatentate two lists of objects. If they are strings use string
+ concatenation."
+List<Char> cat<Char>(List<Char> a, List<Char> b) {
+    if (is String a, is String b) {
+        assert(is List<Char>  r = a + b);
+        return r;
+    }
+
+    return concatenate(a, b);
+}
+
 "Result of a string match"
 shared interface MatchResult<Char> of Res<Char> {
     shared formal Integer length;
@@ -99,7 +110,7 @@ class Concat<Char>(Regular<Char> a, Regular<Char> b) extends Regular<Char>()
 
     "Match result with appropriate backtracking"
     class CRes(List<Char> s, Integer? maxLength, Res<Char> aRes, Res<Char> bRes)
-            extends Res<Char>(concatenate(aRes.matched, bRes.matched),
+            extends Res<Char>(cat(aRes.matched, bRes.matched),
                               aRes.length + bRes.length) {
         shared actual Res<Char>? backtrack {
             if (exists b = bRes.backtrack) {
@@ -137,7 +148,7 @@ class Repeat<Char>(Regular<Char> r, Integer min, Integer? max)
         given Char satisfies Object {
     "Local match result"
     class RRes(List<Char> s, Integer count, RRes? prev, Res<Char>? cur)
-        extends Res<Char>(concatenate(prev?.matched else [], cur?.matched else []),
+        extends Res<Char>(cat(prev?.matched else [], cur?.matched else []),
                     (prev?.length else 0) + (cur?.length else 0)) {
 
         shared actual Res<Char>? backtrack {
