@@ -2195,6 +2195,90 @@ shared object ceylonGrammar extends Grammar<AnyCompilationUnit, String>() {
             ComparingExpression a, Identical o, ComparingExpression b)
             => astNode(IdenticalOperation, [a, b], a, o, b);
 
+    "Section 6.8.1 of the specification"
+    rule
+    shared AndOperation andOperation(
+            ConjoiningExpression a, AndOp o, NegatingExpression b)
+            => astNode(AndOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared OrOperation orOperation(
+            DisjoiningExpression a, OrOp o, ConjoiningExpression b)
+            => astNode(OrOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared ThenOperation thenOperation(
+            ThenElseExpression a, ThenTok o, DisjoiningExpression b)
+            => astNode(ThenOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared ElseOperation elseOperation(
+            ThenElseExpression a, ElseTok o, DisjoiningExpression b)
+            => astNode(ElseOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared AddAssignmentOperation addAssignmentOperation(
+            ThenElseExpression a, PlusEq o, AssigningExpression b)
+            => astNode(AddAssignmentOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared SubtractAssignmentOperation subtractAssignmentOperation(
+            ThenElseExpression a, MinusEq o, AssigningExpression b)
+            => astNode(SubtractAssignmentOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared MultiplyAssignmentOperation multiplyAssignmentOperation(
+            ThenElseExpression a, StarEq o, AssigningExpression b)
+            => astNode(MultiplyAssignmentOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared DivideAssignmentOperation divideAssignmentOperation(
+            ThenElseExpression a, SlashEq o, AssigningExpression b)
+            => astNode(DivideAssignmentOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared RemainderAssignmentOperation remainderAssignmentOperation(
+            ThenElseExpression a, PercentEq o, AssigningExpression b)
+            => astNode(RemainderAssignmentOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared IntersectAssignmentOperation intersectAssignmentOperation(
+            ThenElseExpression a, AmpersandEq o, AssigningExpression b)
+            => astNode(IntersectAssignmentOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared UnionAssignmentOperation unionAssignmentOperation(
+            ThenElseExpression a, PipeEq o, AssigningExpression b)
+            => astNode(UnionAssignmentOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared ComplementAssignmentOperation complementAssignmentOperation(
+            ThenElseExpression a, TildeEq o, AssigningExpression b)
+            => astNode(ComplementAssignmentOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared AndAssignmentOperation andAssignmentOperation(
+            ThenElseExpression a, AndEq o, AssigningExpression b)
+            => astNode(AndAssignmentOperation, [a, b], a, o, b);
+
+    "Section 6.8.1 of the specification"
+    rule
+    shared OrAssignmentOperation orAssignmentOperation(
+            ThenElseExpression a, OrEq o, AssigningExpression b)
+            => astNode(OrAssignmentOperation, [a, b], a, o, b);
+
     "Section 7.1.1 of the specification"
     rule
     shared Annotations annotations(StringLiteral? s, [Annotation *] a)
