@@ -1,6 +1,6 @@
 import ceylon.collection { HashSet }
 
-"Concatentate two lists of objects. If they are strings use string
+"Concatenate two lists of objects. If they are strings use string
  concatenation."
 List<Char> cat<Char>(List<Char> a, List<Char> b) {
     if (is String a, is String b) {
