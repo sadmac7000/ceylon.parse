@@ -19,7 +19,7 @@ shared class Atom {
         => if (is Atom other) then other.val == val else false;
 
     shared Boolean subtypeOf(Atom other)
-        => supertypes.contains(other);
+        => typeAtomCache.subtypeSet(other.val).contains(val);
 
     shared Set<Atom> subtypes => HashSet<Atom>{ for (x in
             typeAtomCache.subtypeSet(val)) Atom.ByHash(x) };
@@ -27,7 +27,7 @@ shared class Atom {
     shared Set<Atom> supertypes => HashSet<Atom>{ for (x in
             typeAtomCache.supertypeSet(val)) Atom.ByHash(x) };
 
-    shared Boolean supertypeOf(Atom other) => other.supertypes.contains(this);
+    shared Boolean supertypeOf(Atom other) => other.subtypeOf(this);
 
     shared Type type => typeAtomCache.resolve(val);
 
