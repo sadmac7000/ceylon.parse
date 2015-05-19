@@ -2407,4 +2407,27 @@ shared object ceylonGrammar extends Grammar<Character>() {
     rule
     shared Annotation annotation(MemberName m, Arguments? a)
             => astNode(Annotation, [m, a], m, a);
+
+    "Section 9.3.11 of the specification"
+    rule
+    shared PackageDescriptor packageDescriptor(Annotations a, PackageTok t,
+            FullPackageName n, Semicolon e)
+            => astNode(PackageDescriptor, [n, a], a, t, n, e);
+
+    "Section 9.3.12 of the specification"
+    rule
+    shared ModuleDescriptor moduleDescriptor(Annotations a, ModuleTok t,
+            FullPackageName n, StringLiteral v, ModuleBody m)
+            => astNode(ModuleDescriptor, [n, v, m, a], a, t, n, v, m);
+
+    "Section 9.3.12 of the specification"
+    rule
+    shared ModuleBody moduleBody(CurlOpen o, ModuleImport[] i, CurlClose c)
+            => astNode(ModuleBody, [i], o, i, c);
+
+    "Section 9.3.12 of the specification"
+    rule
+    shared ModuleImport moduleImport(Annotations a, ImportTok i,
+            FullPackageName|StringLiteral n, StringLiteral v, Semicolon e)
+            => astNode(ModuleImport, [n, v, a], a, i, n, v, e);
 }
