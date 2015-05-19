@@ -1,6 +1,8 @@
 # build
 /classes
 /modules
+/resource
+/bin
 /.exploded
 
 # backup files
