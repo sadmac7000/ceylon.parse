@@ -2304,6 +2304,33 @@ shared object ceylonGrammar extends Grammar<Character>() {
         return astNode(WithinOperation, [c, aBound, eBound], a, b, c, d, e);
     }
 
+    "Section 6.9 of the specification"
+    tokenizer
+    shared Token<Tick>? tick(List<Character> input, Object? prev)
+            => literal(Tick, input, prev, "`");
+
+    "Section 6.9 of the specification"
+    rule
+    shared TypeMeta typeMeta(Tick o, Type t, Tick c)
+            => astNode(TypeMeta, [t], o, t, c);
+
+    "Section 6.9 of the specification"
+    rule
+    shared BaseMeta baseMeta(Tick o, PackageQualifier? p,
+            MemberNameWithTypeArguments m, Tick c)
+            => astNode(BaseMeta, [m, p], o, p, m, c);
+
+    "Section 6.9 of the specification"
+    rule
+    shared PackageQualifier packageQualifier(PackageTok p, Dot d)
+            => astNode(PackageQualifier, [], p, d);
+
+    "Section 6.9 of the specification"
+    rule
+    shared MemberMeta memberMeta(Tick o, PrimaryType p, Dot d,
+            MemberNameWithTypeArguments m, Tick c)
+            => astNode(MemberMeta, [p, m], o, p, d, m, c);
+
     "Section 7.1.1 of the specification"
     rule
     shared Annotations annotations(StringLiteral? s, [Annotation *] a)
