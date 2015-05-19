@@ -39,7 +39,7 @@ shared void choice1() {
 
 test
 shared void choice2() {
-    value root = choiceGrammar.unambiguousParse("abbbabbb");
+    value root = choiceGrammar.unambiguousParse<S>("abbbabbb");
     value expect = S (0,
         S (0,
             S(0,
