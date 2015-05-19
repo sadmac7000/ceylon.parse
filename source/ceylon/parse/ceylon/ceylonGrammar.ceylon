@@ -79,11 +79,10 @@ Token<TypeArg>? takeCharToken<TypeArg>(Callable<TypeArg, [Integer, Integer, Inte
 
 "Parse a token that consists of all characters at the head of the string for
  which the test function returns true."
-Token<TypeArg>? takeTokenWhile<TypeArg,ScanClass>(Callable<TypeArg, [Integer, Integer,
+Token<TypeArg>? takeTokenWhile<TypeArg>(Callable<TypeArg, [Integer, Integer,
         Integer, Integer]>|Callable<TypeArg, [List<Character>, Integer, Integer, Integer,
-        Integer]> t, List<Character> input, Object? prev, Boolean(ScanClass) test)
-        given TypeArg satisfies Object
-        given ScanClass of List<Character>|Character {
+        Integer]> t, List<Character> input, Object? prev, Boolean(List<Character>)|Boolean(Character) test)
+        given TypeArg satisfies Object {
     value [start_line, start_col] = extractStartPos(prev);
 
     variable value length = 0;
@@ -91,7 +90,6 @@ Token<TypeArg>? takeTokenWhile<TypeArg,ScanClass>(Callable<TypeArg, [Integer, In
     if (is Boolean(List<Character>) test) {
         while (test(input[length...])) { length++; }
     } else {
-        assert(is Boolean(Character) test);
         while (exists c = input[length], test(c)) { length++; }
     }
 
@@ -243,7 +241,7 @@ shared object ceylonGrammar extends Grammar<Character>() {
     tokenizer
     shared Token<CommentBody>? commentBody(List<Character> input, Object? prev)
             => takeTokenWhile(CommentBody, input, prev,
-                    (String x) => ! (x.startsWith("/*") || x.startsWith(
+                    (List<Character> x) => ! (x.startsWith("/*") || x.startsWith(
                             "*/") || x == ""));
 
     "Section 2.2 of the specification"
