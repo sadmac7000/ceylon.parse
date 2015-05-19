@@ -545,6 +545,11 @@ shared class LetTok(Integer ls, Integer cs,
         Integer le, Integer ce)
         extends Keyword("let", ls, cs, le, ce) {}
 
+"'module'"
+shared class ModuleTok(Integer ls, Integer cs,
+        Integer le, Integer ce)
+        extends Keyword("module", ls, cs, le, ce) {}
+
 "Text of an LIdentifier"
 shared class LIdentText(List<Character> text, Integer ls, Integer cs,
         Integer le, Integer ce)

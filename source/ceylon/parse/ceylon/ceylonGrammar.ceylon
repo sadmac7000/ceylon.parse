@@ -255,7 +255,7 @@ shared object ceylonGrammar extends Grammar<Character>() {
     shared AnySym separator<AnySym>(
             [BlockComment|LineComment|Whitespace+] before,
             AnySym sym)
-            given AnySym of CeylonMetaToken|Keyword|Punctuation|LIdentifier|UIdentifier
+            given AnySym of CeylonMetaToken|Keyword|Punctuation|Identifier
             => sym;
 
     "Section 2.2 of the specification"
@@ -2330,6 +2330,73 @@ shared object ceylonGrammar extends Grammar<Character>() {
     shared MemberMeta memberMeta(Tick o, PrimaryType p, Dot d,
             MemberNameWithTypeArguments m, Tick c)
             => astNode(MemberMeta, [p, m], o, p, d, m, c);
+
+    "Section 6.10 of the specification"
+    rule
+    shared DecQualifier decQualifier(PackageQualifier? p,
+            [Identifier, Dot][] i)
+            => astNode(DecQualifier, [[*i.map((x) => x[0])], p], p, *i);
+
+    "Section 6.10 of the specification"
+    rule
+    shared ClassDec classDec(Tick o, ClassTok t,
+            [DecQualifier, Identifier]? i, Tick c)
+            => astNode(ClassDec, if (exists i) then [i[1], i[0]] else
+                    [null, null], o, t, i, c);
+
+    "Section 6.10 of the specification"
+    rule
+    shared InterfaceDec interfaceDec(Tick o, Interface t,
+            [DecQualifier, UIdentifier]? i, Tick c)
+            => astNode(InterfaceDec, if (exists i) then [i[1], i[0]] else
+                    [null, null], o, t, i, c);
+
+    "Section 6.10 of the specification"
+    rule
+    shared AliasDec aliasDec(Tick o, Alias t, DecQualifier q,
+            UIdentifier n, Tick c)
+            => astNode(AliasDec, [n, q], o, t, q, n, c);
+
+    "Section 6.10 of the specification"
+    rule
+    shared GivenDec givenDec(Tick o, Given t, DecQualifier q,
+            TypeName n, Tick c)
+            => astNode(GivenDec, [n, q], o, t, q, n, c);
+
+    "Section 6.10 of the specification"
+    rule
+    shared ValueDec valueDec(Tick o, Value t, DecQualifier q,
+            LIdentifier n, Tick c)
+            => astNode(ValueDec, [n, q], o, t, q, n, c);
+
+    "Section 6.10 of the specification"
+    rule
+    shared FunctionDec functionDec(Tick o, FunctionTok t, DecQualifier q,
+            LIdentifier n, Tick c)
+            => astNode(FunctionDec, [n, q], o, t, q, n, c);
+
+    "Section 6.10 of the specification"
+    rule
+    shared ConstructorDec constructorDec(Tick o, New t, DecQualifier q,
+            UIdentifier n, Tick c)
+            => astNode(ConstructorDec, [n, q], o, t, q, n, c);
+
+    "Section 6.10 of the specification"
+    rule
+    shared PackageDec packageDec(Tick o, PackageTok t, FullPackageName? n,
+            Tick c)
+            => astNode(PackageDec, [n], o, t, n, c);
+
+    "Section 6.10 of the specification"
+    tokenizer
+    shared Token<ModuleTok>? moduleTok(List<Character> input, Object? prev)
+            => keyword(ModuleTok, input, prev, "module");
+
+    "Section 6.10 of the specification"
+    rule
+    shared ModuleDec moduleDec(Tick o, ModuleTok t, FullPackageName? n,
+            Tick c)
+            => astNode(ModuleDec, [n], o, t, n, c);
 
     "Section 7.1.1 of the specification"
     rule
