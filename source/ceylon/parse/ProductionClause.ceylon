@@ -27,6 +27,30 @@ shared class ProductionClause satisfies Iterable<Atom> {
         this.values = values;
     }
 
+    shared new FromArgument(AnyGrammar g, Type t,
+            FunctionOrValueDeclaration f) {
+        Type sub;
+
+        if (f.variadic) {
+            assert(is ClassOrInterface t);
+            assert(exists k = t.typeArguments.items.first);
+            sub = k;
+
+            this.once = t.declaration == `interface Sequence`;
+            this.variadic = true;
+        } else {
+            sub = t;
+
+            this.once = false;
+            this.variadic = false;
+        }
+
+        this.g = g;
+        this.values = if (is UnionType sub)
+            then [for (s in sub.caseTypes) makeTypeAtom(s, false, false, g)]
+            else [Atom(sub)];
+    }
+
     value localAtoms = {for (x in values) if (is Atom x) x};
     value productionClauses = {for (x in values) if (is ProductionClause x) x};
     value allIterables = productionClauses.chain({localAtoms});
@@ -77,7 +101,7 @@ shared class ProductionClause satisfies Iterable<Atom> {
 
         value p = ArrayList{*{
             for (other in g.rules)
-                if ((this.select(other.produces.subtypeOf)).size > 0)
+                if ((this.any(other.produces.subtypeOf)))
                     other
          }.chain(localAtoms.map(g.getDynamicRulesFor).fold<{Rule *}>({})
                 ((x, y) => x.chain(y))
@@ -127,27 +151,3 @@ ProductionClause|Atom makeTypeAtom(Type p, Boolean f, Boolean once, AnyGrammar g
         return Atom(p);
     }
 }
-
-"Turn a type into a production clause"
-ProductionClause makeProductionClause(Type p, FunctionOrValueDeclaration f,
-        AnyGrammar g) {
-    ProductionClause|Atom x;
-    Boolean once;
-
-    if (f.variadic) {
-        assert(is ClassOrInterface p);
-        assert(exists sub = p.typeArguments.items.first);
-        once = p.declaration == `interface Sequence`;
-        x = makeTypeAtom(sub, true, once, g);
-    } else {
-        once = false;
-        x = makeTypeAtom(p, false, false, g);
-    }
-
-    if (is Atom x) {
-        return ProductionClause(f.variadic, once, g, x);
-    } else {
-        return x;
-    }
-}
-

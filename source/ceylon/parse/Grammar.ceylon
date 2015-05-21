@@ -65,7 +65,7 @@ shared abstract class Grammar<in Char>()
             value params = zipPairs(consume.parameterTypes,
                     declaration.parameterDeclarations);
             value consumes = [ for (p in params)
-                makeProductionClause(p[0], p[1], g) ];
+                ProductionClause.FromArgument(g, p[0], p[1]) ];
             value produces = Atom(consume.type);
             assert(exists ruleAnnotation = declaration.annotations<GenericRule>()[0]);
             return Rule(consume, consumes, produces,
@@ -173,7 +173,7 @@ shared abstract class Grammar<in Char>()
             value params = zipPairs(consume.parameterTypes,
                     declaration.parameterDeclarations);
             value consumes = [ for (p in params)
-                makeProductionClause(p[0], p[1], this) ];
+                ProductionClause.FromArgument(this, p[0], p[1]) ];
             value produces = Atom(t);
             assert(exists ruleAnnotation = declaration.annotations<OmniRule>()[0]);
             return Rule(consume, consumes, produces,
@@ -195,7 +195,7 @@ shared abstract class Grammar<in Char>()
         value params = zipPairs(r.parameterTypes,
                 r.declaration.parameterDeclarations);
         value consumes = [ for (p in params)
-            makeProductionClause(p[0], p[1], this) ];
+            ProductionClause.FromArgument(this, p[0], p[1]) ];
         value produces = Atom(r.type);
 
         assert(exists ruleAnnotation = r.declaration.annotations<GrammarRule>()[0]);
