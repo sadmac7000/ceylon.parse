@@ -51,9 +51,9 @@ shared class Rule {
 
     shared Boolean bracketed {
         if (exists c = consumes.first,
-            c.contains(produces)) { return false; }
+            produces.subtypeOf(c.atom)) { return false; }
         if (exists c = consumes.last,
-            c.contains(produces)) { return false; }
+            produces.subtypeOf(c.atom)) { return false; }
         return true;
     }
 

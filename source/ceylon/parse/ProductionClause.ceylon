@@ -13,7 +13,7 @@ import ceylon.collection {
 }
 
 "Portion of a rule that matches for a single position"
-shared class ProductionClause satisfies Iterable<Atom> {
+shared class ProductionClause {
     shared Boolean variadic;
     shared Boolean once;
     shared AnyGrammar g;
@@ -52,10 +52,6 @@ shared class ProductionClause satisfies Iterable<Atom> {
             this.caseTypes = [this.atom];
         }
     }
-
-    shared actual Boolean contains(Object type) => caseTypes.contains(type);
-
-    shared actual Iterator<Atom> iterator() => caseTypes.iterator();
 
     shared actual Integer hash = variadic.hash ^ 3 + once.hash ^ 2 + atom.hash;
 

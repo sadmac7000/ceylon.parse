@@ -238,7 +238,7 @@ class EPState {
 
         if (nextSet.variadic && (!nextSet.once || matchedOnce)) { return ret; }
 
-        for (next in nextSet) {
+        for (next in nextSet.caseTypes) {
             value inscons = errorConstructors[next];
 
             if (! exists inscons) {
@@ -289,14 +289,14 @@ class EPState {
         assert(exists want = rule.consumes[matchPos]);
 
         if (is Symbol other) {
-            return want.any(other.type.subtypeOf) then
+            return other.type.subtypeOf(want.atom) then
                     EPState.Derived(this, pos + other.length, other);
         } else if (! exists other){
-            if (! want.contains(nullAtom)) { return null; }
+            if (! nullAtom.subtypeOf(want.atom)) { return null; }
 
             return EPState.Derived(this, pos, null);
         } else {
-            if (! want.any(other.rule.produces.subtypeOf)) {
+            if (! other.rule.produces.subtypeOf(want.atom)) {
                 return null;
             }
 
@@ -356,14 +356,7 @@ class EPState {
         for (i in rule.consumes) {
             ret += " ";
             if (loc++ == matchPos) { ret += "*"; }
-
-            variable value sep = "";
-
-            for (t in i) {
-                ret += sep;
-                ret += t.string;
-                sep = "|";
-            }
+            ret += i.atom.string;
         }
 
         if (complete) { ret +=" *"; }
