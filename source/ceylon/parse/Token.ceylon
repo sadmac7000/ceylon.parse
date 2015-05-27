@@ -7,10 +7,10 @@ shared interface Token<out SymType = Object> satisfies Identifiable given SymTyp
     shared Atom type => Atom(`SymType`);
 
     "Node value returned by this token"
-    shared formal SymType sym;
+    shared formal SymType node;
 
-    "Amount of text matched by this token"
-    shared formal Integer length;
+    "Position in the stream of this token"
+    shared formal Integer position;
 
     "If this token was retrieved by a call to forceNext, then this is the
      amount of data that was added, removed, or replaced in the stream to allow
@@ -18,9 +18,9 @@ shared interface Token<out SymType = Object> satisfies Identifiable given SymTyp
     shared default Integer lsd => 0;
 
     "Whether this token was created by `forceNext` to force us past an error"
-    shared default Boolean isError => false;
+    shared Boolean isError => lsd > 0;
 
-    shared actual Integer hash => type.hash ^ 2 + length;
+    shared actual Integer hash => type.hash ^ 2 + position;
 
     shared actual Boolean equals(Object that) {
         if (! is Token<SymType> that) {
@@ -28,7 +28,7 @@ shared interface Token<out SymType = Object> satisfies Identifiable given SymTyp
         } else {
             if (type != that.type) { return false; }
 
-            return this.length == that.length;
+            return this.position == that.position;
         }
     }
 
@@ -48,22 +48,9 @@ shared interface EOS of eosObject {}
 "Object returned by the end-of-stream token"
 object eosObject satisfies EOS {}
 
-"A result to represent the end of a stream."
-shared object eos satisfies Token<EOS> {
-    shared actual EOS sym = eosObject;
-    shared actual Integer length = 0;
-
-    shared actual {Token<K&Object> *} next<K>(Type<K> k) {
-        if (_type(eos).subtypeOf(k)) {
-            assert(is Token<K&Object> eos);
-            return {eos};
-        }
-
-        return {};
-    }
-
-    shared actual {Token<K&Object> *} forceNext<K>(Type<K> k)
-        => next<K>(k);
+"Token type which ends a stream"
+shared interface EOSToken satisfies Token<EOS> {
+    shared actual EOS node => eosObject;
 }
 
 "Type returned by the start of a stream"
@@ -74,6 +61,6 @@ object sosObject satisfies SOS {}
 
 "Token type which begins a stream"
 shared interface SOSToken satisfies Token<SOS> {
-    shared actual SOS sym => sosObject;
-    shared actual Integer length => 0;
+    shared actual SOS node => sosObject;
+    shared actual Integer position => 0;
 }

@@ -132,7 +132,7 @@ class EPState {
 
         for (c in children) {
             if (is Token c) {
-                sym = sym.withTrailing(c.sym);
+                sym = sym.withTrailing(c.node);
             } else if (is EPState c) {
                 sym = sym.withTrailing(c.astNode);
             } else {
@@ -178,7 +178,7 @@ class EPState {
 
         if (is Token other) {
             return other.type.subtypeOf(want.atom) then
-                    EPState.Derived(this, pos + other.length, other);
+                    EPState.Derived(this, other.position, other);
         } else if (! exists other){
             if (! nullAtom.subtypeOf(want.atom)) { return null; }
 
