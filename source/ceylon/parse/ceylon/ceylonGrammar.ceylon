@@ -1151,24 +1151,26 @@ shared object ceylonGrammar extends Grammar<Character>() {
 
     "Section 4.7 of the specification"
     rule
-    shared FunctionDeclaration functionDeclaration(Annotations a, MemberName m,
-            Type|DynamicModifier|VoidModifier t, TypeParameters? tp,
-            [Parameters+] p, [TypeConstraint*] tc, Semicolon end)
+    shared FunctionDeclaration functionDeclaration(Annotations a,
+            Type|DynamicModifier|VoidModifier t, MemberName m,
+            TypeParameters? tp, [Parameters+] p,
+            [TypeConstraint*] tc, Semicolon end)
             => astNode(FunctionDeclaration, [m, t, p, tp, tc, a],
                     a, m, t, tp, p, tc, end);
 
     "Section 4.7 of the specification"
     rule
-    shared FunctionDefinition functionDefinition(Annotations a, MemberName m,
-            Type|DynamicModifier|VoidModifier t, TypeParameters? tp,
-            [Parameters+] p, [TypeConstraint*] tc, Block b)
+    shared FunctionDefinition functionDefinition(Annotations a, 
+            Type|DynamicModifier|VoidModifier t, MemberName m,
+            TypeParameters? tp, [Parameters+] p,
+            [TypeConstraint*] tc, Block b)
             => astNode(FunctionDefinition, [m, t, p, b, tp, tc, a],
                     a, m, t, tp, p, tc, b);
 
     "Section 4.7 of the specification"
     rule
     shared FunctionShortcutDefinition functionShortcutDefinition(Annotations a,
-            MemberName m, Type|DynamicModifier|VoidModifier t,
+            Type|DynamicModifier|VoidModifier t, MemberName m,
             TypeParameters? tp, [Parameters+] p, [TypeConstraint*] tc,
             LazySpecifier b, Semicolon end)
             => astNode(FunctionShortcutDefinition, [m, t, p, b, tp, tc, a],
@@ -1177,7 +1179,7 @@ shared object ceylonGrammar extends Grammar<Character>() {
     "Section 4.8 of the specification"
     rule
     shared ValueDeclaration valueDeclaration(Annotations a,
-            MemberName m, Type|VariadicType|DynamicModifier t, Semicolon end)
+            Type|VariadicType|DynamicModifier t, MemberName m, Semicolon end)
             => astNode(ValueDeclaration, [m, t, a],
                     a, m, t, end);
 
