@@ -53,10 +53,3 @@ shared annotation GenericRule genericRule(ClassOrInterfaceDeclaration c,
 shared annotation OmniRule omniRule(Integer precedence = 0,
         Associativity associativity = nonassoc)
     => OmniRule(precedence, associativity);
-
-"A do-nothing annotation class for the `tokenizer` annotation."
-shared final annotation class Tokenizer()
-        satisfies OptionalAnnotation<Tokenizer, Annotated> {}
-
-"Methods annotated with `tokenizer` take a sequence and return a token."
-shared annotation Tokenizer tokenizer() => Tokenizer();

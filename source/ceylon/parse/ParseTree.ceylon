@@ -6,7 +6,7 @@ import ceylon.collection {
 }
 
 "A queue of states"
-class StateQueue<Root>(AnyGrammar g)
+class StateQueue<Root>(Grammar g, SOSToken start)
     given Root satisfies Object {
     g.populateRules();
 
@@ -77,7 +77,7 @@ class StateQueue<Root>(AnyGrammar g)
     }
 
     for (rule in g.startRules<Root>()) {
-        value newState = EPState(rule);
+        value newState = EPState(rule, start);
         offer(newState);
     }
 
@@ -117,14 +117,10 @@ class StateQueue<Root>(AnyGrammar g)
  are specifed by defining methods with the `rule` annotation.  The parser will
  create an appropriate production rule and call the annotated method in order
  to reduce the value."
-shared class ParseTree<out Root, in Char>(Grammar<Char> g, List<Char> data)
-        given Char satisfies Object
+shared class ParseTree<out Root>(Grammar g, SOSToken data)
         given Root satisfies Object {
-    value tokenCache = HashMap<Integer, Set<Token>>();
-    value tokenAt = HashMap<[Integer, Object], Token?>();
-
     "Queue of states to process"
-    value stateQueue = StateQueue<Root>(g);
+    value stateQueue = StateQueue<Root>(g, data);
 
     "Process queued states"
     void pumpStateQueue() {
@@ -133,48 +129,8 @@ shared class ParseTree<out Root, in Char>(Grammar<Char> g, List<Char> data)
         }
     }
 
-    "Get tokens at a given location"
-    Set<Token> getTokens(Integer loc, Object? last) {
-        assert(loc <= data.size);
-
-        if (loc == data.size) {
-            return HashSet{elements={eos};};
-        }
-
-        if (tokenCache.defines(loc)) {
-            assert(exists cached = tokenCache[loc]);
-            return cached;
-        }
-
-        value tail = data.sublistFrom(loc);
-        value ret = HashSet{elements={ for (t in g.tokenizers.items)
-            if (exists r = t(tail, last)) r};};
-
-        tokenCache.put(loc, ret);
-        return ret;
-    }
-
     "Run prediction for a state"
     void predictState(EPState state) {
-        /* FIXME: This method is the performance bottleneck */
-        assert(exists wants = state.rule.consumes[state.matchPos]);
-
-        value tail = data.sublistFrom(state.pos);
-
-        for (t in g.scannersFor(wants.atom)) {
-            Token? sym;
-            if (tokenAt.defines([state.pos, t])) {
-                sym = tokenAt[[state.pos, t]];
-            } else {
-                sym = t(tail, state.lastToken);
-                tokenAt.put([state.pos, t], sym);
-            }
-
-            if (exists sym, exists s = state.feed(sym)) {
-                stateQueue.offer(s);
-            }
-        }
-
         if (exists s = state.feed(null)) {
             stateQueue.offer(s);
         }
@@ -184,6 +140,10 @@ shared class ParseTree<out Root, in Char>(Grammar<Char> g, List<Char> data)
         }
 
         for (s in state.predicted) {
+            stateQueue.offer(s);
+        }
+
+        for (s in state.scan) {
             stateQueue.offer(s);
         }
     }
@@ -202,50 +162,8 @@ shared class ParseTree<out Root, in Char>(Grammar<Char> g, List<Char> data)
 
         assert(exists state);
 
-        value tokens = getTokens(state.pos, state.lastToken);
-        value badToken = tokens.size == 0;
-
-        if (badToken) {
-            variable value i = state.pos + 1;
-
-            while (i <= data.size && getTokens(i, state.lastToken).size == 0) { i++; }
-
-            value tokenData = data[state.pos..(i - 1)];
-            value tok = g.badTokenConstructor(tokenData, state.lastToken);
-
-            for (s in state.failPropagate({tok}, true, g.errorConstructors)) {
-                stateQueue.offer(s);
-            }
-        } else {
-            value posSet = HashSet<Integer>{elements={ for (t in tokens)
-                t.length + state.pos };};
-            assert(exists maxPos = max(posSet));
-            value resultSet = HashSet<Token>{elements={ for (t in
-                    tokens) t };};
-
-            for (i in (state.pos + 1)..(maxPos - 1)) {
-                if (posSet.contains(i)) { continue; }
-                if (i > data.size) { break; }
-
-                value toks = getTokens(i, state.lastToken);
-
-                for (tok in toks) {
-                    if (posSet.contains(tok.length + state.pos)) {
-                        continue;
-                    }
-
-                    value tokenData = data[state.pos..(i - 1)];
-                    value bad = g.badTokenConstructor(tokenData, state.lastToken);
-
-                    resultSet.add(bad);
-                    posSet.add(i);
-                    break;
-                }
-            }
-
-            for (s in state.failPropagate(resultSet, false, g.errorConstructors)) {
-                stateQueue.offer(s);
-            }
+        for (s in state.forceScan) {
+            stateQueue.offer(s);
         }
     }
 
@@ -257,22 +175,6 @@ shared class ParseTree<out Root, in Char>(Grammar<Char> g, List<Char> data)
         }
 
         assert(exists endsPair = stateQueue.latest);
-
-        value eosTokens = getTokens(endsPair.key, null);
-
-        if (eosTokens.size != 1) {
-            recoverError();
-            return null;
-        }
-
-        /* TODO: Error handling (trailing tokens) */
-        assert(exists eosToken = eosTokens.first);
-
-        if (eosToken.sym != eosObject) {
-            recoverError();
-            return null;
-        }
-
         value resultNodes = ArrayList<Root>();
 
         variable Integer? minLsd = null;
@@ -281,6 +183,7 @@ shared class ParseTree<out Root, in Char>(Grammar<Char> g, List<Char> data)
             if (! i.complete) { continue; }
             if (! Atom(`Root`).supertypeOf(i.rule.produces)) { continue; }
             if (i.start != 0) { continue; }
+            if (i.lastToken.next(`EOS`).empty) { continue; }
 
             if (! exists k = minLsd) {
                 minLsd = i.lsd;

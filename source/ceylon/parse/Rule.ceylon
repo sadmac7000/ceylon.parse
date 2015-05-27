@@ -12,7 +12,7 @@ shared class Rule {
     shared Integer precedence;
     shared Associativity associativity;
     shared actual Integer hash;
-    shared AnyGrammar g;
+    shared Grammar g;
     shared Object identifier;
 
     shared new (Function<Object,Nothing> consume,
@@ -20,7 +20,7 @@ shared class Rule {
             Atom produces,
             Integer precedence,
             Associativity associativity,
-            AnyGrammar g) {
+            Grammar g) {
         this.consume = (Object?* x) => consume.apply(*x);
         this.consumes = consumes;
         this.produces = produces;
@@ -32,7 +32,7 @@ shared class Rule {
     }
 
     shared new TupleRule(Type<Tuple<Anything,Anything,Anything[]>> tuple,
-            AnyGrammar g) {
+            Grammar g) {
         this.produces = Atom(tuple);
         this.consume = (Anything * a) => a;
         this.precedence = 0;

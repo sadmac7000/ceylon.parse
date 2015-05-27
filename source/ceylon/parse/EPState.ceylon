@@ -1,53 +1,13 @@
 import ceylon.language.meta { _type = type }
 import ceylon.language.meta.model { Type }
 
-"Exception thrown when we need an error constructor but one isn't defined"
-class ErrorConstructorException(Type token)
-        extends Exception("Could not construct error of type ``token``") {}
-
-"An error in parsing"
-abstract class Error() {
-    shared actual Boolean equals(Object that) {
-        return _type(this) == _type(that);
-    }
-}
-
-"Interface for errors that delete a token"
-interface DeletingError {
-    shared formal Object original;
-}
-
-"Interface for errors that insert a token"
-interface InsertingError {
-    shared formal Object newSym;
-}
-
-"Error resolved by replacing a token"
-class ErrorReplace(shared actual Object newSym,
-                   shared actual Object original)
-        extends Error()
-        satisfies DeletingError, InsertingError {}
-
-"Error resolved by deleting a token"
-class ErrorDelete(shared actual Object original)
-        extends Error()
-        satisfies DeletingError {}
-
-"Error resolved by inserting a new token"
-class ErrorInsert(shared actual Object newSym)
-        extends Error()
-        satisfies InsertingError {}
-
 "An Earley parser state"
 class EPState {
-    "Starting Levenshtein distance"
-    Integer baseLsd;
-
     "Whether we've matched once already"
     Boolean matchedOnce;
 
     "Token we processed before parsing this rule"
-    shared Object? lastToken;
+    shared Token lastToken;
 
     "Tokens processed before we began to parse this state"
     Integer tokensProcessedBefore;
@@ -56,7 +16,7 @@ class EPState {
     shared Integer start;
 
     "Tokens"
-    shared [Token|EPState|Error?*] children;
+    shared [Token|EPState?*] children;
 
     "Position this state belongs to"
     shared Integer pos;
@@ -67,36 +27,37 @@ class EPState {
     "The rule we are matching"
     shared Rule rule;
 
-    "Memoization for lsd attribute"
-    variable Integer? _lsd = null;
+    "Levenshtein distance between what we matched after error correction and
+     the real string"
+    shared Integer lsd;
 
     "Number of tokens matched. It is important that this does not count error
      tokens."
     shared Integer tokensProcessed;
 
     "Create a new initial EPState for the given start rule"
-    shared new (Rule rule) {
+    shared new (Rule rule, SOSToken start) {
         this.pos = 0;
         this.rule = rule;
         this.matchPos = 0;
         this.start = 0;
         this.children = [];
-        this.baseLsd = 0;
+        this.lsd = 0;
         this.tokensProcessedBefore = 0;
-        this.lastToken = null;
+        this.lastToken = start;
         this.matchedOnce = false;
         this.tokensProcessed = tokensProcessedBefore;
     }
 
     "Create a new EPState predicted from the given rule"
     new Predicted(Integer pos, Rule rule, Integer tokensProcessedBefore,
-            Object? lastToken) {
+            Token lastToken) {
         this.pos = pos;
         this.rule = rule;
         this.matchPos = 0;
         this.start = pos;
         this.children = [];
-        this.baseLsd = 0;
+        this.lsd = 0;
         this.tokensProcessedBefore = tokensProcessedBefore;
         this.lastToken = lastToken;
         this.matchedOnce = false;
@@ -104,17 +65,15 @@ class EPState {
     }
 
     "Produce a new EPState derived from a previous state"
-    new Derived(EPState original, Integer newPos, Token|EPState|Error? newChild) {
+    new Derived(EPState original, Integer newPos, Token|EPState? newChild) {
         this.pos = newPos;
+        variable value lsd_mod = 0;
 
         if (is Token newChild) {
-            this.lastToken = newChild.sym;
+            this.lastToken = newChild;
+            lsd_mod = newChild.lsd;
         } else if (is EPState newChild) {
             this.lastToken = newChild.lastToken;
-        } else if (is ErrorReplace newChild) {
-            this.lastToken = newChild.newSym;
-        } else if (is DeletingError newChild) {
-            this.lastToken = newChild.original;
         } else {
             this.lastToken = original.lastToken;
         }
@@ -122,10 +81,7 @@ class EPState {
         assert(exists currentConsumes =
                 original.rule.consumes[original.matchPos]);
 
-        if (is ErrorDelete newChild) {
-            this.matchPos = original.matchPos;
-            this.matchedOnce = false;
-        } else if (currentConsumes.variadic) {
+        if (currentConsumes.variadic) {
             if (this.pos != original.pos) {
                 this.matchPos = original.matchPos;
             } else {
@@ -138,12 +94,7 @@ class EPState {
             this.matchedOnce = false;
         }
 
-        if (is Error newChild) {
-            this.baseLsd = original.baseLsd + 1;
-        } else {
-            this.baseLsd = original.baseLsd;
-        }
-
+        this.lsd = original.lsd + lsd_mod;
         this.children = original.children.withTrailing(newChild);
         this.rule = original.rule;
         this.start = original.start;
@@ -160,28 +111,11 @@ class EPState {
         this.matchPos = original.matchPos + 1;
         this.start = original.start;
         this.children = original.children;
-        this.baseLsd = original.baseLsd;
+        this.lsd = original.lsd;
         this.tokensProcessedBefore = original.tokensProcessedBefore;
         this.lastToken = original.lastToken;
         this.matchedOnce = original.matchedOnce;
         this.tokensProcessed = original.tokensProcessed;
-    }
-
-    "Levenshtein distance between what we matched after error correction and
-     the real string"
-    shared Integer lsd {
-        if (exists l=_lsd) { return l; }
-
-        variable value ret = baseLsd;
-
-        for (c in children) {
-            if (is EPState c) {
-                ret += c.lsd;
-            }
-        }
-
-        _lsd = ret;
-        return ret;
     }
 
     shared actual Integer hash => start ^ 4 +
@@ -201,12 +135,8 @@ class EPState {
                 sym = sym.withTrailing(c.sym);
             } else if (is EPState c) {
                 sym = sym.withTrailing(c.astNode);
-            } else if (! exists c) {
+            } else {
                 sym = sym.withTrailing(null);
-            } else if (is ErrorInsert c) {
-                sym = sym.withTrailing(c.newSym);
-            } else if (is ErrorReplace c) {
-                sym = sym.withTrailing(c.newSym);
             }
         }
 
@@ -224,46 +154,6 @@ class EPState {
         return EPState.Advanced(this);
     }
 
-    "Propagate this state with a trailing error."
-    shared {EPState *} failPropagate({Token *} skip,
-            Boolean badToken,
-            Map<Atom,Object(Object?, Object?)> errorConstructors) {
-        assert(exists nextSet = rule.consumes[matchPos]);
-
-        value delete = { for (s in skip) EPState.Derived(this, pos + s.length,
-                ErrorDelete(s.sym))
-        };
-
-        variable value ret = delete;
-
-        if (nextSet.variadic && (!nextSet.once || matchedOnce)) { return ret; }
-
-        for (next in nextSet.caseTypes) {
-            value inscons = errorConstructors[next];
-
-            if (! exists inscons) {
-                throw ErrorConstructorException(next.type);
-            }
-
-            assert(exists inscons);
-
-            value replace = { for (s in skip) EPState.Derived(this, pos + s.length,
-                    ErrorReplace(inscons(s.sym, lastToken), s.sym))
-            };
-
-            ret = ret.chain(replace);
-
-            if (badToken) { continue; }
-
-            value newToken = inscons(null, lastToken);
-            value insert = EPState.Derived(this, pos, ErrorInsert(newToken));
-
-            ret = ret.chain({insert});
-        }
-
-        return ret;
-    }
-
     "S-Expression view of this state"
     shared String sexp {
         variable String ret = "( ``rule.produces``";
@@ -274,10 +164,8 @@ class EPState {
                 ret += c.sexp;
             } else if (is Token c) {
                 ret += c.string;
-            } else if (! exists c) {
-                ret += "_";
             } else {
-                ret += "<ERROR>";
+                ret += "_";
             }
         }
         ret += " )";
@@ -314,6 +202,18 @@ class EPState {
             then c.predicted.map((r) => EPState.Predicted(pos, r,
                         tokensProcessed, lastToken))
             else {};
+
+    "Scan for the next desired object"
+    shared {EPState *} scan =>
+        if (exists c = rule.consumes[matchPos])
+        then lastToken.next(c.atom.type).map(feed).narrow<EPState>()
+        else {};
+
+    "Scan for the next desired object"
+    shared {EPState *} forceScan =>
+        if (exists c = rule.consumes[matchPos])
+        then lastToken.forceNext(c.atom.type).map(feed).narrow<EPState>()
+        else {};
 
     shared actual Boolean equals(Object other) {
         if (is EPState other) {

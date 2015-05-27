@@ -1,3 +1,6 @@
+import ceylon.language.meta.model { Type }
+import ceylon.language.meta { _type = type }
+
 "A single token result returned by a tokenizer"
 shared interface Token<out SymType = Object> satisfies Identifiable given SymType satisfies Object {
     "Type atom for this token"
@@ -31,12 +34,12 @@ shared interface Token<out SymType = Object> satisfies Identifiable given SymTyp
 
     "Get the next token(s) in the stream where those tokens are of a given
      type. We return a stream because we allow non-deterministic tokenization."
-    shared formal {Token<K> *} next<K>() given K satisfies Object;
+    shared formal {Token<K&Object> *} next<K>(Type<K> k);
 
     "Try to force tokens of the given type to appear in the stream. The
      tokenizer may insert, delete, or replace data in the stream and record the
      resulting Levenshtein distance in the result token's `lsd` field."
-    shared formal {Token<K> *} forceNext<K>() given K satisfies Object;
+    shared formal {Token<K&Object> *} forceNext<K>(Type<K> k);
 }
 
 "Type returned by the end of a stream"
@@ -50,13 +53,17 @@ shared object eos satisfies Token<EOS> {
     shared actual EOS sym = eosObject;
     shared actual Integer length = 0;
 
-    shared actual {Token<K> *} next<K>()
-            given K satisfies Object
-        => if (is Token<K> eos) then {eos} else {};
+    shared actual {Token<K&Object> *} next<K>(Type<K> k) {
+        if (_type(eos).subtypeOf(k)) {
+            assert(is Token<K&Object> eos);
+            return {eos};
+        }
 
-    shared actual {Token<K> *} forceNext<K>()
-            given K satisfies Object
-        => next<K>();
+        return {};
+    }
+
+    shared actual {Token<K&Object> *} forceNext<K>(Type<K> k)
+        => next<K>(k);
 }
 
 "Type returned by the start of a stream"

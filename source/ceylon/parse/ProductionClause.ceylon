@@ -12,11 +12,11 @@ import ceylon.language.meta.declaration {
 shared class ProductionClause {
     shared Boolean variadic;
     shared Boolean once;
-    shared AnyGrammar g;
+    shared Grammar g;
     shared Atom[] caseTypes;
     shared Atom atom;
 
-    shared new (AnyGrammar g, Type tIn,
+    shared new (Grammar g, Type tIn,
             Boolean|FunctionOrValueDeclaration? f = null) {
         Type t;
 
@@ -69,7 +69,7 @@ shared class ProductionClause {
 
 "Turn a tuple type into predicates"
 ProductionClause[] clausesFromTupleType(Type<[Anything*]>&Generic clauses,
-        AnyGrammar g) {
+        Grammar g) {
     if (is Type<Tuple<Anything,Anything,Anything[]>> clauses) {
         assert(exists firstParam = `class Tuple`.typeParameterDeclarations[1]);
         assert(exists restParam = `class Tuple`.typeParameterDeclarations[2]);
