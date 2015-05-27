@@ -255,7 +255,7 @@ shared object ceylonGrammar extends Grammar<Character>() {
     shared AnySym separator<AnySym>(
             [BlockComment|LineComment|Whitespace+] before,
             AnySym sym)
-            given AnySym of CeylonMetaToken|Keyword|Punctuation|Identifier
+            given AnySym of Keyword|Punctuation|Identifier
             => sym;
 
     "Section 2.2 of the specification"

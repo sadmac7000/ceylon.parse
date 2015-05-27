@@ -605,10 +605,6 @@ shared class CeylonMetaToken(shared CeylonToken+ subtokens)
 shared class BlockComment(CeylonToken+ tokens)
         extends CeylonMetaToken(*tokens) {}
 
-"A separator"
-shared class Separator(CeylonToken+ tokens)
-        extends CeylonMetaToken(*tokens) {}
-
 "A string of decimal digits"
 shared class Digits(CeylonToken+ tokens)
         extends CeylonMetaToken(*tokens) {}
