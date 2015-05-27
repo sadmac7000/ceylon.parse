@@ -52,7 +52,6 @@ class StateQueue<Root>(AnyGrammar g)
         if (target.contains(state)) { return; }
 
         target.add(state);
-
         queue.offer(state);
 
         if (state.complete) {

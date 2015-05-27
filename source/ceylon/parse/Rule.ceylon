@@ -13,6 +13,7 @@ shared class Rule {
     shared Associativity associativity;
     shared actual Integer hash;
     shared AnyGrammar g;
+    shared Object identifier;
 
     shared new (Function<Object,Nothing> consume,
             ProductionClause[] consumes,
@@ -25,8 +26,9 @@ shared class Rule {
         this.produces = produces;
         this.precedence = precedence;
         this.associativity = associativity;
-        this.hash = consume.hash ^ 2 + produces.hash;
+        this.hash = consume.hash;
         this.g = g;
+        this.identifier = consume;
     }
 
     shared new TupleRule(Type<Tuple<Anything,Anything,Anything[]>> tuple,
@@ -38,16 +40,16 @@ shared class Rule {
 
         assert(is Type<Anything[]>&Generic tuple);
         this.consumes = clausesFromTupleType(tuple, g);
-        this.hash = consume.hash ^ 2 + produces.hash;
+        this.hash = tuple.hash;
         this.g = g;
+        this.identifier = tuple;
     }
 
     shared actual Boolean equals(Object other) {
         if (! is Rule other) { return false; }
         assert(is Rule other);
 
-        if (other.consume != consume) { return false; }
-        return other.produces == produces;
+        return other.identifier == identifier;
     }
 
     shared Boolean precedenceConflict(Rule other) {
