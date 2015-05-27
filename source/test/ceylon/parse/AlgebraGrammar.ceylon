@@ -1,4 +1,7 @@
 import ceylon.parse { ... }
+import ceylon.language.meta { type }
+import ceylon.language.meta.model { Type }
+import ceylon.collection { ArrayList }
 
 class Expr(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
 
@@ -13,187 +16,112 @@ class Div(Integer pos = 0, shared actual Object? prevError = null) extends Sym(p
 class LParen(Integer pos = 0, shared actual Object? prevError = null) extends Sym(pos) {}
 class RParen(Integer pos = 0, shared actual Object? prevError = null) extends Sym(pos) {}
 
-class AlgebraGrammar() extends Grammar<Character>() {
-    tokenizer
-    shared Token<Var>? var(List<Character> input, Object? last) {
-        String varChars = "abcdefghijklmnopqrstuvwxyz";
-        Integer position;
-        Object? prevError;
+{Token<K&Object> *} tokenize<K>(String s, Integer pos, Type<K> k) {
+    value results = ArrayList<Token<K&Object>>();
+    String varChars = "abcdefghijklmnopqrstuvwxyz";
 
-        assert(exists chr = input.first);
-
-        if (is Sym last) {
-            position = last.position + 1;
-            prevError = null;
-        } else if (is Crap last) {
-            position = last.position + last.data.size;
-            prevError = last;
-        } else {
-            position = 0;
-            prevError = null;
-        }
-
-        if (varChars.contains(chr)) {
-            return Token(Var(chr.string, position, prevError), 1);
-        } else {
-            return null;
-        }
+    if (`EOS`.subtypeOf(k),
+        s.size <= pos) {
+        assert (is Token<K> q = object satisfies AlgebraGrammarToken<EOS>&EOSToken {
+            shared actual String str = s;
+            shared actual Integer position => pos;
+        });
+        results.add(q);
     }
 
-    tokenizer
-    shared Token<Plus>? plus(List<Character> input, Object? last) {
-        Integer position;
-        Object? prevError;
-
-        if (is Sym last) {
-            position = last.position + 1;
-            prevError = null;
-        } else if (is Crap last) {
-            position = last.position + last.data.size;
-            prevError = last;
-        } else {
-            position = 0;
-            prevError = null;
-        }
-
-        if (input.startsWith("+")) {
-            return Token(Plus(position, prevError), 1);
-        } else {
-            return null;
-        }
+    if (`Var`.subtypeOf(k),
+        exists chr = s[pos],
+        varChars.contains(chr)) {
+        assert (is Token<K> q = object satisfies AlgebraGrammarToken<Var> {
+            shared actual String str = s;
+            shared actual Var node => Var(chr.string, pos);
+            shared actual Integer position => pos + 1;
+        });
+        results.add(q);
     }
 
-    tokenizer
-    shared Token<Minus>? minus(List<Character> input, Object? last) {
-        Integer position;
-        Object? prevError;
-
-        if (is Sym last) {
-            position = last.position + 1;
-            prevError = null;
-        } else if (is Crap last) {
-            position = last.position + last.data.size;
-            prevError = last;
-        } else {
-            position = 0;
-            prevError = null;
-        }
-
-        if (input.startsWith("-")) {
-            return Token(Minus(position, prevError), 1);
-        } else {
-            return null;
-        }
+    if (`Plus`.subtypeOf(k),
+        exists chr = s[pos],
+        chr == '+') {
+        assert (is Token<K> q = object satisfies AlgebraGrammarToken<Plus> {
+            shared actual String str = s;
+            shared actual Plus node => Plus(pos);
+            shared actual Integer position => pos + 1;
+        });
+        results.add(q);
     }
 
-    tokenizer
-    shared Token<Mul>? mull(List<Character> input, Object? last) {
-        Integer position;
-        Object? prevError;
-
-        if (is Sym last) {
-            position = last.position + 1;
-            prevError = null;
-        } else if (is Crap last) {
-            position = last.position + last.data.size;
-            prevError = last;
-        } else {
-            position = 0;
-            prevError = null;
-        }
-
-        if (input.startsWith("*")) {
-            return Token(Mul(position, prevError), 1);
-        } else {
-            return null;
-        }
+    if (`Minus`.subtypeOf(k),
+        exists chr = s[pos],
+        chr == '-') {
+        assert (is Token<K> q = object satisfies AlgebraGrammarToken<Minus> {
+            shared actual String str = s;
+            shared actual Minus node => Minus(pos);
+            shared actual Integer position => pos + 1;
+        });
+        results.add(q);
     }
 
-    tokenizer
-    shared Token<Div>? divv(List<Character> input, Object? last) {
-        Integer position;
-        Object? prevError;
-
-        if (is Sym last) {
-            position = last.position + 1;
-            prevError = null;
-        } else if (is Crap last) {
-            position = last.position + last.data.size;
-            prevError = last;
-        } else {
-            position = 0;
-            prevError = null;
-        }
-
-        if (input.startsWith("/")) {
-            return Token(Div(position, prevError), 1);
-        } else {
-            return null;
-        }
+    if (`Mul`.subtypeOf(k),
+        exists chr = s[pos],
+        chr == '*') {
+        assert (is Token<K> q = object satisfies AlgebraGrammarToken<Mul> {
+            shared actual String str = s;
+            shared actual Mul node => Mul(pos);
+            shared actual Integer position => pos + 1;
+        });
+        results.add(q);
     }
 
-    tokenizer
-    shared Token<LParen>? lparen(List<Character> input, Object? last) {
-        Integer position;
-        Object? prevError;
-
-        if (is Sym last) {
-            position = last.position + 1;
-            prevError = null;
-        } else if (is Crap last) {
-            position = last.position + last.data.size;
-            prevError = last;
-        } else {
-            position = 0;
-            prevError = null;
-        }
-
-        if (input.startsWith("(")) {
-            return Token(LParen(position, prevError), 1);
-        } else {
-            return null;
-        }
+    if (`Div`.subtypeOf(k),
+        exists chr = s[pos],
+        chr == '/') {
+        assert (is Token<K> q = object satisfies AlgebraGrammarToken<Div> {
+            shared actual String str = s;
+            shared actual Div node => Div(pos);
+            shared actual Integer position => pos + 1;
+        });
+        results.add(q);
     }
 
-    tokenizer
-    shared Token<RParen>? rparen(List<Character> input, Object? last) {
-        Integer position;
-        Object? prevError;
-
-        if (is Sym last) {
-            position = last.position + 1;
-            prevError = null;
-        } else if (is Crap last) {
-            position = last.position + last.data.size;
-            prevError = last;
-        } else {
-            position = 0;
-            prevError = null;
-        }
-
-        if (input.startsWith(")")) {
-            return Token(RParen(position, prevError), 1);
-        } else {
-            return null;
-        }
+    if (`LParen`.subtypeOf(k),
+        exists chr = s[pos],
+        chr == '(') {
+        assert (is Token<K> q = object satisfies AlgebraGrammarToken<LParen> {
+            shared actual String str = s;
+            shared actual LParen node => LParen(pos);
+            shared actual Integer position => pos + 1;
+        });
+        results.add(q);
     }
 
+    if (`RParen`.subtypeOf(k),
+        exists chr = s[pos],
+        chr == ')') {
+        assert (is Token<K> q = object satisfies AlgebraGrammarToken<RParen> {
+            shared actual String str = s;
+            shared actual RParen node => RParen(pos);
+            shared actual Integer position => pos + 1;
+        });
+        results.add(q);
+    }
+
+    return results;
+}
+
+interface AlgebraGrammarToken<T>
+        satisfies Token<T>
+        given T satisfies Object {
+    shared formal String str;
+    shared actual {Token<K&Object> *} next<K>(Type<K> k)
+        => tokenize(str, position, k);
+    shared actual {Token<K&Object> *} forceNext<K>(Type<K> k) => {};
+}
+
+class AlgebraStartToken(shared actual String str)
+        satisfies SOSToken&AlgebraGrammarToken<SOS> {}
+
+class AlgebraGrammar() extends Grammar() {
     rule
     shared Expr parenExpression(LParen l, Expr e, RParen r) => e;
-
-    shared actual Crap badTokenConstructor(List<Character> data, Object? last) {
-        assert(is String data);
-        if (is Sym last) {
-            return Crap(data, last.position + 1);
-        } else if (is Crap last) {
-            return Crap(data, last.position + last.data.size);
-        } else {
-            return Crap(data);
-        }
-    }
-
-    errorConstructor
-    shared Mul error(Object? replaces, Object? last) {
-        return Mul(0);
-    }
 }
