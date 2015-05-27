@@ -17,13 +17,15 @@ shared class ProductionClause satisfies Iterable<Atom> {
     shared Boolean variadic;
     shared Boolean once;
     shared AnyGrammar g;
-    shared <Atom|ProductionClause>[] values;
+    shared Atom[] caseTypes;
+    shared Atom atom;
 
     shared new (AnyGrammar g, Type tIn,
             Boolean|FunctionOrValueDeclaration? f = null) {
+        Type t;
+
         this.g = g;
 
-        Type t;
         if (is Boolean f) {
             this.variadic = true;
             this.once = f;
@@ -42,30 +44,20 @@ shared class ProductionClause satisfies Iterable<Atom> {
         }
 
 
+        this.atom = Atom(t);
+
         if (is UnionType t) {
-            this.values = [for (tsub in t.caseTypes)
-                if (is UnionType tsub)
-                    then ProductionClause(g, tsub)
-                    else Atom(tsub)
-                ];
+            this.caseTypes = [for (tsub in t.caseTypes) Atom(tsub) ];
         } else {
-            this.values = [Atom(t)];
+            this.caseTypes = [this.atom];
         }
     }
 
-    value localAtoms = {for (x in values) if (is Atom x) x};
-    value productionClauses = {for (x in values) if (is ProductionClause x) x};
-    value allIterables = productionClauses.chain({localAtoms});
-    value atomIterator = allIterables.reduce<{Atom *}>((x,y) => x.chain(y));
-    value allAtoms = HashSet{*atomIterator};
-    value allAtomsList = ArrayList{*allAtoms};
+    shared actual Boolean contains(Object type) => caseTypes.contains(type);
 
-    shared actual Boolean contains(Object type) => allAtoms.contains(type);
+    shared actual Iterator<Atom> iterator() => caseTypes.iterator();
 
-    shared actual Iterator<Atom> iterator() => allAtomsList.iterator();
-
-    shared actual Integer hash = variadic.hash ^ 3 + once.hash ^ 2 +
-        values.hash;
+    shared actual Integer hash = variadic.hash ^ 3 + once.hash ^ 2 + atom.hash;
 
     shared actual Boolean equals(Object that) {
         if (! is ProductionClause that) { return false; }
@@ -73,7 +65,7 @@ shared class ProductionClause satisfies Iterable<Atom> {
 
         if (that.variadic != variadic) { return false; }
         if (that.once != once) { return false; }
-        if (that.values != values) { return false; }
+        if (that.atom != atom) { return false; }
         return true;
     }
 
@@ -81,14 +73,12 @@ shared class ProductionClause satisfies Iterable<Atom> {
     variable {Rule *}? predictedCache = null;
 
     "Stream of applicable scanners"
-    shared {Token?(Nothing, Object?) *} scanners = [*productionClauses.map((x) => x.scanners)
-            .chain(
-                    localAtoms.map((a)
+    shared {Token?(Nothing, Object?) *} scanners = [*
+                    caseTypes.map((a)
                         => a.subtypes.map((x) => g.tokenizers[x])
                             .narrow<Object>()
                     )
-                  )
-            .fold<{Token?(Nothing, Object?) *}>({})((x, y) => x.chain(y))];
+                  .fold<{Token?(Nothing, Object?) *}>({})((x, y) => x.chain(y))];
 
     "Generate a prediction set for this clause"
     shared {Rule *} predicted {
@@ -103,12 +93,12 @@ shared class ProductionClause satisfies Iterable<Atom> {
 
         value p = ArrayList{*{
             for (other in g.rules)
-                if ((this.any(other.produces.subtypeOf)))
+                if (other.produces.subtypeOf(atom))
                     other
-         }.chain(localAtoms.map(g.getDynamicRulesFor).fold<{Rule *}>({})
+         }.chain(caseTypes.map(g.getDynamicRulesFor).fold<{Rule *}>({})
                 ((x, y) => x.chain(y))
             ).chain(
-                localAtoms.map((x) =>
+                caseTypes.map((x) =>
                     x.type).narrow<Type<Tuple<Anything,Anything,Anything[]>>>()
                     .map((x) => Rule.TupleRule(x, g))
             )};
