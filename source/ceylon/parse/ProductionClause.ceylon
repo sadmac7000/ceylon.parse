@@ -7,10 +7,6 @@ import ceylon.language.meta.model {
 import ceylon.language.meta.declaration {
     FunctionOrValueDeclaration
 }
-import ceylon.collection {
-    HashSet,
-    ArrayList
-}
 
 "Portion of a rule that matches for a single position"
 shared class ProductionClause {
@@ -43,7 +39,6 @@ shared class ProductionClause {
             t = tIn;
         }
 
-
         this.atom = Atom(t);
 
         if (is UnionType t) {
@@ -65,9 +60,6 @@ shared class ProductionClause {
         return true;
     }
 
-    "Memoization for [[predicted]]"
-    variable {Rule *}? predictedCache = null;
-
     "Stream of applicable scanners"
     shared {Token?(Nothing, Object?) *} scanners = [*
                     caseTypes.map((a)
@@ -77,17 +69,10 @@ shared class ProductionClause {
                   .fold<{Token?(Nothing, Object?) *}>({})((x, y) => x.chain(y))];
 
     "Generate a prediction set for this clause"
-    shared {Rule *} predicted {
-        predict();
-        assert(exists p = predictedCache);
-        return p;
-    }
+    shared {Rule *} predicted => g.getRulesFor(atom);
 
     "Populate the cached prediction set"
-    shared void predict() {
-        if (exists p = predictedCache) { return; }
-        predictedCache = g.getRulesFor(atom);
-    }
+    shared void predict() => g.getRulesFor(atom);
 }
 
 "Turn a tuple type into predicates"
