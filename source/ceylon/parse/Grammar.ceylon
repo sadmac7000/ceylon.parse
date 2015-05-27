@@ -15,7 +15,8 @@ import ceylon.language.meta.declaration {
     ClassOrInterfaceDeclaration
 }
 import ceylon.collection {
-    HashMap
+    HashMap,
+    HashSet
 }
 
 "Exception thrown when we need a bad token constructor but one isn't defined"
@@ -154,7 +155,7 @@ shared abstract class Grammar<in Char>()
             return r;
         }
 
-        value r = getRulesSlowpath(a);
+        value r = HashSet{*getRulesSlowpath(a)};
         rulesCache.put(a, r);
 
         for (item in r) { item.predictAll(); }
