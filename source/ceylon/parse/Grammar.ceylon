@@ -158,7 +158,20 @@ shared abstract class Grammar<in Char>()
         if (! is Type<Object> t) { return {}; }
         assert(is Type<Object> t);
 
-        value ret = [*getOmniRulesFor(t).chain(getGenericRulesFor(t))];
+        {Rule *} ret;
+
+        if (is UnionType t) {
+            value caseSets = {
+                for (tsub in t.caseTypes) getDynamicRulesFor(Atom(tsub))
+            };
+
+            ret = caseSets.fold<{Rule *}>({})((x, y) => x.chain(y));
+        } else if (is Type<Tuple<Anything,Anything,Anything[]>> t) {
+            ret = [Rule.TupleRule(t, this)];
+        } else {
+            ret = [*getOmniRulesFor(t).chain(getGenericRulesFor(t))];
+        }
+
         dynamicRulesCache.put(a,ret);
         return ret;
     }

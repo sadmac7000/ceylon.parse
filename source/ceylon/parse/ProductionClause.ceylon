@@ -91,13 +91,7 @@ shared class ProductionClause {
             for (other in g.rules)
                 if (other.produces.subtypeOf(atom))
                     other
-         }.chain(caseTypes.map(g.getDynamicRulesFor).fold<{Rule *}>({})
-                ((x, y) => x.chain(y))
-            ).chain(
-                caseTypes.map((x) =>
-                    x.type).narrow<Type<Tuple<Anything,Anything,Anything[]>>>()
-                    .map((x) => Rule.TupleRule(x, g))
-            )};
+         }.chain(g.getDynamicRulesFor(atom)) };
 
         predictedCache = p;
         for (r in p) { r.predictAll(); }
