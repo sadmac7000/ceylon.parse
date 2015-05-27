@@ -56,7 +56,7 @@ class EPState {
     shared Integer start;
 
     "Tokens"
-    shared [Symbol|EPState|Error?*] children;
+    shared [Token|EPState|Error?*] children;
 
     "Position this state belongs to"
     shared Integer pos;
@@ -104,10 +104,10 @@ class EPState {
     }
 
     "Produce a new EPState derived from a previous state"
-    new Derived(EPState original, Integer newPos, Symbol|EPState|Error? newChild) {
+    new Derived(EPState original, Integer newPos, Token|EPState|Error? newChild) {
         this.pos = newPos;
 
-        if (is Symbol newChild) {
+        if (is Token newChild) {
             this.lastToken = newChild.sym;
         } else if (is EPState newChild) {
             this.lastToken = newChild.lastToken;
@@ -148,7 +148,7 @@ class EPState {
         this.rule = original.rule;
         this.start = original.start;
         this.tokensProcessedBefore = original.tokensProcessedBefore;
-        this.tokensProcessed = original.tokensProcessed + (if (is Symbol
+        this.tokensProcessed = original.tokensProcessed + (if (is Token
                 newChild) then 1 else if (is EPState newChild) then
             newChild.tokensProcessed else 0);
     }
@@ -197,7 +197,7 @@ class EPState {
         variable Object?[] sym = [];
 
         for (c in children) {
-            if (is Symbol c) {
+            if (is Token c) {
                 sym = sym.withTrailing(c.sym);
             } else if (is EPState c) {
                 sym = sym.withTrailing(c.astNode);
@@ -272,7 +272,7 @@ class EPState {
             ret += " ";
             if (is EPState c) {
                 ret += c.sexp;
-            } else if (is Symbol c) {
+            } else if (is Token c) {
                 ret += c.string;
             } else if (! exists c) {
                 ret += "_";
@@ -285,10 +285,10 @@ class EPState {
     }
 
     "Offer a symbol to this state for scanning or completion"
-    shared EPState? feed(Symbol|EPState? other) {
+    shared EPState? feed(Token|EPState? other) {
         assert(exists want = rule.consumes[matchPos]);
 
-        if (is Symbol other) {
+        if (is Token other) {
             return other.type.subtypeOf(want.atom) then
                     EPState.Derived(this, pos + other.length, other);
         } else if (! exists other){
