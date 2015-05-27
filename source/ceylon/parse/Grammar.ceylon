@@ -42,8 +42,8 @@ shared abstract class Grammar<in Char>()
     "Omni-rule methods"
     variable FunctionDeclaration[] omniRuleMeths = [];
 
-    "Dynamic rules cache"
-    value dynamicRulesCache = HashMap<Atom,{Rule *}>();
+    "Rules cache"
+    value rulesCache = HashMap<Atom,{Rule *}>();
 
     "Generic rule initial values structure"
     class GenericInfo(shared FunctionDeclaration declaration,
@@ -148,32 +148,39 @@ shared abstract class Grammar<in Char>()
         return ProductionClause(this, `Root`).predicted;
     }
 
-    "Get dynamic and omni rules"
-    shared {Rule *} getDynamicRulesFor(Atom a)
-        => dynamicRulesCache[a] else getDynamicRulesSlowpath(a);
-
-    "Populate dynamicRulesCache and return its new value"
-    {Rule *} getDynamicRulesSlowpath(Atom a) {
-        value t = a.type;
-        if (! is Type<Object> t) { return {}; }
-        assert(is Type<Object> t);
-
-        {Rule *} ret;
-
-        if (is UnionType t) {
-            value caseSets = {
-                for (tsub in t.caseTypes) getDynamicRulesFor(Atom(tsub))
-            };
-
-            ret = caseSets.fold<{Rule *}>({})((x, y) => x.chain(y));
-        } else if (is Type<Tuple<Anything,Anything,Anything[]>> t) {
-            ret = [Rule.TupleRule(t, this)];
-        } else {
-            ret = [*getOmniRulesFor(t).chain(getGenericRulesFor(t))];
+    "Get rules for a particular atom"
+    shared {Rule *} getRulesFor(Atom a) {
+        if (exists r = rulesCache[a]) {
+            return r;
         }
 
-        dynamicRulesCache.put(a,ret);
-        return ret;
+        value r = getRulesSlowpath(a);
+        rulesCache.put(a, r);
+
+        for (item in r) { item.predictAll(); }
+        return r;
+    }
+
+    "Populate rulesCache and return its new value"
+    {Rule *} getRulesSlowpath(Atom a) {
+        value staticRules = rules.select((x) => x.produces.subtypeOf(a));
+        {Rule *} ret;
+
+        value t = a.type;
+        if (is UnionType t) {
+            value caseSets = {
+                for (tsub in t.caseTypes) getRulesFor(Atom(tsub))
+            };
+
+            return staticRules.chain(caseSets.fold<{Rule *}>({})((x, y) => x.chain(y)));
+        } else if (is Type<Tuple<Anything,Anything,Anything[]>> t) {
+            return staticRules.withTrailing(Rule.TupleRule(t, this));
+        } else if (is Type<Object> t){
+            return
+                getOmniRulesFor(t).chain(getGenericRulesFor(t)).chain(staticRules);
+        } else {
+            return staticRules;
+        }
     }
 
     "Reify omni rules for a given type"

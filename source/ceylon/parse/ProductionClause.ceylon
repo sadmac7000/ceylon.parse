@@ -86,15 +86,7 @@ shared class ProductionClause {
     "Populate the cached prediction set"
     shared void predict() {
         if (exists p = predictedCache) { return; }
-
-        value p = ArrayList{*{
-            for (other in g.rules)
-                if (other.produces.subtypeOf(atom))
-                    other
-         }.chain(g.getDynamicRulesFor(atom)) };
-
-        predictedCache = p;
-        for (r in p) { r.predictAll(); }
+        predictedCache = g.getRulesFor(atom);
     }
 }
 
