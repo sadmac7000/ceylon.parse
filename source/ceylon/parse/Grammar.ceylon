@@ -145,7 +145,7 @@ shared abstract class Grammar<in Char>()
     "Starting rules"
     shared {Rule *} startRules<Root>()
         given Root satisfies Object {
-        return ProductionClause(false, true, this, Atom(`Root`)).predicted;
+        return ProductionClause(this, `Root`, false, false).predicted;
     }
 
     "Get dynamic and omni rules"

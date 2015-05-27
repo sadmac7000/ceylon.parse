@@ -19,15 +19,7 @@ shared class ProductionClause satisfies Iterable<Atom> {
     shared AnyGrammar g;
     shared <Atom|ProductionClause>[] values;
 
-    shared new(Boolean variadic, Boolean once,
-        AnyGrammar g, Atom|ProductionClause *values) {
-        this.variadic = variadic;
-        this.once = once;
-        this.g = g;
-        this.values = values;
-    }
-
-    shared new FromType(AnyGrammar g, Type t, Boolean variadic,
+    shared new (AnyGrammar g, Type t, Boolean variadic,
             Boolean once) {
         this.variadic = variadic;
         this.once = once;
@@ -35,7 +27,7 @@ shared class ProductionClause satisfies Iterable<Atom> {
         if (is UnionType t) {
             this.values = [for (tsub in t.caseTypes)
                 if (is UnionType tsub)
-                    then ProductionClause.FromType(g, tsub, false, false)
+                    then ProductionClause(g, tsub, false, false)
                     else Atom(tsub)
                 ];
         } else {
@@ -53,7 +45,7 @@ shared class ProductionClause satisfies Iterable<Atom> {
         if (is UnionType t) {
             this.values = [for (tsub in t.caseTypes)
                 if (is UnionType tsub)
-                    then ProductionClause.FromType(g, tsub, false, false)
+                    then ProductionClause(g, tsub, false, false)
                     else Atom(tsub)
                 ];
         } else {
@@ -135,7 +127,7 @@ ProductionClause[] clausesFromTupleType(Type<[Anything*]>&Generic clauses,
         assert(exists first = clauses.typeArguments[firstParam]);
         assert(is Type<[Anything*]>&Generic rest = clauses.typeArguments[restParam]);
 
-        value prodClause = ProductionClause.FromType(g, first, false, false);
+        value prodClause = ProductionClause(g, first, false, false);
 
         return [prodClause].append(clausesFromTupleType(rest, g));
     }
@@ -146,7 +138,7 @@ ProductionClause[] clausesFromTupleType(Type<[Anything*]>&Generic clauses,
     assert(exists param = `interface Sequential`.typeParameterDeclarations[0]);
     assert(exists unitType = clauses.typeArguments[param]);
 
-    return [ProductionClause.FromType(g, unitType, true, once)];
+    return [ProductionClause(g, unitType, true, once)];
 }
 
 [Type,Boolean,Boolean] typeInfoFromDec(Type t, FunctionOrValueDeclaration f) {
