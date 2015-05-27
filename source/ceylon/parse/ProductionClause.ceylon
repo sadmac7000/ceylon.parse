@@ -27,28 +27,38 @@ shared class ProductionClause satisfies Iterable<Atom> {
         this.values = values;
     }
 
-    shared new FromArgument(AnyGrammar g, Type t,
-            FunctionOrValueDeclaration f) {
-        Type sub;
-
-        if (f.variadic) {
-            assert(is ClassOrInterface t);
-            assert(exists k = t.typeArguments.items.first);
-            sub = k;
-
-            this.once = t.declaration == `interface Sequence`;
-            this.variadic = true;
-        } else {
-            sub = t;
-
-            this.once = false;
-            this.variadic = false;
-        }
-
+    shared new FromType(AnyGrammar g, Type t, Boolean variadic,
+            Boolean once) {
+        this.variadic = variadic;
+        this.once = once;
         this.g = g;
-        this.values = if (is UnionType sub)
-            then [for (s in sub.caseTypes) makeTypeAtom(s, false, false, g)]
-            else [Atom(sub)];
+        if (is UnionType t) {
+            this.values = [for (tsub in t.caseTypes)
+                if (is UnionType tsub)
+                    then ProductionClause.FromType(g, tsub, false, false)
+                    else Atom(tsub)
+                ];
+        } else {
+            this.values = [Atom(t)];
+        }
+    }
+
+    shared new FromArgument(AnyGrammar g, Type tIn,
+            FunctionOrValueDeclaration f) {
+        value [t, variadic, once] = typeInfoFromDec(tIn, f);
+
+        this.variadic = variadic;
+        this.once = once;
+        this.g = g;
+        if (is UnionType t) {
+            this.values = [for (tsub in t.caseTypes)
+                if (is UnionType tsub)
+                    then ProductionClause.FromType(g, tsub, false, false)
+                    else Atom(tsub)
+                ];
+        } else {
+            this.values = [Atom(t)];
+        }
     }
 
     value localAtoms = {for (x in values) if (is Atom x) x};
@@ -125,9 +135,7 @@ ProductionClause[] clausesFromTupleType(Type<[Anything*]>&Generic clauses,
         assert(exists first = clauses.typeArguments[firstParam]);
         assert(is Type<[Anything*]>&Generic rest = clauses.typeArguments[restParam]);
 
-        value rawAtom = makeTypeAtom(first, false, false, g);
-        value prodClause = if (is ProductionClause rawAtom) then rawAtom else
-            ProductionClause(false, false, g, rawAtom);
+        value prodClause = ProductionClause.FromType(g, first, false, false);
 
         return [prodClause].append(clausesFromTupleType(rest, g));
     }
@@ -137,17 +145,28 @@ ProductionClause[] clausesFromTupleType(Type<[Anything*]>&Generic clauses,
     value once = clauses is Type<[Anything+]>;
     assert(exists param = `interface Sequential`.typeParameterDeclarations[0]);
     assert(exists unitType = clauses.typeArguments[param]);
-    value typeAtom = makeTypeAtom(unitType, true, once, g);
-    return if (is ProductionClause typeAtom) then [typeAtom] else
-        [ProductionClause(true, once, g, typeAtom)];
+
+    return [ProductionClause.FromType(g, unitType, true, once)];
 }
 
-"Break a type down into type atoms or aggregate production clauses"
-ProductionClause|Atom makeTypeAtom(Type p, Boolean f, Boolean once, AnyGrammar g) {
-    if (is UnionType p) {
-        return ProductionClause(f, once, g, *{for (t in p.caseTypes)
-            makeTypeAtom(t, false, false, g)});
+[Type,Boolean,Boolean] typeInfoFromDec(Type t, FunctionOrValueDeclaration f) {
+    Type ret;
+    Boolean variadic;
+    Boolean once;
+
+    if (f.variadic) {
+        assert(is ClassOrInterface t);
+        assert(exists k = t.typeArguments.items.first);
+        ret = k;
+
+        once = t.declaration == `interface Sequence`;
+        variadic = true;
     } else {
-        return Atom(p);
+        ret = t;
+
+        once = false;
+        variadic = false;
     }
+
+    return [ret, variadic, once];
 }
