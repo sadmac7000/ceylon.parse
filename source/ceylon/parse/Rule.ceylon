@@ -25,7 +25,7 @@ shared class Rule {
         this.produces = produces;
         this.precedence = precedence;
         this.associativity = associativity;
-        this.hash = consumes.hash ^ 2 + produces.hash;
+        this.hash = consume.hash ^ 2 + produces.hash;
         this.g = g;
     }
 
@@ -38,8 +38,16 @@ shared class Rule {
 
         assert(is Type<Anything[]>&Generic tuple);
         this.consumes = clausesFromTupleType(tuple, g);
-        this.hash = consumes.hash ^ 2 + produces.hash;
+        this.hash = consume.hash ^ 2 + produces.hash;
         this.g = g;
+    }
+
+    shared actual Boolean equals(Object other) {
+        if (! is Rule other) { return false; }
+        assert(is Rule other);
+
+        if (other.consume != consume) { return false; }
+        return other.produces == produces;
     }
 
     shared Boolean precedenceConflict(Rule other) {
