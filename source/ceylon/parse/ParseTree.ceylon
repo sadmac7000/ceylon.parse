@@ -120,8 +120,8 @@ class StateQueue<Root>(AnyGrammar g)
 shared class ParseTree<out Root, in Char>(Grammar<Char> g, List<Char> data)
         given Char satisfies Object
         given Root satisfies Object {
-
     value tokenCache = HashMap<Integer, Set<Token>>();
+    value tokenAt = HashMap<[Integer, Object], Token?>();
 
     "Queue of states to process"
     value stateQueue = StateQueue<Root>(g);
@@ -162,8 +162,15 @@ shared class ParseTree<out Root, in Char>(Grammar<Char> g, List<Char> data)
         value tail = data.sublistFrom(state.pos);
 
         for (t in g.scannersFor(wants.atom)) {
-            if (exists sym = t(tail, state.lastToken),
-                exists s = state.feed(sym)) {
+            Token? sym;
+            if (tokenAt.defines([state.pos, t])) {
+                sym = tokenAt[[state.pos, t]];
+            } else {
+                sym = t(tail, state.lastToken);
+                tokenAt.put([state.pos, t], sym);
+            }
+
+            if (exists sym, exists s = state.feed(sym)) {
                 stateQueue.offer(s);
             }
         }
