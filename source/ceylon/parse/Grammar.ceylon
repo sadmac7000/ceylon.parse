@@ -46,6 +46,9 @@ shared abstract class Grammar<in Char>()
     "Rules cache"
     value rulesCache = HashMap<Atom,{Rule *}>();
 
+    "Scanners cache"
+    value scannersCache = HashMap<Atom, {Token?(List<Char>, Object?) *}>();
+
     "Generic rule initial values structure"
     class GenericInfo(shared FunctionDeclaration declaration,
                       shared ClassOrInterfaceDeclaration target,
@@ -147,6 +150,18 @@ shared abstract class Grammar<in Char>()
     shared {Rule *} startRules<Root>()
         given Root satisfies Object {
         return ProductionClause(this, `Root`).predicted;
+    }
+
+    "Scanners for a given type"
+    shared {Token?(List<Char>, Object?) *} scannersFor(Atom a) {
+        if (exists t = scannersCache[a]) {
+            return t;
+        }
+
+        value r = a.subtypes.map((x) => tokenizers[x]).narrow<Object>();
+        value rSet = HashSet{*r};
+        scannersCache.put(a, rSet);
+        return rSet;
     }
 
     "Get rules for a particular atom"

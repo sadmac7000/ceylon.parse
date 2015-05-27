@@ -60,14 +60,6 @@ shared class ProductionClause {
         return true;
     }
 
-    "Stream of applicable scanners"
-    shared {Token?(Nothing, Object?) *} scanners = [*
-                    caseTypes.map((a)
-                        => a.subtypes.map((x) => g.tokenizers[x])
-                            .narrow<Object>()
-                    )
-                  .fold<{Token?(Nothing, Object?) *}>({})((x, y) => x.chain(y))];
-
     "Generate a prediction set for this clause"
     shared {Rule *} predicted => g.getRulesFor(atom);
 

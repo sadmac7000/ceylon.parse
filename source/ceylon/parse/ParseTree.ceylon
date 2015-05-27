@@ -161,8 +161,7 @@ shared class ParseTree<out Root, in Char>(Grammar<Char> g, List<Char> data)
 
         value tail = data[state.pos...];
 
-        for (t in wants.scanners) {
-            assert(is Token?(List<Char>,Object?) t);
+        for (t in g.scannersFor(wants.atom)) {
             if (exists sym = t(tail, state.lastToken),
                 exists s = state.feed(sym)) {
                 stateQueue.offer(s);

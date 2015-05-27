@@ -28,7 +28,7 @@ shared class Rule {
         this.associativity = associativity;
         this.hash = consume.hash;
         this.g = g;
-        this.identifier = consume;
+        this.identifier = consume.string;
     }
 
     shared new TupleRule(Type<Tuple<Anything,Anything,Anything[]>> tuple,
