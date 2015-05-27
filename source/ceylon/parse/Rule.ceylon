@@ -42,7 +42,7 @@ shared class Rule {
         this.consumes = clausesFromTupleType(tuple, g);
         this.hash = tuple.hash;
         this.g = g;
-        this.identifier = tuple;
+        this.identifier = Atom(tuple);
     }
 
     shared actual Boolean equals(Object other) {
