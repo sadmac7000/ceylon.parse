@@ -19,33 +19,33 @@ shared class ProductionClause satisfies Iterable<Atom> {
     shared AnyGrammar g;
     shared <Atom|ProductionClause>[] values;
 
-    shared new (AnyGrammar g, Type t, Boolean variadic,
-            Boolean once) {
-        this.variadic = variadic;
-        this.once = once;
+    shared new (AnyGrammar g, Type tIn,
+            Boolean|FunctionOrValueDeclaration? f = null) {
         this.g = g;
-        if (is UnionType t) {
-            this.values = [for (tsub in t.caseTypes)
-                if (is UnionType tsub)
-                    then ProductionClause(g, tsub, false, false)
-                    else Atom(tsub)
-                ];
+
+        Type t;
+        if (is Boolean f) {
+            this.variadic = true;
+            this.once = f;
+            t = tIn;
+        } else if (exists f, f.variadic) {
+            assert(is ClassOrInterface tIn);
+            assert(exists k = tIn.typeArguments.items.first);
+            t = k;
+
+            this.once = tIn.declaration == `interface Sequence`;
+            this.variadic = true;
         } else {
-            this.values = [Atom(t)];
+            this.variadic = false;
+            this.once = false;
+            t = tIn;
         }
-    }
 
-    shared new FromArgument(AnyGrammar g, Type tIn,
-            FunctionOrValueDeclaration f) {
-        value [t, variadic, once] = typeInfoFromDec(tIn, f);
 
-        this.variadic = variadic;
-        this.once = once;
-        this.g = g;
         if (is UnionType t) {
             this.values = [for (tsub in t.caseTypes)
                 if (is UnionType tsub)
-                    then ProductionClause(g, tsub, false, false)
+                    then ProductionClause(g, tsub)
                     else Atom(tsub)
                 ];
         } else {
@@ -127,7 +127,7 @@ ProductionClause[] clausesFromTupleType(Type<[Anything*]>&Generic clauses,
         assert(exists first = clauses.typeArguments[firstParam]);
         assert(is Type<[Anything*]>&Generic rest = clauses.typeArguments[restParam]);
 
-        value prodClause = ProductionClause(g, first, false, false);
+        value prodClause = ProductionClause(g, first);
 
         return [prodClause].append(clausesFromTupleType(rest, g));
     }
@@ -138,27 +138,5 @@ ProductionClause[] clausesFromTupleType(Type<[Anything*]>&Generic clauses,
     assert(exists param = `interface Sequential`.typeParameterDeclarations[0]);
     assert(exists unitType = clauses.typeArguments[param]);
 
-    return [ProductionClause(g, unitType, true, once)];
-}
-
-[Type,Boolean,Boolean] typeInfoFromDec(Type t, FunctionOrValueDeclaration f) {
-    Type ret;
-    Boolean variadic;
-    Boolean once;
-
-    if (f.variadic) {
-        assert(is ClassOrInterface t);
-        assert(exists k = t.typeArguments.items.first);
-        ret = k;
-
-        once = t.declaration == `interface Sequence`;
-        variadic = true;
-    } else {
-        ret = t;
-
-        once = false;
-        variadic = false;
-    }
-
-    return [ret, variadic, once];
+    return [ProductionClause(g, unitType, once)];
 }
