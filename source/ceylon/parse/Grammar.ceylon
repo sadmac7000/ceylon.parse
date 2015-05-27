@@ -243,7 +243,7 @@ shared abstract class Grammar<in Char>()
 
     "Returns a token to represent an unparseable region. The input data is
      exactly the contents of that region."
-    shared default Object badTokenConstructor(List<Char> data, Object? previous) {
+    shared default Token badTokenConstructor(List<Char> data, Object? previous) {
         throw BadTokenConstructorException();
     }
 

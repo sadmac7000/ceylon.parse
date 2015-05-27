@@ -211,7 +211,7 @@ shared class ParseTree<out Root, in Char>(Grammar<Char> g, List<Char> data)
             while (i <= data.size && getTokens(i, state.lastToken).size == 0) { i++; }
 
             value tokenData = data[state.pos..(i - 1)];
-            value tok = constructBadToken(tokenData, state.lastToken);
+            value tok = g.badTokenConstructor(tokenData, state.lastToken);
 
             for (s in state.failPropagate({tok}, true, g.errorConstructors)) {
                 stateQueue.offer(s);
@@ -235,7 +235,7 @@ shared class ParseTree<out Root, in Char>(Grammar<Char> g, List<Char> data)
                     }
 
                     value tokenData = data[state.pos..(i - 1)];
-                    value bad = constructBadToken(tokenData, state.lastToken);
+                    value bad = g.badTokenConstructor(tokenData, state.lastToken);
 
                     resultSet.add(bad);
                     posSet.add(i);
@@ -316,9 +316,5 @@ shared class ParseTree<out Root, in Char>(Grammar<Char> g, List<Char> data)
 
         assert(exists v=ret);
         return v;
-    }
-
-    Token constructBadToken(List<Char> data, Object? previous) {
-        return Token(g.badTokenConstructor(data, previous), data.size);
     }
 }
