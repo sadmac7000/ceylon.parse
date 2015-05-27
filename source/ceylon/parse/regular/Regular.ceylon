@@ -138,7 +138,7 @@ class Concat<Char>(Regular<Char> a, Regular<Char> b) extends Regular<Char>()
         while (exists a = aRes) {
             value nextLength = if (exists maxLength) then maxLength - a.length
                 else null;
-            value next = b.match(s[a.length...], nextLength);
+            value next = b.match(s.sublistFrom(a.length), nextLength);
 
             if (exists n = next) { return CRes(s, maxLength, a of Res<Char>, n
                     of Res<Char>); }
@@ -184,7 +184,7 @@ class Repeat<Char>(Regular<Char> r, Integer min, Integer? max)
             if (exists m = outer.max, count == m) { return this; }
             if (exists c = cur?.length, c == 0) { return this; }
 
-            value target = s[(cur?.length else 0)...];
+            value target = s.sublistFrom(cur?.length else 0);
             value next = outer.r.match(target, maxLength);
 
             if (exists next) {

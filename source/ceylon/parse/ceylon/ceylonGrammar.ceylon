@@ -88,7 +88,7 @@ Token<TypeArg>? takeTokenWhile<TypeArg>(Callable<TypeArg, [Integer, Integer,
     variable value length = 0;
 
     if (is Boolean(List<Character>) test) {
-        while (test(input[length...])) { length++; }
+        while (test(input.sublistFrom(length))) { length++; }
     } else {
         while (exists c = input[length], test(c)) { length++; }
     }
@@ -176,7 +176,7 @@ List<CeylonToken> tokenStream(CeylonToken|{CeylonToken|Node*}|Node?* args) {
     variable value i = 0;
 
     while (exists c = text[i]) {
-        if (text[i...].startsWith("\r\n")) {
+        if (text.includesAt(i, "\r\n")) {
             i++; // We'll detect the linebreak later, just note that it's long
         }
 
@@ -545,7 +545,7 @@ shared object ceylonGrammar extends Grammar<Character>() {
         variable value i = 0;
         variable value skip = false;
 
-        while (exists c = input[i], (c != '"' && ! input[i...].startsWith("\``")) || skip) {
+        while (exists c = input[i], (c != '"' && ! input.includesAt(i, "\``")) || skip) {
             skip = c == '\\' && !skip;
             i++;
         }

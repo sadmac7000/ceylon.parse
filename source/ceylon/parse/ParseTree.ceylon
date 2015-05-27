@@ -146,7 +146,7 @@ shared class ParseTree<out Root, in Char>(Grammar<Char> g, List<Char> data)
             return cached;
         }
 
-        value tail = data[loc...];
+        value tail = data.sublistFrom(loc);
         value ret = HashSet{elements={ for (t in g.tokenizers.items)
             if (exists r = t(tail, last)) r};};
 
@@ -159,7 +159,7 @@ shared class ParseTree<out Root, in Char>(Grammar<Char> g, List<Char> data)
         /* FIXME: This method is the performance bottleneck */
         assert(exists wants = state.rule.consumes[state.matchPos]);
 
-        value tail = data[state.pos...];
+        value tail = data.sublistFrom(state.pos);
 
         for (t in g.scannersFor(wants.atom)) {
             if (exists sym = t(tail, state.lastToken),
