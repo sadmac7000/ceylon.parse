@@ -4,7 +4,7 @@ import ceylon.test { test, assertEquals }
 class ASubtype(Integer pos = 0, Sym* children) extends A(pos, *children) {}
 
 "A parse tree that accepts a string of a's and uses inheriting symbols"
-object inheritingGrammar extends ABGrammar() {
+object inheritingGrammar extends Grammar() {
     rule
     shared S rule1(A* a) {
         assert(exists first = a.first);
@@ -19,7 +19,7 @@ object inheritingGrammar extends ABGrammar() {
 
 test
 shared void inheritance() {
-    value root = inheritingGrammar.unambiguousParse<S>("aaaaa");
+    value root = inheritingGrammar.unambiguousParse<S>(ABStartToken("aaaaa"));
     value expect = S (0,
                 ASubtype(0, ATerm(0)),
                 ASubtype(1, ATerm(1)),

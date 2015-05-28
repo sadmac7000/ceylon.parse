@@ -83,15 +83,28 @@ class ParenBox(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
             shared actual Integer lsd = 1;
         });
         results.add(q);
+
         assert (is Token<K> r = object satisfies ABGrammarToken<ATerm> {
             shared actual String str = s;
-            shared actual ATerm node => ATermError(Crap(s[pos..pos + 1]), pos);
+            shared actual ATerm node => ATermError(Crap(s[pos:1]), pos);
             shared actual Integer position = pos + 1;
             shared actual Integer lsd = 1;
         });
 
         if (s.longerThan(pos)) {
             results.add(r);
+        }
+
+        if (exists chr = s[pos + 1],
+            chr == 'a') {
+
+            assert (is Token<K> t = object satisfies ABGrammarToken<ATerm> {
+                shared actual String str = s;
+                shared actual ATerm node => ATerm(pos + 1, Crap(s[pos:1], pos));
+                shared actual Integer position = pos + 2;
+                shared actual Integer lsd = 1;
+            });
+            results.add(t);
         }
     }
 
