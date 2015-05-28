@@ -108,17 +108,6 @@ class ParenBox(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
         }
     }
 
-    /*if (`BTerm`.subtypeOf(k),
-        exists chr = s[pos],
-        chr == 'b') {
-        assert (is Token<K> q = object satisfies ABGrammarToken<BTerm> {
-            shared actual String str = s;
-            shared actual BTerm node => BTerm(pos);
-            shared actual Integer position => pos + 1;
-        });
-        results.add(q);
-    }*/
-
     return results;
 }
 

@@ -1,100 +1,103 @@
 import ceylon.parse { ... }
 import ceylon.test { test, assertEquals }
+import ceylon.collection { ArrayList }
+import ceylon.language.meta.model { Type }
+
+{Token<K&Object> *} tokenizeBroad<K>(String s, Integer pos, Type<K> k) {
+    value results = ArrayList<Token<K&Object>>();
+
+    if (`EOS`.subtypeOf(k),
+        s.size <= pos) {
+        assert (is Token<K> q = object satisfies BroadGenericGrammarToken<EOS>&EOSToken {
+            shared actual String str = s;
+            shared actual Integer position => pos;
+        });
+        results.add(q);
+    }
+
+    if (`ATerm`.subtypeOf(k),
+        exists chr = s[pos],
+        chr == 'a') {
+        assert (is Token<K> q = object satisfies BroadGenericGrammarToken<ATerm> {
+            shared actual String str = s;
+            shared actual ATerm node => ATerm(pos);
+            shared actual Integer position => pos + 1;
+        });
+        results.add(q);
+    }
+
+    if (`BTerm`.subtypeOf(k),
+        exists chr = s[pos],
+        chr == 'b') {
+        assert (is Token<K> q = object satisfies BroadGenericGrammarToken<BTerm> {
+            shared actual String str = s;
+            shared actual BTerm node => BTerm(pos);
+            shared actual Integer position => pos + 1;
+        });
+        results.add(q);
+    }
+
+    if (`Spc`.subtypeOf(k),
+        exists chr = s[pos],
+        chr == ' ') {
+        assert (is Token<K> q = object satisfies BroadGenericGrammarToken<Spc> {
+            shared actual String str = s;
+            shared actual Spc node => Spc(pos);
+            shared actual Integer position => pos + 1;
+        });
+        results.add(q);
+    }
+
+    if (`LParen`.subtypeOf(k),
+        exists chr = s[pos],
+        chr == '(') {
+        assert (is Token<K> q = object satisfies BroadGenericGrammarToken<LParen> {
+            shared actual String str = s;
+            shared actual LParen node => LParen(pos);
+            shared actual Integer position => pos + 1;
+        });
+        results.add(q);
+    }
+
+    if (`RParen`.subtypeOf(k),
+        exists chr = s[pos],
+        chr == ')') {
+        assert (is Token<K> q = object satisfies BroadGenericGrammarToken<RParen> {
+            shared actual String str = s;
+            shared actual RParen node => RParen(pos);
+            shared actual Integer position => pos + 1;
+        });
+        results.add(q);
+    }
+
+    if (`Mul`.subtypeOf(k),
+        exists chr = s[pos],
+        chr == '*') {
+        assert (is Token<K> q = object satisfies BroadGenericGrammarToken<Mul> {
+            shared actual String str = s;
+            shared actual Mul node => Mul(pos);
+            shared actual Integer position => pos + 1;
+        });
+        results.add(q);
+    }
+
+    return results;
+}
+
+interface BroadGenericGrammarToken<T>
+        satisfies Token<T>
+        given T satisfies Object {
+    shared formal String str;
+    shared actual {Token<K&Object> *} next<K>(Type<K> k)
+        => tokenizeBroad(str, position, k);
+    shared actual {Token<K&Object> *} forceNext<K>(Type<K> k) => {};
+}
+
+class BroadGenericStartToken(shared actual String str)
+        satisfies SOSToken&BroadGenericGrammarToken<SOS> {}
 
 "Grammar to test generics that apply broadly"
-object broadGenericGrammar extends ABGrammar() {
-    tokenizer
-    shared Token<Spc>? spc(List<Character> input, Object? last) {
-        Integer position;
-        Object? prevError;
-
-        if (is Sym last) {
-            position = last.position + 1;
-            prevError = null;
-        } else if (is Crap last) {
-            position = last.position + last.data.size;
-            prevError = last;
-        } else {
-            position = 0;
-            prevError = null;
-        }
-
-        if (input.startsWith(" ")) {
-            return Token(Spc(position, prevError), 1);
-        } else {
-            return null;
-        }
-    }
-
-    tokenizer
-    shared Token<LParen>? lparen(List<Character> input, Object? last) {
-        Integer position;
-        Object? prevError;
-
-        if (is Sym last) {
-            position = last.position + 1;
-            prevError = null;
-        } else if (is Crap last) {
-            position = last.position + last.data.size;
-            prevError = last;
-        } else {
-            position = 0;
-            prevError = null;
-        }
-
-        if (input.startsWith("(")) {
-            return Token(LParen(position, prevError), 1);
-        } else {
-            return null;
-        }
-    }
-
-    tokenizer
-    shared Token<RParen>? rparen(List<Character> input, Object? last) {
-        Integer position;
-        Object? prevError;
-
-        if (is Sym last) {
-            position = last.position + 1;
-            prevError = null;
-        } else if (is Crap last) {
-            position = last.position + last.data.size;
-            prevError = last;
-        } else {
-            position = 0;
-            prevError = null;
-        }
-
-        if (input.startsWith(")")) {
-            return Token(RParen(position, prevError), 1);
-        } else {
-            return null;
-        }
-    }
-
-    tokenizer
-    shared Token<Mul>? mull(List<Character> input, Object? last) {
-        Integer position;
-        Object? prevError;
-
-        if (is Sym last) {
-            position = last.position + 1;
-            prevError = null;
-        } else if (is Crap last) {
-            position = last.position + last.data.size;
-            prevError = last;
-        } else {
-            position = 0;
-            prevError = null;
-        }
-
-        if (input.startsWith("*")) {
-            return Token(Mul(position, prevError), 1);
-        } else {
-            return null;
-        }
-    }
-
+object broadGenericGrammar extends Grammar() {
     omniRule
     shared K whitespace<K>([Spc+] space, K k) given K of Mul|RParen|LParen|ATerm => k;
 
@@ -117,7 +120,7 @@ object broadGenericGrammar extends ABGrammar() {
 test
 void broadGeneric() {
     value text = "a a*a ( a ) a a*a ( a ) a a*a ( a )";
-    value root = broadGenericGrammar.unambiguousParse<[S*]>(text);
+    value root = broadGenericGrammar.unambiguousParse<[S*]>(BroadGenericStartToken(text));
     value expect = [S(0,
             ATerm(0),
             MMulA(2,
