@@ -1,4 +1,6 @@
 import ceylon.parse { ... }
+import ceylon.collection { ArrayList }
+import ceylon.language.meta.model { Type }
 
 class S(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
 class A(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
@@ -24,66 +26,98 @@ class MulA(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
 class MMulA(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
 class ParenBox(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
 
-"A grammar on the alphabet of 'a' and 'b'"
-class ABGrammar() extends Grammar<Character>() {
-    tokenizer
-    shared Token<ATerm>? aTerm(List<Character> input, Object? last) {
-        Integer position;
-        Crap? prevError;
+{Token<K&Object> *} tokenizeAB<K>(String s, Integer pos, Type<K> k) {
+    value results = ArrayList<Token<K&Object>>();
 
-        if (is Sym last) {
-            position = last.position + 1;
-            prevError = null;
-        } else if (is Crap last) {
-            position = last.position + last.data.size;
-            prevError = last;
-        } else {
-            position = 0;
-            prevError = null;
-        }
-        if (input.startsWith("a")) { return Token(ATerm(position, prevError),1); }
-        return null;
+    if (`EOS`.subtypeOf(k),
+        s.size <= pos) {
+        assert (is Token<K> q = object satisfies ABGrammarToken<EOS>&EOSToken {
+            shared actual String str = s;
+            shared actual Integer position => pos;
+        });
+        results.add(q);
     }
 
-    tokenizer
-    shared Token<BTerm>? bTerm(List<Character> input, Object? last) {
-        Integer position;
-        Crap? prevError;
-
-        if (is Sym last) {
-            position = last.position + 1;
-            prevError = null;
-        } else if (is Crap last) {
-            position = last.position + last.data.size;
-            prevError = last;
-        } else {
-            position = 0;
-            prevError = null;
-        }
-
-        if (input.startsWith("b")) { return Token(BTerm(position, prevError),1); }
-        return null;
+    if (`ATerm`.subtypeOf(k),
+        exists chr = s[pos],
+        chr == 'a') {
+        assert (is Token<K> q = object satisfies ABGrammarToken<ATerm> {
+            shared actual String str = s;
+            shared actual ATerm node => ATerm(pos);
+            shared actual Integer position => pos + 1;
+        });
+        results.add(q);
     }
 
-    errorConstructor
-    shared ATerm error(Object? replaces, Object? last) {
-        if (is Sym last) {
-            return ATermError(replaces, last.position + 1);
-        } else if (is Crap last) {
-            return ATermError(replaces, last.position + last.data.size);
-        } else {
-            return ATermError(replaces);
-        }
+    if (`BTerm`.subtypeOf(k),
+        exists chr = s[pos],
+        chr == 'b') {
+        assert (is Token<K> q = object satisfies ABGrammarToken<BTerm> {
+            shared actual String str = s;
+            shared actual BTerm node => BTerm(pos);
+            shared actual Integer position => pos + 1;
+        });
+        results.add(q);
     }
 
-    shared actual Crap badTokenConstructor(List<Character> data, Object? last) {
-        assert(is String data);
-        if (is Sym last) {
-            return Crap(data, last.position + 1);
-        } else if (is Crap last) {
-            return Crap(data, last.position + last.data.size);
-        } else {
-            return Crap(data);
-        }
-    }
+    return results;
 }
+
+{Token<K&Object> *} forceTokenizeAB<K>(String s, Integer pos, Type<K> k) {
+    value results = ArrayList<Token<K&Object>>();
+    if (`EOS`.subtypeOf(k)) {
+        assert (is Token<K> q = object satisfies ABGrammarToken<EOS>&EOSToken {
+            shared actual String str = s;
+            shared actual Integer position = s.size;
+            shared actual Integer lsd = s.size - pos;
+        });
+        results.add(q);
+    }
+
+    if (`ATerm`.subtypeOf(k)) {
+
+        assert (is Token<K> q = object satisfies ABGrammarToken<ATerm> {
+            shared actual String str = s;
+            shared actual ATerm node => ATermError(null, pos);
+            shared actual Integer position = pos;
+            shared actual Integer lsd = 1;
+        });
+        results.add(q);
+        assert (is Token<K> r = object satisfies ABGrammarToken<ATerm> {
+            shared actual String str = s;
+            shared actual ATerm node => ATermError(Crap(s[pos..pos + 1]), pos);
+            shared actual Integer position = pos + 1;
+            shared actual Integer lsd = 1;
+        });
+
+        if (s.longerThan(pos)) {
+            results.add(r);
+        }
+    }
+
+    /*if (`BTerm`.subtypeOf(k),
+        exists chr = s[pos],
+        chr == 'b') {
+        assert (is Token<K> q = object satisfies ABGrammarToken<BTerm> {
+            shared actual String str = s;
+            shared actual BTerm node => BTerm(pos);
+            shared actual Integer position => pos + 1;
+        });
+        results.add(q);
+    }*/
+
+    return results;
+}
+
+interface ABGrammarToken<T>
+        satisfies Token<T>
+        given T satisfies Object {
+    shared formal String str;
+    shared actual {Token<K&Object> *} next<K>(Type<K> k)
+        => tokenizeAB(str, position, k);
+    shared actual {Token<K&Object> *} forceNext<K>(Type<K> k) =>
+        forceTokenizeAB(str, position, k);
+}
+
+class ABStartToken(shared actual String str)
+        satisfies SOSToken&ABGrammarToken<SOS> {}
