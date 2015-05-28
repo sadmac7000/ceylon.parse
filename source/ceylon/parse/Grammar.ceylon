@@ -169,7 +169,7 @@ shared abstract class Grammar() {
     "Parse a stream"
     shared Set<Root> parse<Root>(SOSToken start)
         given Root satisfies Object
-        => ParseTree<Root>(this, start).ast;
+        => StateQueue<Root>(this, start).ast;
 
     "Parse a stream. Throw an exception if the parse is ambiguous"
     shared Root unambiguousParse<Root>(SOSToken start)

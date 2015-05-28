@@ -4,7 +4,7 @@ import ceylon.language.meta.declaration { ClassOrInterfaceDeclaration }
 shared final annotation class GrammarErrorConstructor()
         satisfies OptionalAnnotation<GrammarErrorConstructor, Annotated> {}
 
-"We annotate some methods of a `ParseTree` object to indicate that those
+"We annotate some methods of a `Grammar` object to indicate that those
  methods can construct an error version of symbols so we can build error
  reporting into the parse tree."
 shared annotation GrammarErrorConstructor errorConstructor() =>
@@ -37,7 +37,7 @@ shared final annotation class OmniRule(shared Integer precedence,
         shared Associativity associativity)
         satisfies OptionalAnnotation<OmniRule, Annotated> {}
 
-"We annotate methods of a `ParseTree` object to indicate that those methods
+"We annotate methods of a `Grammar` object to indicate that those methods
  correspond to production rules"
 shared annotation GrammarRule rule(Integer precedence = 0, Associativity associativity
         = nonassoc) => GrammarRule(precedence, associativity);

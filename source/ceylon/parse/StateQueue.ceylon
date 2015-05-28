@@ -14,9 +14,9 @@ class StateQueue<Root>(Grammar g, SOSToken start)
     value states = HashMap<Integer,HashSet<EPState>>();
     value completeStates = HashMap<Integer,HashSet<EPState>>();
 
-    shared Integer size => queue.size;
+    Integer size => queue.size;
 
-    shared <Integer->HashSet<EPState>>? latest {
+    <Integer->HashSet<EPState>>? latest {
         Integer? key = max(states.keys);
 
         if (! exists key) { return null; }
@@ -28,7 +28,7 @@ class StateQueue<Root>(Grammar g, SOSToken start)
     variable PriorityQueue<EPState>? recoveryQueue = null;
 
     "Initialize recovery queue"
-    shared void initRecovery(Rule[] rules) {
+    void initRecovery(Rule[] rules) {
         if (recoveryQueue exists) { return; }
         recoveryQueue = PriorityQueue<EPState>((x,y) => x.compareRecovery(y));
 
@@ -42,7 +42,7 @@ class StateQueue<Root>(Grammar g, SOSToken start)
     }
 
     "Offer an item to this queue"
-    shared void offer(EPState state) {
+    void offer(EPState state) {
         if (! states.defines(state.pos)) {
             states.put(state.pos, HashSet<EPState>());
         }
@@ -82,7 +82,7 @@ class StateQueue<Root>(Grammar g, SOSToken start)
     }
 
     "Accept an item from this queue"
-    shared EPState? accept() {
+    EPState? accept() {
         variable value state = queue.accept();
 
         while (exists st = state, st.complete) {
@@ -100,81 +100,64 @@ class StateQueue<Root>(Grammar g, SOSToken start)
     }
 
     "Get states for a given position"
-    shared HashSet<EPState> at(Integer pos) {
+    HashSet<EPState> at(Integer pos) {
         if (! states.defines(pos)) { return HashSet<EPState>(); }
         assert(exists ret = states[pos]);
         return ret;
     }
 
     "Accept a recovery state"
-    shared EPState? acceptRecoveryState() {
+    EPState? acceptRecoveryState() {
         assert(exists r=recoveryQueue);
         return r.accept();
     }
-}
 
-"A `ParseTree` is defined by a series of BNF-style production rules. The rules
- are specifed by defining methods with the `rule` annotation.  The parser will
- create an appropriate production rule and call the annotated method in order
- to reduce the value."
-shared class ParseTree<out Root>(Grammar g, SOSToken data)
-        given Root satisfies Object {
-    "Queue of states to process"
-    value stateQueue = StateQueue<Root>(g, data);
+    "Pump the queue until we are out of work to do"
+    void pump() {
+        while(exists next = accept()) {
+            if (exists s = next.feed(null)) {
+                offer(s);
+            }
 
-    "Process queued states"
-    void pumpStateQueue() {
-        while(exists next = stateQueue.accept()) {
-            predictState(next);
-        }
-    }
+            if (exists s = next.breakVariadic()) {
+                offer(s);
+            }
 
-    "Run prediction for a state"
-    void predictState(EPState state) {
-        if (exists s = state.feed(null)) {
-            stateQueue.offer(s);
-        }
+            for (s in next.predicted) {
+                offer(s);
+            }
 
-        if (exists s = state.breakVariadic()) {
-            stateQueue.offer(s);
-        }
-
-        for (s in state.predicted) {
-            stateQueue.offer(s);
-        }
-
-        for (s in state.scan) {
-            stateQueue.offer(s);
+            for (s in next.scan) {
+                offer(s);
+            }
         }
     }
 
     "Recover an error"
-    void recoverError() {
-        stateQueue.initRecovery(g.rules);
-        value state = stateQueue.acceptRecoveryState();
+    Boolean recoverError() {
+        initRecovery(g.rules);
+        value state = acceptRecoveryState();
+
         if (! exists state) {
-            /* TODO: Getting here means the grammar is malformed such that none
-             * of the rules actually produce the AST root. It's a complex error
-             * to handle better, and it won't come up very often, but we should
-             * probably try.
-             */
+            return false;
         }
 
         assert(exists state);
 
         for (s in state.forceScan) {
-            stateQueue.offer(s);
+            offer(s);
         }
+
+        return true;
     }
 
-    "Confirm that we have successfully parsed."
+    "Validate"
     Set<Root>? validate() {
-        if (! stateQueue.latest exists) {
-            recoverError();
-            return null;
+        if (! latest exists) {
+            return if (recoverError()) then null else HashSet<Root>();
         }
 
-        assert(exists endsPair = stateQueue.latest);
+        assert(exists endsPair = latest);
         value resultNodes = ArrayList<Root>();
 
         variable Integer? minLsd = null;
@@ -198,9 +181,8 @@ shared class ParseTree<out Root>(Grammar g, SOSToken data)
             resultNodes.add(t);
         }
 
-        if (resultNodes.size == 0) {
-            recoverError();
-            return null;
+        if (resultNodes.empty) {
+            return if (recoverError()) then null else HashSet<Root>();
         }
 
         assert(exists ret = resultNodes[0]);
@@ -212,10 +194,9 @@ shared class ParseTree<out Root>(Grammar g, SOSToken data)
         variable Set<Root>? ret = null;
 
         while (! ret exists) {
-            pumpStateQueue();
+            pump();
             ret = validate();
         }
-
 
         assert(exists v=ret);
         return v;
