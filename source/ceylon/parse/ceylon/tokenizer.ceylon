@@ -1,4 +1,4 @@
-import ceylon.parse { Token, SOS, EOS, SOSToken }
+import ceylon.parse { Token, SOS, EOS, SOSToken, Atom }
 import ceylon.language.meta.model { Class, Type }
 import ceylon.collection { ArrayList }
 import ceylon.parse.regular { ... }
@@ -16,138 +16,138 @@ String[] reservedWords = ["assembly", "module", "package", "import", "alias",
     "switch", "case", "for", "while", "try", "catch", "finally", "then", "let",
     "this", "outer", "super", "is", "exists", "nonempty"];
 
-[[Type, String] +] keywords = [
-    [`Extends`, "extends"],
-    [`SuperTok`, "super"],
-    [`Satisfies`, "satisfies"],
-    [`Of`, "of"],
-    [`In`, "in"],
-    [`Out`, "out"],
-    [`Given`, "given"],
-    [`ImportTok`, "import"],
-    [`Dynamic`, "dynamic"],
-    [`Void`, "void"],
-    [`Interface`, "interface"],
-    [`ClassTok`, "class"],
-    [`ObjectTok`, "object"],
-    [`Alias`, "alias"],
-    [`Value`, "value"],
-    [`New`, "new"],
-    [`ReturnTok`, "return"],
-    [`ThrowTok`, "throw"],
-    [`BreakTok`, "break"],
-    [`ContinueTok`, "continue"],
-    [`ThisTok`, "this"],
-    [`Is`, "is"],
-    [`Exists`, "exists"],
-    [`Nonempty`, "nonempty"],
-    [`IfTok`, "if"],
-    [`ElseTok`, "else"],
-    [`SwitchTok`, "switch"],
-    [`CaseTok`, "case"],
-    [`ForTok`, "for"],
-    [`WhileTok`, "while"],
-    [`TryTok`, "try"],
-    [`CatchTok`, "catch"],
-    [`FinallyTok`, "finally"],
-    [`AssertTok`, "assert"],
-    [`OuterTok`, "outer"],
-    [`PackageTok`, "package"],
-    [`FunctionTok`, "function"],
-    [`ThenTok`, "then"],
-    [`LetTok`, "let"],
-    [`ModuleTok`, "module"]
+[[Atom, String] +] keywords = [
+    [Atom(`Extends`), "extends"],
+    [Atom(`SuperTok`), "super"],
+    [Atom(`Satisfies`), "satisfies"],
+    [Atom(`Of`), "of"],
+    [Atom(`In`), "in"],
+    [Atom(`Out`), "out"],
+    [Atom(`Given`), "given"],
+    [Atom(`ImportTok`), "import"],
+    [Atom(`Dynamic`), "dynamic"],
+    [Atom(`Void`), "void"],
+    [Atom(`Interface`), "interface"],
+    [Atom(`ClassTok`), "class"],
+    [Atom(`ObjectTok`), "object"],
+    [Atom(`Alias`), "alias"],
+    [Atom(`Value`), "value"],
+    [Atom(`New`), "new"],
+    [Atom(`ReturnTok`), "return"],
+    [Atom(`ThrowTok`), "throw"],
+    [Atom(`BreakTok`), "break"],
+    [Atom(`ContinueTok`), "continue"],
+    [Atom(`ThisTok`), "this"],
+    [Atom(`Is`), "is"],
+    [Atom(`Exists`), "exists"],
+    [Atom(`Nonempty`), "nonempty"],
+    [Atom(`IfTok`), "if"],
+    [Atom(`ElseTok`), "else"],
+    [Atom(`SwitchTok`), "switch"],
+    [Atom(`CaseTok`), "case"],
+    [Atom(`ForTok`), "for"],
+    [Atom(`WhileTok`), "while"],
+    [Atom(`TryTok`), "try"],
+    [Atom(`CatchTok`), "catch"],
+    [Atom(`FinallyTok`), "finally"],
+    [Atom(`AssertTok`), "assert"],
+    [Atom(`OuterTok`), "outer"],
+    [Atom(`PackageTok`), "package"],
+    [Atom(`FunctionTok`), "function"],
+    [Atom(`ThenTok`), "then"],
+    [Atom(`LetTok`), "let"],
+    [Atom(`ModuleTok`), "module"]
 ];
 
-[[Type, String] +] literals = [
-    [`ParOpen`, "("],
-    [`ParClose`, ")"],
-    [`Comma`, ","],
-    [`CurlOpen`, "{"],
-    [`CurlClose`, "}"],
-    [`Star`, "*"],
-    [`Eq`, "="],
-    [`Arrow`, "->"],
-    [`Ellipsis`, "..."],
-    [`DArrow`, "=>"],
-    [`Semicolon`, ";"],
-    [`TickTick`, "\``"],
-    [`QDot`, "?."],
-    [`SDot`, "*."],
-    [`DotDot`, ".."],
-    [`Colon`, ":"],
-    [`PlusPlus`, "++"],
-    [`MinusMinus`, "--"],
-    [`Caret`, "^"],
-    [`Tilde`, "~"],
-    [`Slash`, "/"],
-    [`Percent`, "%"],
-    [`StarStar`, "**"],
-    [`LTE`, "<="],
-    [`GTE`, ">="],
-    [`Spaceship`, "<=>"],
-    [`AbsEq`, "=="],
-    [`NEq`, "!="],
-    [`Identical`, "==="],
-    [`AndOp`, "&&"],
-    [`OrOp`, "||"],
-    [`PlusEq`, "+="],
-    [`MinusEq`, "-="],
-    [`StarEq`, "*="],
-    [`SlashEq`, "/="],
-    [`PercentEq`, "%="],
-    [`AmpersandEq`, "&="],
-    [`PipeEq`, "|="],
-    [`TildeEq`, "~="],
-    [`AndEq`, "&&="],
-    [`OrEq`, "||="],
-    [`Tick`, "`"],
-    [`CommentStart`, "/*"],
-    [`CommentEnd`, "*/"],
-    [`UIdentStart`, "\\I"],
-    [`LIdentStart`, "\\i"],
-    [`HashMark`, "#"],
-    [`DollarMark`, "$"],
-    [`Underscore`, "_"],
-    [`Plus`, "+"],
-    [`Minus`, "-"],
-    [`Dot`, "."],
-    [`Quote`, "'"],
-    [`DoubleQuote`, "\""],
-    [`Pipe`, "|"],
-    [`Ampersand`, "&"],
-    [`LT`, "<"],
-    [`GT`, ">"],
-    [`Question`, "?"],
-    [`SqOpen`, "["],
-    [`SqClose`, "]"]
+[[Atom, String] +] literals = [
+    [Atom(`ParOpen`), "("],
+    [Atom(`ParClose`), ")"],
+    [Atom(`Comma`), ","],
+    [Atom(`CurlOpen`), "{"],
+    [Atom(`CurlClose`), "}"],
+    [Atom(`Star`), "*"],
+    [Atom(`Eq`), "="],
+    [Atom(`Arrow`), "->"],
+    [Atom(`Ellipsis`), "..."],
+    [Atom(`DArrow`), "=>"],
+    [Atom(`Semicolon`), ";"],
+    [Atom(`TickTick`), "\``"],
+    [Atom(`QDot`), "?."],
+    [Atom(`SDot`), "*."],
+    [Atom(`DotDot`), ".."],
+    [Atom(`Colon`), ":"],
+    [Atom(`PlusPlus`), "++"],
+    [Atom(`MinusMinus`), "--"],
+    [Atom(`Caret`), "^"],
+    [Atom(`Tilde`), "~"],
+    [Atom(`Slash`), "/"],
+    [Atom(`Percent`), "%"],
+    [Atom(`StarStar`), "**"],
+    [Atom(`LTE`), "<="],
+    [Atom(`GTE`), ">="],
+    [Atom(`Spaceship`), "<=>"],
+    [Atom(`AbsEq`), "=="],
+    [Atom(`NEq`), "!="],
+    [Atom(`Identical`), "==="],
+    [Atom(`AndOp`), "&&"],
+    [Atom(`OrOp`), "||"],
+    [Atom(`PlusEq`), "+="],
+    [Atom(`MinusEq`), "-="],
+    [Atom(`StarEq`), "*="],
+    [Atom(`SlashEq`), "/="],
+    [Atom(`PercentEq`), "%="],
+    [Atom(`AmpersandEq`), "&="],
+    [Atom(`PipeEq`), "|="],
+    [Atom(`TildeEq`), "~="],
+    [Atom(`AndEq`), "&&="],
+    [Atom(`OrEq`), "||="],
+    [Atom(`Tick`), "`"],
+    [Atom(`CommentStart`), "/*"],
+    [Atom(`CommentEnd`), "*/"],
+    [Atom(`UIdentStart`), "\\I"],
+    [Atom(`LIdentStart`), "\\i"],
+    [Atom(`HashMark`), "#"],
+    [Atom(`DollarMark`), "$"],
+    [Atom(`Underscore`), "_"],
+    [Atom(`Plus`), "+"],
+    [Atom(`Minus`), "-"],
+    [Atom(`Dot`), "."],
+    [Atom(`Quote`), "'"],
+    [Atom(`DoubleQuote`), "\""],
+    [Atom(`Pipe`), "|"],
+    [Atom(`Ampersand`), "&"],
+    [Atom(`LT`), "<"],
+    [Atom(`GT`), ">"],
+    [Atom(`Question`), "?"],
+    [Atom(`SqOpen`), "["],
+    [Atom(`SqClose`), "]"]
 ];
 
-[[Type, Boolean(Character&Object)] +] singles = [
-    [`Digit`, (Character x) => x.digit],
-    [`HexDigit`, (Character x) => x.digit || "abcdefABCDEF".contains(x)],
-    [`BinDigit`, "01".contains],
-    [`Magnitude`, "kMGTP".contains],
-    [`Minitude`, "munpf".contains],
-    [`ExpMarker`, "eE".contains]
+[[Atom, Boolean(Character&Object)] +] singles = [
+    [Atom(`Digit`), (Character x) => x.digit],
+    [Atom(`HexDigit`), (Character x) => x.digit || "abcdefABCDEF".contains(x)],
+    [Atom(`BinDigit`), "01".contains],
+    [Atom(`Magnitude`), "kMGTP".contains],
+    [Atom(`Minitude`), "munpf".contains],
+    [Atom(`ExpMarker`), "eE".contains]
 ];
 
-[[Type, Regular] +] expressions = [
-    [`Whitespace`, any(whitespaceChars).atLeast(1)],
-    [`LineComment`, lit("//").or(lit("#!")) + (not(any("\r\n")) + anyChar).zeroPlus ],
-    [`CommentBody`, (not(lit("/*").or(lit("*/"))) + anyChar).zeroPlus ],
-    [`UIdentText`, anyUpper + anyLetter.or(anyDigit).or(lit("_")).zeroPlus ],
-    [`LIdentText`, anyLower + anyLetter.or(anyDigit).or(lit("_")).zeroPlus ],
-    [`CharacterLiteralTok`, (not(lit("'")) + anyChar).or(lit("\\") + anyChar)],
-    [`StringLiteralTok`, (not(lit("\"")) + anyChar).or(lit("\\") + anyChar).zeroPlus]
+[[Atom, Regular] +] expressions = [
+    [Atom(`Whitespace`), any(whitespaceChars).atLeast(1)],
+    [Atom(`LineComment`), lit("//").or(lit("#!")) + (not(any("\r\n")) + anyChar).zeroPlus ],
+    [Atom(`CommentBody`), (not(lit("/*").or(lit("*/"))) + anyChar).zeroPlus ],
+    [Atom(`UIdentText`), anyUpper + anyLetter.or(anyDigit).or(lit("_")).zeroPlus ],
+    [Atom(`LIdentText`), anyLower + anyLetter.or(anyDigit).or(lit("_")).zeroPlus ],
+    [Atom(`CharacterLiteralTok`), (not(lit("'")) + anyChar).or(lit("\\") + anyChar)],
+    [Atom(`StringLiteralTok`), (not(lit("\"")) + anyChar).or(lit("\\") + anyChar).zeroPlus]
 ];
 
 "Construct a TokenizerToken given a metamodel type argument"
-Token<K&Object> getTokenizerToken<K>(Type<K> t, String text, Integer position,
+Token<CeylonToken> getTokenizerToken(Atom t, String text, Integer position,
         Integer length, [Integer,Integer] startPos, Integer lsd=0) {
-    assert(is Callable<Token<K&Object>, [String, Integer,
+    assert(is Callable<Token<CeylonToken>, [String, Integer,
             Integer, [Integer,Integer], Integer]> cls = `class
-            TokenizerToken`.apply<TokenizerToken<out CeylonToken>>(t));
+            TokenizerToken`.apply<TokenizerToken<out CeylonToken>>(t.type));
     return cls(text, position, length, startPos, lsd);
 }
 
@@ -164,14 +164,13 @@ shared abstract class BaseTokenizerToken<K>(shared String text, shared Integer d
     shared [Integer,Integer] endPosition
         => [startPosition[0], startPosition[1] + dataLength];
 
-    shared actual {Token<K&Object> *} next<K>(Type<K> k) {
-        value results = ArrayList<Token<K&Object>>();
+    shared actual {Token<Object> *} next(Atom k) {
+        value results = ArrayList<Token<Object>>();
 
         if (! this is Token<Keyword>) {
             for ([t, s] in keywords) {
                 if (t.subtypeOf(k), text.includesAt(position, s)) {
-                    assert(is Type<K> t);
-                    results.add(getTokenizerToken<K>(t, text, position + s.size,
+                    results.add(getTokenizerToken(t, text, position + s.size,
                                 s.size, endPosition));
                 }
             }
@@ -180,8 +179,7 @@ shared abstract class BaseTokenizerToken<K>(shared String text, shared Integer d
         for ([t, s] in literals) {
             if (t.subtypeOf(k),
                 text.includesAt(position, s)) {
-                assert(is Type<K> t);
-                results.add(getTokenizerToken<K>(t, text, position + s.size,
+                results.add(getTokenizerToken(t, text, position + s.size,
                             s.size, endPosition));
             }
         }
@@ -189,30 +187,26 @@ shared abstract class BaseTokenizerToken<K>(shared String text, shared Integer d
         for ([t, f] in singles) {
             if (t.subtypeOf(k),
                 exists c = text[position], f(c)) {
-                assert(is Type<K> t);
-                results.add(getTokenizerToken<K>(t, text, position + 1, 1,
+                results.add(getTokenizerToken(t, text, position + 1, 1,
                             endPosition));
             }
         }
 
         for ([t, e] in expressions) {
             if (t.subtypeOf(k), exists m = e.matchAt(position, text)) {
-                assert(is Type<K> t);
-                results.add(getTokenizerToken<K>(t, text, position + m.length,
+                results.add(getTokenizerToken(t, text, position + m.length,
                             m.length, endPosition));
             }
         }
 
-        if (`EOS`.subtypeOf(k), text.size <= position) {
-            assert(is Token<K&Object> obj =
-                    TokenizerToken<EOS>(text, 0, 0, endPosition));
-            results.add(obj);
+        if (Atom(`EOS`).subtypeOf(k), text.size <= position) {
+            results.add(TokenizerToken<EOS>(text, 0, 0, endPosition));
         }
 
         return results;
     }
 
-    shared actual {Token<K&Object> *} forceNext<K>(Type<K> k)
+    shared actual {Token<Object> *} forceNext(Atom k)
         => {};
 }
 

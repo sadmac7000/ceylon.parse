@@ -26,70 +26,70 @@ class MulA(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
 class MMulA(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
 class ParenBox(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
 
-{Token<K&Object> *} tokenizeAB<K>(String s, Integer pos, Type<K> k) {
-    value results = ArrayList<Token<K&Object>>();
+{Token<Object> *} tokenizeAB(String s, Integer pos, Atom k) {
+    value results = ArrayList<Token<Object>>();
 
-    if (`EOS`.subtypeOf(k),
+    if (Atom(`EOS`).subtypeOf(k),
         s.size <= pos) {
-        assert (is Token<K> q = object satisfies ABGrammarToken<EOS>&EOSToken {
+        object q satisfies ABGrammarToken<EOS>&EOSToken {
             shared actual String str = s;
             shared actual Integer position => pos;
-        });
+        }
         results.add(q);
     }
 
-    if (`ATerm`.subtypeOf(k),
+    if (Atom(`ATerm`).subtypeOf(k),
         exists chr = s[pos],
         chr == 'a') {
-        assert (is Token<K> q = object satisfies ABGrammarToken<ATerm> {
+        object q satisfies ABGrammarToken<ATerm> {
             shared actual String str = s;
             shared actual ATerm node => ATerm(pos);
             shared actual Integer position => pos + 1;
-        });
+        }
         results.add(q);
     }
 
-    if (`BTerm`.subtypeOf(k),
+    if (Atom(`BTerm`).subtypeOf(k),
         exists chr = s[pos],
         chr == 'b') {
-        assert (is Token<K> q = object satisfies ABGrammarToken<BTerm> {
+        object q satisfies ABGrammarToken<BTerm> {
             shared actual String str = s;
             shared actual BTerm node => BTerm(pos);
             shared actual Integer position => pos + 1;
-        });
+        }
         results.add(q);
     }
 
     return results;
 }
 
-{Token<K&Object> *} forceTokenizeAB<K>(String s, Integer pos, Type<K> k) {
-    value results = ArrayList<Token<K&Object>>();
-    if (`EOS`.subtypeOf(k)) {
-        assert (is Token<K> q = object satisfies ABGrammarToken<EOS>&EOSToken {
+{Token<Object> *} forceTokenizeAB(String s, Integer pos, Atom k) {
+    value results = ArrayList<Token<Object>>();
+    if (Atom(`EOS`).subtypeOf(k)) {
+        object q satisfies ABGrammarToken<EOS>&EOSToken {
             shared actual String str = s;
             shared actual Integer position = s.size;
             shared actual Integer lsd = s.size - pos;
-        });
+        }
         results.add(q);
     }
 
-    if (`ATerm`.subtypeOf(k)) {
+    if (Atom(`ATerm`).subtypeOf(k)) {
 
-        assert (is Token<K> q = object satisfies ABGrammarToken<ATerm> {
+        object q satisfies ABGrammarToken<ATerm> {
             shared actual String str = s;
             shared actual ATerm node => ATermError(null, pos);
             shared actual Integer position = pos;
             shared actual Integer lsd = 1;
-        });
+        }
         results.add(q);
 
-        assert (is Token<K> r = object satisfies ABGrammarToken<ATerm> {
+        object r satisfies ABGrammarToken<ATerm> {
             shared actual String str = s;
             shared actual ATerm node => ATermError(Crap(s[pos:1]), pos);
             shared actual Integer position = pos + 1;
             shared actual Integer lsd = 1;
-        });
+        }
 
         if (s.longerThan(pos)) {
             results.add(r);
@@ -98,12 +98,12 @@ class ParenBox(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
         if (exists chr = s[pos + 1],
             chr == 'a') {
 
-            assert (is Token<K> t = object satisfies ABGrammarToken<ATerm> {
+            object t satisfies ABGrammarToken<ATerm> {
                 shared actual String str = s;
                 shared actual ATerm node => ATerm(pos + 1, Crap(s[pos:1], pos));
                 shared actual Integer position = pos + 2;
                 shared actual Integer lsd = 1;
-            });
+            }
             results.add(t);
         }
     }
@@ -115,9 +115,9 @@ interface ABGrammarToken<T>
         satisfies Token<T>
         given T satisfies Object {
     shared formal String str;
-    shared actual {Token<K&Object> *} next<K>(Type<K> k)
+    shared actual {Token<Object> *} next(Atom k)
         => tokenizeAB(str, position, k);
-    shared actual {Token<K&Object> *} forceNext<K>(Type<K> k) =>
+    shared actual {Token<Object> *} forceNext(Atom k) =>
         forceTokenizeAB(str, position, k);
 }
 

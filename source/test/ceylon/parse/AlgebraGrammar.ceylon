@@ -16,93 +16,93 @@ class Div(Integer pos = 0, shared actual Object? prevError = null) extends Sym(p
 class LParen(Integer pos = 0, shared actual Object? prevError = null) extends Sym(pos) {}
 class RParen(Integer pos = 0, shared actual Object? prevError = null) extends Sym(pos) {}
 
-{Token<K&Object> *} tokenize<K>(String s, Integer pos, Type<K> k) {
-    value results = ArrayList<Token<K&Object>>();
+{Token<Object> *} tokenize(String s, Integer pos, Atom k) {
+    value results = ArrayList<Token<Object>>();
     String varChars = "abcdefghijklmnopqrstuvwxyz";
 
-    if (`EOS`.subtypeOf(k),
+    if (Atom(`EOS`).subtypeOf(k),
         s.size <= pos) {
-        assert (is Token<K> q = object satisfies AlgebraGrammarToken<EOS>&EOSToken {
+        object q satisfies AlgebraGrammarToken<EOS>&EOSToken {
             shared actual String str = s;
             shared actual Integer position => pos;
-        });
+        }
         results.add(q);
     }
 
-    if (`Var`.subtypeOf(k),
+    if (Atom(`Var`).subtypeOf(k),
         exists chr = s[pos],
         varChars.contains(chr)) {
-        assert (is Token<K> q = object satisfies AlgebraGrammarToken<Var> {
+        object q satisfies AlgebraGrammarToken<Var> {
             shared actual String str = s;
             shared actual Var node => Var(chr.string, pos);
             shared actual Integer position => pos + 1;
-        });
+        }
         results.add(q);
     }
 
-    if (`Plus`.subtypeOf(k),
+    if (Atom(`Plus`).subtypeOf(k),
         exists chr = s[pos],
         chr == '+') {
-        assert (is Token<K> q = object satisfies AlgebraGrammarToken<Plus> {
+        object q satisfies AlgebraGrammarToken<Plus> {
             shared actual String str = s;
             shared actual Plus node => Plus(pos);
             shared actual Integer position => pos + 1;
-        });
+        }
         results.add(q);
     }
 
-    if (`Minus`.subtypeOf(k),
+    if (Atom(`Minus`).subtypeOf(k),
         exists chr = s[pos],
         chr == '-') {
-        assert (is Token<K> q = object satisfies AlgebraGrammarToken<Minus> {
+        object q satisfies AlgebraGrammarToken<Minus> {
             shared actual String str = s;
             shared actual Minus node => Minus(pos);
             shared actual Integer position => pos + 1;
-        });
+        }
         results.add(q);
     }
 
-    if (`Mul`.subtypeOf(k),
+    if (Atom(`Mul`).subtypeOf(k),
         exists chr = s[pos],
         chr == '*') {
-        assert (is Token<K> q = object satisfies AlgebraGrammarToken<Mul> {
+        object q satisfies AlgebraGrammarToken<Mul> {
             shared actual String str = s;
             shared actual Mul node => Mul(pos);
             shared actual Integer position => pos + 1;
-        });
+        }
         results.add(q);
     }
 
-    if (`Div`.subtypeOf(k),
+    if (Atom(`Div`).subtypeOf(k),
         exists chr = s[pos],
         chr == '/') {
-        assert (is Token<K> q = object satisfies AlgebraGrammarToken<Div> {
+        object q satisfies AlgebraGrammarToken<Div> {
             shared actual String str = s;
             shared actual Div node => Div(pos);
             shared actual Integer position => pos + 1;
-        });
+        }
         results.add(q);
     }
 
-    if (`LParen`.subtypeOf(k),
+    if (Atom(`LParen`).subtypeOf(k),
         exists chr = s[pos],
         chr == '(') {
-        assert (is Token<K> q = object satisfies AlgebraGrammarToken<LParen> {
+        object q satisfies AlgebraGrammarToken<LParen> {
             shared actual String str = s;
             shared actual LParen node => LParen(pos);
             shared actual Integer position => pos + 1;
-        });
+        }
         results.add(q);
     }
 
-    if (`RParen`.subtypeOf(k),
+    if (Atom(`RParen`).subtypeOf(k),
         exists chr = s[pos],
         chr == ')') {
-        assert (is Token<K> q = object satisfies AlgebraGrammarToken<RParen> {
+        object q satisfies AlgebraGrammarToken<RParen> {
             shared actual String str = s;
             shared actual RParen node => RParen(pos);
             shared actual Integer position => pos + 1;
-        });
+        }
         results.add(q);
     }
 
@@ -113,9 +113,9 @@ interface AlgebraGrammarToken<T>
         satisfies Token<T>
         given T satisfies Object {
     shared formal String str;
-    shared actual {Token<K&Object> *} next<K>(Type<K> k)
+    shared actual {Token<Object> *} next(Atom k)
         => tokenize(str, position, k);
-    shared actual {Token<K&Object> *} forceNext<K>(Type<K> k) => {};
+    shared actual {Token<Object> *} forceNext(Atom k) => {};
 }
 
 class AlgebraStartToken(shared actual String str)

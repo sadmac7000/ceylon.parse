@@ -54,11 +54,3 @@ shared void repeatTest() {
     assert(exp.match("aaaaa") exists);
     assert(exists k = exp.match("aaaaaa"), k.matched == "aaaaa");
 }
-
-test
-shared void nonString() {
-    value exp = lit([4, 5, 6]).or(lit([7, 8 , 9]));
-
-    assert(exp.match([4, 5, 6, 7]) exists);
-    assert(exp.match([7, 8, 9, 10]) exists);
-}

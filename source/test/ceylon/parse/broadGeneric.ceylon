@@ -3,81 +3,81 @@ import ceylon.test { test, assertEquals }
 import ceylon.collection { ArrayList }
 import ceylon.language.meta.model { Type }
 
-{Token<K&Object> *} tokenizeBroad<K>(String s, Integer pos, Type<K> k) {
-    value results = ArrayList<Token<K&Object>>();
+{Token<Object> *} tokenizeBroad(String s, Integer pos, Atom k) {
+    value results = ArrayList<Token<Object>>();
 
-    if (`EOS`.subtypeOf(k),
+    if (Atom(`EOS`).subtypeOf(k),
         s.size <= pos) {
-        assert (is Token<K> q = object satisfies BroadGenericGrammarToken<EOS>&EOSToken {
+        object q satisfies BroadGenericGrammarToken<EOS>&EOSToken {
             shared actual String str = s;
             shared actual Integer position => pos;
-        });
+        }
         results.add(q);
     }
 
-    if (`ATerm`.subtypeOf(k),
+    if (Atom(`ATerm`).subtypeOf(k),
         exists chr = s[pos],
         chr == 'a') {
-        assert (is Token<K> q = object satisfies BroadGenericGrammarToken<ATerm> {
+        object q satisfies BroadGenericGrammarToken<ATerm> {
             shared actual String str = s;
             shared actual ATerm node => ATerm(pos);
             shared actual Integer position => pos + 1;
-        });
+        }
         results.add(q);
     }
 
-    if (`BTerm`.subtypeOf(k),
+    if (Atom(`BTerm`).subtypeOf(k),
         exists chr = s[pos],
         chr == 'b') {
-        assert (is Token<K> q = object satisfies BroadGenericGrammarToken<BTerm> {
+        object q satisfies BroadGenericGrammarToken<BTerm> {
             shared actual String str = s;
             shared actual BTerm node => BTerm(pos);
             shared actual Integer position => pos + 1;
-        });
+        }
         results.add(q);
     }
 
-    if (`Spc`.subtypeOf(k),
+    if (Atom(`Spc`).subtypeOf(k),
         exists chr = s[pos],
         chr == ' ') {
-        assert (is Token<K> q = object satisfies BroadGenericGrammarToken<Spc> {
+        object q satisfies BroadGenericGrammarToken<Spc> {
             shared actual String str = s;
             shared actual Spc node => Spc(pos);
             shared actual Integer position => pos + 1;
-        });
+        }
         results.add(q);
     }
 
-    if (`LParen`.subtypeOf(k),
+    if (Atom(`LParen`).subtypeOf(k),
         exists chr = s[pos],
         chr == '(') {
-        assert (is Token<K> q = object satisfies BroadGenericGrammarToken<LParen> {
+        object q satisfies BroadGenericGrammarToken<LParen> {
             shared actual String str = s;
             shared actual LParen node => LParen(pos);
             shared actual Integer position => pos + 1;
-        });
+        }
         results.add(q);
     }
 
-    if (`RParen`.subtypeOf(k),
+    if (Atom(`RParen`).subtypeOf(k),
         exists chr = s[pos],
         chr == ')') {
-        assert (is Token<K> q = object satisfies BroadGenericGrammarToken<RParen> {
+        object q satisfies BroadGenericGrammarToken<RParen> {
             shared actual String str = s;
             shared actual RParen node => RParen(pos);
             shared actual Integer position => pos + 1;
-        });
+        }
         results.add(q);
     }
 
-    if (`Mul`.subtypeOf(k),
+    if (Atom(`Mul`).subtypeOf(k),
         exists chr = s[pos],
         chr == '*') {
-        assert (is Token<K> q = object satisfies BroadGenericGrammarToken<Mul> {
+        object q satisfies BroadGenericGrammarToken<Mul> {
             shared actual String str = s;
             shared actual Mul node => Mul(pos);
             shared actual Integer position => pos + 1;
-        });
+        }
         results.add(q);
     }
 
@@ -88,9 +88,9 @@ interface BroadGenericGrammarToken<T>
         satisfies Token<T>
         given T satisfies Object {
     shared formal String str;
-    shared actual {Token<K&Object> *} next<K>(Type<K> k)
+    shared actual {Token<Object> *} next(Atom k)
         => tokenizeBroad(str, position, k);
-    shared actual {Token<K&Object> *} forceNext<K>(Type<K> k) => {};
+    shared actual {Token<Object> *} forceNext(Atom k) => {};
 }
 
 class BroadGenericStartToken(shared actual String str)

@@ -2,12 +2,12 @@ import ceylon.language.meta.model { Type }
 import ceylon.language.meta { _type = type }
 
 "A single token result returned by a tokenizer"
-shared interface Token<out SymType = Object> satisfies Identifiable given SymType satisfies Object {
+shared interface Token<out NodeType = Object> satisfies Identifiable given NodeType satisfies Object {
     "Type atom for this token"
-    shared Atom type => Atom(`SymType`);
+    shared Atom type => Atom(`NodeType`);
 
     "Node value returned by this token"
-    shared formal SymType node;
+    shared formal NodeType node;
 
     "Position in the stream of this token"
     shared formal Integer position;
@@ -23,7 +23,7 @@ shared interface Token<out SymType = Object> satisfies Identifiable given SymTyp
     shared actual Integer hash => type.hash ^ 2 + position;
 
     shared actual Boolean equals(Object that) {
-        if (! is Token<SymType> that) {
+        if (! is Token<NodeType> that) {
             return false;
         } else {
             if (type != that.type) { return false; }
@@ -34,12 +34,12 @@ shared interface Token<out SymType = Object> satisfies Identifiable given SymTyp
 
     "Get the next token(s) in the stream where those tokens are of a given
      type. We return a stream because we allow non-deterministic tokenization."
-    shared formal {Token<K&Object> *} next<K>(Type<K> k);
+    shared formal {Token<Object> *} next(Atom k);
 
     "Try to force tokens of the given type to appear in the stream. The
      tokenizer may insert, delete, or replace data in the stream and record the
      resulting Levenshtein distance in the result token's `lsd` field."
-    shared formal {Token<K&Object> *} forceNext<K>(Type<K> k);
+    shared formal {Token<Object> *} forceNext(Atom k);
 }
 
 "Type returned by the end of a stream"

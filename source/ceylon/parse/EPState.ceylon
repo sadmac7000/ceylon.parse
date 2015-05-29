@@ -1,6 +1,3 @@
-import ceylon.language.meta { _type = type }
-import ceylon.language.meta.model { Type }
-
 "An Earley parser state"
 class EPState {
     "Whether we've matched once already"
@@ -206,13 +203,13 @@ class EPState {
     "Scan for the next desired object"
     shared {EPState *} scan =>
         if (exists c = rule.consumes[matchPos])
-        then lastToken.next(c.atom.type).map(feed).narrow<EPState>()
+        then lastToken.next(c.atom).map(feed).narrow<EPState>()
         else {};
 
     "Scan for the next desired object"
     shared {EPState *} forceScan =>
         if (exists c = rule.consumes[matchPos])
-        then lastToken.forceNext(c.atom.type).map(feed).narrow<EPState>()
+        then lastToken.forceNext(c.atom).map(feed).narrow<EPState>()
         else {};
 
     shared actual Boolean equals(Object other) {
