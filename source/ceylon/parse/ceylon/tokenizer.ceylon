@@ -69,7 +69,6 @@ String[] reservedWords = ["assembly", "module", "package", "import", "alias",
     [`Eq`, "="],
     [`Arrow`, "->"],
     [`Ellipsis`, "..."],
-    [`Ellipsis`, "..."],
     [`DArrow`, "=>"],
     [`Semicolon`, ";"],
     [`TickTick`, "\``"],
@@ -197,7 +196,7 @@ shared abstract class BaseTokenizerToken<K>(shared String text, shared Integer d
         }
 
         for ([t, e] in expressions) {
-            if (t.subtypeOf(k), exists m = e.match(text[position...])) {
+            if (t.subtypeOf(k), exists m = e.matchAt(position, text)) {
                 assert(is Type<K> t);
                 results.add(getTokenizerToken<K>(t, text, position + m.length,
                             m.length, endPosition));

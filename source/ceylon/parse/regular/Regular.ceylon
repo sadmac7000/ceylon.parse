@@ -16,12 +16,17 @@ class Res(shared actual String matched,
 "A regular language for string matching."
 shared abstract class Regular() satisfies Summable<Regular> {
 
-    "Match the start of sequence [[s]] against this language. Return a
+    "Match the position in string [[s]] against this language. Return a
      [[MatchResult]] or `null` if no match. [[maxLength]] prevents the
      return of a match longer than the given length when specified, though we
      can still look ahead further for context to determine if the match is
      successful."
-    shared formal MatchResult? match(String s, Integer? maxLength = null);
+    shared formal MatchResult? matchAt(Integer start, String s,
+            Integer? maxLength = null);
+
+    "Match the start of the given string against this language"
+    shared MatchResult? match(String s, Integer? maxLength = null)
+            => matchAt(0, s, maxLength);
 
     "Get a new regular language that repeats this language [[min]] times, or
      between [[min]] and [[max]] times."
@@ -62,18 +67,21 @@ class Any({Character *} valuesIn) extends Regular() {
     "All characters that we match"
     value values = HashSet{ *valuesIn };
 
-    shared actual MatchResult? match(String s, Integer? maxLength) {
+    shared actual MatchResult? matchAt(Integer position, String s,
+            Integer? maxLength) {
         if (exists maxLength, maxLength < 1) { return null; }
-        if (exists c = s[0], values.contains(c)) { return Res(s[0:1], 1); }
+        if (exists c = s[position], values.contains(c)) { return
+            Res(s[position:1], 1); }
         return null;
     }
 }
 
 "Regular language that matches a literal string"
 class Literal(String val) extends Regular() {
-    shared actual MatchResult? match(String s, Integer? maxLength) {
+    shared actual MatchResult? matchAt(Integer position,
+            String s, Integer? maxLength) {
         if (exists maxLength, maxLength < val.size) { return null; }
-        if (s.startsWith(val)) { return Res(s[0:val.size], val.size); }
+        if (s.includesAt(position, val)) { return Res(s[position:val.size], val.size); }
         return null;
     }
 }
@@ -82,40 +90,42 @@ class Literal(String val) extends Regular() {
  zero-length match result. If [[invert]] is set, we return zero when [[r]]
  doesn't match, and `null` when it does."
 class Lookahead(Regular r, Boolean invert) extends Regular() {
-    Boolean subMatch(String s)
-        => if (r.match(s) exists) then !invert else invert;
+    Boolean subMatchAt(Integer position, String s)
+        => if (r.matchAt(position, s) exists) then !invert else invert;
 
-    shared actual MatchResult? match(String s, Integer? maxLength)
-        => if (subMatch(s)) then Res("", 0) else null;
+    shared actual MatchResult? matchAt(Integer position, String s,
+            Integer? maxLength)
+        => if (subMatchAt(position, s)) then Res("", 0) else null;
 }
 
 "Regular language that concatenates two other languages"
 class Concat(Regular a, Regular b) extends Regular() {
     "Match result with appropriate backtracking"
-    class CRes(String s, Integer? maxLength, Res aRes, Res bRes)
+    class CRes(Integer pos, String s, Integer? maxLength, Res aRes, Res bRes)
             extends Res(aRes.matched + bRes.matched,
                               aRes.length + bRes.length) {
         shared actual Res? backtrack {
             if (exists b = bRes.backtrack) {
-                return CRes(s, maxLength, aRes, b);
+                return CRes(pos, s, maxLength, aRes, b);
             }
 
-            return outer.resultB(s, maxLength, aRes.backtrack);
+            return outer.resultB(pos, s, maxLength, aRes.backtrack);
         }
     }
 
-    shared actual MatchResult? match(String s, Integer? maxLength)
-            => resultB(s, maxLength, a.match(s, maxLength));
+    shared actual MatchResult? matchAt(Integer position,
+            String s, Integer? maxLength)
+            => resultB(position, s, maxLength, a.matchAt(position, s, maxLength));
 
     "Get the second part of the match result"
-    Res? resultB(String s, Integer? maxLength,
+    Res? resultB(Integer pos, String s, Integer? maxLength,
             variable MatchResult? aRes) {
         while (exists a = aRes) {
             value nextLength = if (exists maxLength) then maxLength - a.length
                 else null;
-            value next = b.match(s[a.length...], nextLength);
+            value next = b.matchAt(pos + a.length, s, nextLength);
 
-            if (exists n = next) { return CRes(s, maxLength, a of Res, n
+            if (exists n = next) { return CRes(pos, s, maxLength, a of Res, n
                     of Res); }
 
             aRes = (a of Res).backtrack;
@@ -129,13 +139,13 @@ class Concat(Regular a, Regular b) extends Regular() {
 class Repeat(Regular r, Integer min, Integer? max)
         extends Regular() {
     "Local match result"
-    class RRes(String s, Integer count, RRes? prev, Res? cur)
+    class RRes(Integer pos, String s, Integer count, RRes? prev, Res? cur)
         extends Res((prev?.matched else "") + (cur?.matched else ""),
                     (prev?.length else 0) + (cur?.length else 0)) {
 
         shared actual Res? backtrack {
             if (exists c = cur?.backtrack) {
-                return RRes(s, count, prev, c);
+                return RRes(pos, s, count, prev, c);
             } else {
                 return prev?.advance(length - 1);
             }
@@ -158,19 +168,21 @@ class Repeat(Regular r, Integer min, Integer? max)
             if (exists m = outer.max, count == m) { return this; }
             if (exists c = cur?.length, c == 0) { return this; }
 
-            value target = s[(cur?.length else 0)...];
-            value next = outer.r.match(target, maxLength);
+            value newPos = pos + (cur?.length else 0);
+            value next = outer.r.matchAt(newPos, s,
+                    maxLength);
 
             if (exists next) {
-                return RRes(target, count + 1, this, next of Res).advance(maxLength);
+                return RRes(newPos, s, count + 1, this, next of Res).advance(maxLength);
             }
 
             return count >= outer.min then this;
         }
     }
 
-    shared actual MatchResult? match(String s, Integer? maxLength)
-            => RRes(s, 0, null, null).advance(maxLength);
+    shared actual MatchResult? matchAt(Integer position, String s,
+            Integer? maxLength)
+            => RRes(position, s, 0, null, null).advance(maxLength);
 }
 
 "Regular language that matches either of two other languages"
@@ -212,9 +224,9 @@ class Disjoin(Regular a, Regular b) extends Regular() {
         }
     }
 
-    shared actual MatchResult? match(String s, Integer? maxLength) {
-        value aRes = a.match(s, maxLength);
-        value bRes = b.match(s, maxLength);
+    shared actual MatchResult? matchAt(Integer position, String s, Integer? maxLength) {
+        value aRes = a.matchAt(position, s, maxLength);
+        value bRes = b.matchAt(position, s, maxLength);
 
         if (exists aRes, exists bRes) { return DRes(aRes of Res, bRes of
                 Res); }
@@ -237,41 +249,46 @@ shared Regular not(Regular r)
     => Lookahead(r, true);
 
 shared object anyChar extends Regular() {
-    shared actual MatchResult? match(String s, Integer? maxLength) {
+    shared actual MatchResult? matchAt(Integer position, String s,
+            Integer? maxLength) {
         if (exists maxLength, maxLength < 1) { return null; }
-        if (exists c = s[0]) { return Res(s[0:1], 1); }
+        if (exists c = s[position]) { return Res(s[0:1], 1); }
         return null;
     }
 }
 
 shared object anyLetter extends Regular() {
-    shared actual MatchResult? match(String s, Integer? maxLength) {
+    shared actual MatchResult? matchAt(Integer position, String s,
+            Integer? maxLength) {
         if (exists maxLength, maxLength < 1) { return null; }
-        if (exists c = s[0], c.letter) { return Res(s[0:1], 1); }
+        if (exists c = s[position], c.letter) { return Res(s[0:1], 1); }
         return null;
     }
 }
 
 shared object anyDigit extends Regular() {
-    shared actual MatchResult? match(String s, Integer? maxLength) {
+    shared actual MatchResult? matchAt(Integer position, String s,
+            Integer? maxLength) {
         if (exists maxLength, maxLength < 1) { return null; }
-        if (exists c = s[0], c.digit) { return Res(s[0:1], 1); }
+        if (exists c = s[position], c.digit) { return Res(s[0:1], 1); }
         return null;
     }
 }
 
 shared object anyUpper extends Regular() {
-    shared actual MatchResult? match(String s, Integer? maxLength) {
+    shared actual MatchResult? matchAt(Integer position, String s,
+            Integer? maxLength) {
         if (exists maxLength, maxLength < 1) { return null; }
-        if (exists c = s[0], c.uppercase) { return Res(s[0:1], 1); }
+        if (exists c = s[position], c.uppercase) { return Res(s[0:1], 1); }
         return null;
     }
 }
 
 shared object anyLower extends Regular() {
-    shared actual MatchResult? match(String s, Integer? maxLength) {
+    shared actual MatchResult? matchAt(Integer position, String s,
+            Integer? maxLength) {
         if (exists maxLength, maxLength < 1) { return null; }
-        if (exists c = s[0], c.lowercase) { return Res(s[0:1], 1); }
+        if (exists c = s[position], c.lowercase) { return Res(s[0:1], 1); }
         return null;
     }
 }
