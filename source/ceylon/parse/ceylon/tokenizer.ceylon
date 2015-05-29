@@ -197,7 +197,7 @@ shared abstract class BaseTokenizerToken<K>(shared String text, shared Integer d
         }
 
         for ([t, e] in expressions) {
-            if (t.subtypeOf(k), exists m = e.match(text)) {
+            if (t.subtypeOf(k), exists m = e.match(text[position...])) {
                 assert(is Type<K> t);
                 results.add(getTokenizerToken<K>(t, text, position + m.length,
                             m.length, endPosition));
