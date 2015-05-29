@@ -41,26 +41,14 @@ shared abstract class Grammar() {
     "Generic rule initial values"
     variable GenericInfo[] genericInfos = [];
 
-    "Error constructors"
-    shared Map<Atom, Object(Object?, Object?)> errorConstructors =
-        HashMap<Atom, Object(Object?, Object?)>();
-
     variable Boolean populated = false;
 
     "Set up the list of rules"
     shared void populateRules() {
-        assert(is HashMap<Atom, Object(Object?, Object?)> errorConstructors);
-
         if (populated) { return; }
         populated = true;
 
         value meths = _type(this).getMethods<Nothing, Object, Nothing>(`GrammarRule`);
-        value errConMeths =
-            _type(this).getMethods<Nothing, Object, [Object?, Object?]>(`GrammarErrorConstructor`);
-
-        for (c in errConMeths) {
-            errorConstructors.put(Atom(c.type), c.bind(this));
-        }
 
         for (r in meths) {
             addRule(r);

@@ -1,15 +1,5 @@
 import ceylon.language.meta.declaration { ClassOrInterfaceDeclaration }
 
-"A do-nothing annotation class for the `error` annotation"
-shared final annotation class GrammarErrorConstructor()
-        satisfies OptionalAnnotation<GrammarErrorConstructor, Annotated> {}
-
-"We annotate some methods of a `Grammar` object to indicate that those
- methods can construct an error version of symbols so we can build error
- reporting into the parse tree."
-shared annotation GrammarErrorConstructor errorConstructor() =>
-        GrammarErrorConstructor();
-
 "Associativity of a rule"
 shared interface Associativity of lassoc|rassoc|nonassoc {}
 
