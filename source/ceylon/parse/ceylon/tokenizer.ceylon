@@ -133,7 +133,7 @@ String[] reservedWords = ["assembly", "module", "package", "import", "alias",
     [`ExpMarker`, "eE".contains]
 ];
 
-[[Type, Regular<Character>] +] expressions = [
+[[Type, Regular] +] expressions = [
     [`Whitespace`, any(whitespaceChars).atLeast(1)],
     [`LineComment`, lit("//").or(lit("#!")) + (not(any("\r\n")) + anyChar).zeroPlus ],
     [`CommentBody`, (not(lit("/*").or(lit("*/"))) + anyChar).zeroPlus ],
