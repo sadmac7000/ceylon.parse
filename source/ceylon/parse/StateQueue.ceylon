@@ -166,7 +166,7 @@ class StateQueue<Root>(Grammar g, SOSToken start)
             if (! i.complete) { continue; }
             if (! Atom(`Root`).supertypeOf(i.rule.produces)) { continue; }
             if (i.start != 0) { continue; }
-            if (i.lastToken.next(Atom(`EOS`)).empty) { continue; }
+            if (i.lastToken.next(eosAtom).empty) { continue; }
 
             if (! exists k = minLsd) {
                 minLsd = i.lsd;

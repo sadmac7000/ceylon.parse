@@ -44,6 +44,7 @@ shared interface Token<out NodeType = Object> satisfies Identifiable given NodeT
 
 "Type returned by the end of a stream"
 shared interface EOS of eosObject {}
+shared Atom eosAtom = Atom(`EOS`);
 
 "Object returned by the end-of-stream token"
 object eosObject satisfies EOS {}
@@ -55,6 +56,7 @@ shared interface EOSToken satisfies Token<EOS> {
 
 "Type returned by the start of a stream"
 shared interface SOS of sosObject {}
+shared Atom sosAtom = Atom(`SOS`);
 
 "Object returned by the start-of-stream token"
 object sosObject satisfies SOS {}

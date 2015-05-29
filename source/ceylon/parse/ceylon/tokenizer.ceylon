@@ -1,4 +1,4 @@
-import ceylon.parse { Token, SOS, EOS, SOSToken, Atom }
+import ceylon.parse { Token, SOS, EOS, SOSToken, Atom, eosAtom }
 import ceylon.language.meta.model { Class, Type }
 import ceylon.collection { ArrayList }
 import ceylon.parse.regular { ... }
@@ -199,7 +199,7 @@ shared abstract class BaseTokenizerToken<K>(shared String text, shared Integer d
             }
         }
 
-        if (Atom(`EOS`).subtypeOf(k), text.size <= position) {
+        if (eosAtom.subtypeOf(k), text.size <= position) {
             results.add(TokenizerToken<EOS>(text, 0, 0, endPosition));
         }
 

@@ -29,7 +29,7 @@ class ParenBox(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
 {Token<Object> *} tokenizeAB(String s, Integer pos, Atom k) {
     value results = ArrayList<Token<Object>>();
 
-    if (Atom(`EOS`).subtypeOf(k),
+    if (eosAtom.subtypeOf(k),
         s.size <= pos) {
         object q satisfies ABGrammarToken<EOS>&EOSToken {
             shared actual String str = s;
@@ -65,7 +65,7 @@ class ParenBox(Integer pos = 0, Sym* children) extends Sym(pos, *children) {}
 
 {Token<Object> *} forceTokenizeAB(String s, Integer pos, Atom k) {
     value results = ArrayList<Token<Object>>();
-    if (Atom(`EOS`).subtypeOf(k)) {
+    if (eosAtom.subtypeOf(k)) {
         object q satisfies ABGrammarToken<EOS>&EOSToken {
             shared actual String str = s;
             shared actual Integer position = s.size;

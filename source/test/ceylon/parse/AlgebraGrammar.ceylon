@@ -20,7 +20,7 @@ class RParen(Integer pos = 0, shared actual Object? prevError = null) extends Sy
     value results = ArrayList<Token<Object>>();
     String varChars = "abcdefghijklmnopqrstuvwxyz";
 
-    if (Atom(`EOS`).subtypeOf(k),
+    if (eosAtom.subtypeOf(k),
         s.size <= pos) {
         object q satisfies AlgebraGrammarToken<EOS>&EOSToken {
             shared actual String str = s;

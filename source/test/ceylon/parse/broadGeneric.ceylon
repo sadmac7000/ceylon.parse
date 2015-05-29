@@ -6,7 +6,7 @@ import ceylon.language.meta.model { Type }
 {Token<Object> *} tokenizeBroad(String s, Integer pos, Atom k) {
     value results = ArrayList<Token<Object>>();
 
-    if (Atom(`EOS`).subtypeOf(k),
+    if (eosAtom.subtypeOf(k),
         s.size <= pos) {
         object q satisfies BroadGenericGrammarToken<EOS>&EOSToken {
             shared actual String str = s;
