@@ -265,3 +265,43 @@ shared Regular<Char> lit<Char>(List<Char> c)
 shared Regular<Char> not<Char>(Regular<Char> r)
         given Char satisfies Object
     => Lookahead(r, true);
+
+shared object anyChar extends Regular<Character>() {
+    shared actual MatchResult<Character>? match(List<Character> s, Integer? maxLength) {
+        if (exists maxLength, maxLength < 1) { return null; }
+        if (exists c = s[0]) { return Res(s[0:1], 1); }
+        return null;
+    }
+}
+
+shared object anyLetter extends Regular<Character>() {
+    shared actual MatchResult<Character>? match(List<Character> s, Integer? maxLength) {
+        if (exists maxLength, maxLength < 1) { return null; }
+        if (exists c = s[0], c.letter) { return Res(s[0:1], 1); }
+        return null;
+    }
+}
+
+shared object anyDigit extends Regular<Character>() {
+    shared actual MatchResult<Character>? match(List<Character> s, Integer? maxLength) {
+        if (exists maxLength, maxLength < 1) { return null; }
+        if (exists c = s[0], c.digit) { return Res(s[0:1], 1); }
+        return null;
+    }
+}
+
+shared object anyUpper extends Regular<Character>() {
+    shared actual MatchResult<Character>? match(List<Character> s, Integer? maxLength) {
+        if (exists maxLength, maxLength < 1) { return null; }
+        if (exists c = s[0], c.uppercase) { return Res(s[0:1], 1); }
+        return null;
+    }
+}
+
+shared object anyLower extends Regular<Character>() {
+    shared actual MatchResult<Character>? match(List<Character> s, Integer? maxLength) {
+        if (exists maxLength, maxLength < 1) { return null; }
+        if (exists c = s[0], c.lowercase) { return Res(s[0:1], 1); }
+        return null;
+    }
+}
