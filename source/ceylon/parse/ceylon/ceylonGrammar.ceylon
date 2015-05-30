@@ -562,7 +562,8 @@ shared object ceylonGrammar extends Grammar() {
     "Section 4.3.5 of the specification"
     rule
     shared CallableParameter callableParameter(Annotations a,
-            Type|VoidModifier v, MemberName m, Parameters+ p)
+            Type|VoidModifier|FunctionModifier|DynamicModifier v,
+            MemberName m, Parameters+ p)
             => astNode(CallableParameter, [v, m, p, a], a, v, m, p);
 
     "Section 4.3.6 of the specification"
@@ -658,7 +659,7 @@ shared object ceylonGrammar extends Grammar() {
     "Section 4.7 of the specification"
     rule
     shared FunctionDeclaration functionDeclaration(Annotations a,
-            Type|DynamicModifier|VoidModifier t, MemberName m,
+            Type|DynamicModifier|VoidModifier|FunctionModifier t, MemberName m,
             TypeParameters? tp, [Parameters+] p,
             [TypeConstraint*] tc, Semicolon end)
             => astNode(FunctionDeclaration, [m, t, p, tp, tc, a],
