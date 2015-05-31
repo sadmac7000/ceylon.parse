@@ -9,7 +9,7 @@ shared class Atom {
         this.val = typeAtomCache.getAlias(t);
     }
 
-    new ByHash(Integer hash) {
+    shared new ByHash(Integer hash) {
         this.val = hash;
     }
 
@@ -19,13 +19,11 @@ shared class Atom {
         => if (is Atom other) then other.val == val else false;
 
     shared Boolean subtypeOf(Atom other)
-        => typeAtomCache.subtypeSet(other.val).contains(val);
+        => typeAtomCache.subtypeSet(other.val).contains(this);
 
-    shared Set<Atom> subtypes => HashSet<Atom>{ for (x in
-            typeAtomCache.subtypeSet(val)) Atom.ByHash(x) };
+    shared Set<Atom> subtypes => typeAtomCache.subtypeSet(val);
 
-    shared Set<Atom> supertypes => HashSet<Atom>{ for (x in
-            typeAtomCache.supertypeSet(val)) Atom.ByHash(x) };
+    shared Set<Atom> supertypes => typeAtomCache.supertypeSet(val);
 
     shared Boolean supertypeOf(Atom other) => other.subtypeOf(this);
 
@@ -44,8 +42,8 @@ String filterTypes(String typeName)
 object typeAtomCache {
     value from = HashMap<Type, Integer>();
     value to = HashMap<Integer, Type>();
-    value subtypes = HashMap<Integer, HashSet<Integer>>();
-    value supertypes = HashMap<Integer, HashSet<Integer>>();
+    value subtypes = HashMap<Integer, HashSet<Atom>>();
+    value supertypes = HashMap<Integer, HashSet<Atom>>();
     variable value next = 0;
 
     "Get an alias for a type"
@@ -56,36 +54,36 @@ object typeAtomCache {
             return ret;
         }
 
-        value mySubtypes = HashSet<Integer>();
-        value mySupertypes = HashSet<Integer>();
+        value mySubtypes = HashSet<Atom>();
+        value mySupertypes = HashSet<Atom>();
 
         for (k->v in from) {
             if (k.subtypeOf(t)) {
-                mySubtypes.add(v);
-                supertypes[v]?.add(next);
+                mySubtypes.add(Atom.ByHash(v));
+                supertypes[v]?.add(Atom.ByHash(next));
             }
 
             if (k.supertypeOf(t)) {
-                mySupertypes.add(v);
-                subtypes[v]?.add(next);
+                mySupertypes.add(Atom.ByHash(v));
+                subtypes[v]?.add(Atom.ByHash(next));
             }
         }
 
         from.put(t, next);
         to.put(next, t);
-        mySubtypes.add(next);
-        mySupertypes.add(next);
+        mySubtypes.add(Atom.ByHash(next));
+        mySupertypes.add(Atom.ByHash(next));
         subtypes.put(next, mySubtypes);
         supertypes.put(next, mySupertypes);
         return next++;
     }
 
-    shared Set<Integer> subtypeSet(Integer i) {
+    shared Set<Atom> subtypeSet(Integer i) {
         assert(exists ret = subtypes[i]);
         return ret;
     }
 
-    shared Set<Integer> supertypeSet(Integer i) {
+    shared Set<Atom> supertypeSet(Integer i) {
         assert(exists ret = supertypes[i]);
         return ret;
     }
