@@ -43,15 +43,13 @@ class StateQueue<Root>(Grammar g, SOSToken start)
 
     "Offer an item to this queue"
     void offer(EPState state) {
-        if (! states.defines(state.pos)) {
-            states.put(state.pos, HashSet<EPState>());
+        if (exists target = states[state.pos]) {
+            if (target.contains(state)) { return; }
+            target.add(state);
+        } else {
+            states.put(state.pos, HashSet<EPState>{state});
         }
 
-        assert(exists target = states[state.pos]);
-
-        if (target.contains(state)) { return; }
-
-        target.add(state);
         queue.offer(state);
 
         if (state.complete) {
