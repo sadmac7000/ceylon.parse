@@ -221,6 +221,8 @@ class EPState {
             if (other.rule != rule) { return false; }
             if (other.matchPos != matchPos) { return false; }
 
+            if (children nonempty != other.children nonempty) { return false; }
+            if (! nonempty children) { return true; }
             if (other.children.size != children.size) { return false; }
             if (other.children != children) { return false; }
 
