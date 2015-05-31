@@ -4,7 +4,7 @@ import ceylon.language.meta { _type = type }
 "A single token result returned by a tokenizer"
 shared interface Token<out NodeType = Object> satisfies Identifiable given NodeType satisfies Object {
     "Type atom for this token"
-    shared Atom type => Atom(`NodeType`);
+    shared default Atom type => Atom(`NodeType`);
 
     "Node value returned by this token"
     shared formal NodeType node;
