@@ -12,7 +12,8 @@ shared class CeylonToken(shared String text, shared Integer line_start, shared
         assert(is CeylonToken other);
 
         return text == other.text && line_start == other.line_start && line_end
-            == other.line_end;
+            == other.line_end && col_start == other.col_start && col_end ==
+            other.col_end;
     }
 }
 
