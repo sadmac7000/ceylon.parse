@@ -1,12 +1,14 @@
 import ceylon.parse { Token, SOS, EOS, SOSToken, Atom, eosAtom, sosAtom }
 import ceylon.language.meta.model { Class, Type }
-import ceylon.collection { ArrayList, HashMap }
+import ceylon.collection { ArrayList, MutableMap, HashMap }
 import ceylon.parse.regular { ... }
 
 "List of whitespace characters"
 Character[] whitespaceChars = [ ' ', '\{FORM FEED (FF)}',
        '\{LINE FEED (LF)}', '\{CHARACTER TABULATION}',
        '\{CARRIAGE RETURN (CR)}'];
+
+shared variable Integer tokenCalls = 0;
 
 "List of reserved words"
 String[] reservedWords = ["assembly", "module", "package", "import", "alias",
@@ -18,13 +20,15 @@ String[] reservedWords = ["assembly", "module", "package", "import", "alias",
 
 "Shortcut function: Allows you to write `tokenizerToken<Given>()` instead of `TokenizerToken<Given>`.
  Since that is a fully applied function call, the compiler no longer has to generate an anonymous `AbstractCallable` subclass at use-site."
-TokenizerToken<out CeylonToken>(Atom, String, Integer, Integer, [Integer,Integer], Integer) tokenizerToken<Tok>()
+TokenizerToken<out CeylonToken>(MutableMap<[Atom,String,Integer], {Token<Object> *}>,
+        Atom, String, Integer, Integer, [Integer,Integer], Integer) tokenizerToken<Tok>()
         given Tok satisfies CeylonToken
         => TokenizerToken<Tok>;
 
 "Shortcut function: Allows you to write `tokenizerTuple<Given>(\"given\")` instead of `[\"given\", tokenizerToken<Given>()]`.
  This means that less code has to be generated at use-site."
-[String,TokenizerToken<out CeylonToken>(Atom, String, Integer, Integer, [Integer,Integer], Integer)] tokenizerTuple<Tok>(String token)
+[String,TokenizerToken<out CeylonToken>(MutableMap<[Atom,String,Integer], {Token<Object> *}>,
+        Atom, String, Integer, Integer, [Integer,Integer], Integer)] tokenizerTuple<Tok>(String token)
         given Tok satisfies CeylonToken
         => [token, tokenizerToken<Tok>()];
 
@@ -34,13 +38,15 @@ TokenizerToken<out CeylonToken>(Atom, String, Integer, Integer, [Integer,Integer
  Atom(`Given`) -> [\"given\", TokenizerToken<Given>]
  ~~~
  This means that the entry does not have to be reified at use-site, removing a huge amount of type descriptor generation code."
-Atom->[String,TokenizerToken<out CeylonToken>(Atom, String, Integer, Integer, [Integer,Integer], Integer)] tokenizerEntry<Tok>(String token)
+Atom->[String,TokenizerToken<out CeylonToken>(MutableMap<[Atom,String,Integer], {Token<Object> *}>,
+        Atom, String, Integer, Integer, [Integer,Integer], Integer)] tokenizerEntry<Tok>(String token)
         given Tok satisfies CeylonToken
         => Atom(`Tok`) -> [token, tokenizerToken<Tok>()];
 
 Map<Atom,
     [Boolean(Character&Object)|String|Regular,
-     TokenizerToken<out CeylonToken>(Atom, String, Integer, Integer,
+     TokenizerToken<out CeylonToken>(MutableMap<[Atom,String,Integer], {Token<Object> *}>,
+             Atom, String, Integer, Integer,
              [Integer,Integer], Integer)]> tokens = HashMap{
     tokenizerEntry<Extends>("extends"),
     tokenizerEntry<SuperTok>("super"),
@@ -161,7 +167,11 @@ Map<Atom,
 "Our starting tokenizer"
 shared class Tokenizer(String t)
         extends BaseTokenizerToken<SOS>(sosAtom, t, 0, [1, 0])
-        satisfies SOSToken {}
+        satisfies SOSToken {
+        shared actual MutableMap<[Atom,String,Integer], {Token<Object> *}> resultsCache
+            = HashMap<[Atom,String,Integer], {Token<Object> *}>();
+}
+
 
 "A token from the parser's point of view"
 shared abstract class BaseTokenizerToken<K>(shared actual Atom type, shared
@@ -169,10 +179,17 @@ shared abstract class BaseTokenizerToken<K>(shared actual Atom type, shared
         startPosition, shared actual Integer lsd = 0)
         satisfies Token<K> given K of CeylonToken|SOS|EOS satisfies Object {
 
+    shared formal MutableMap<[Atom,String,Integer], {Token<Object> *}> resultsCache;
+
     shared [Integer,Integer] endPosition
         => [startPosition[0], startPosition[1] + dataLength];
 
     shared actual {Token<Object> *} next(Atom k) {
+        value key = [k, text, position];
+        value cached = resultsCache[key];
+        if (exists cached) { return cached; }
+        tokenCalls++;
+
         value results = ArrayList<Token<Object>>();
 
         for (t in k.subtypes) {
@@ -183,18 +200,19 @@ shared abstract class BaseTokenizerToken<K>(shared actual Atom type, shared
             value [s, make] = info;
 
             if (is String s, text.includesAt(position, s)) {
-                results.add(make(t, text, position + s.size, s.size, endPosition, 0));
+                results.add(make(resultsCache, t, text, position + s.size, s.size, endPosition, 0));
             } else if (is Boolean(Object) s, exists c = text[position], s(c)) {
-                results.add(make(t, text, position + 1, 1, endPosition, 0));
+                results.add(make(resultsCache, t, text, position + 1, 1, endPosition, 0));
             } else if (is Regular s, exists m = s.matchAt(position, text)) {
-                results.add(make(t, text, position + m.length, m.length, endPosition, 0));
+                results.add(make(resultsCache, t, text, position + m.length, m.length, endPosition, 0));
             }
         }
 
         if (eosAtom.subtypeOf(k), text.size <= position) {
-            results.add(TokenizerToken<EOS>(eosAtom, text, 0, 0, endPosition, 0));
+            results.add(TokenizerToken<EOS>(resultsCache, eosAtom, text, 0, 0, endPosition, 0));
         }
 
+        resultsCache.put(key, results);
         return results;
     }
 
@@ -202,7 +220,8 @@ shared abstract class BaseTokenizerToken<K>(shared actual Atom type, shared
         => {};
 }
 
-class TokenizerToken<K>(Atom a, String t, Integer p, Integer d, [Integer,Integer] s, Integer l)
+class TokenizerToken<K>(shared actual MutableMap<[Atom,String,Integer], {Token<Object> *}> resultsCache,
+        Atom a, String t, Integer p, Integer d, [Integer,Integer] s, Integer l)
         extends BaseTokenizerToken<K>(a, t, d, s, l)
         given K of CeylonToken|EOS satisfies Object {
     shared actual Integer position = p;

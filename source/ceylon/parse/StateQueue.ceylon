@@ -5,6 +5,8 @@ import ceylon.collection {
     PriorityQueue
 }
 
+variable Integer stateCount = 0;
+
 "A queue of states"
 class StateQueue<Root>(Grammar g, SOSToken start)
     given Root satisfies Object {
