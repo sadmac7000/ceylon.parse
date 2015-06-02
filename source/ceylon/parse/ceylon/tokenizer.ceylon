@@ -8,8 +8,6 @@ Character[] whitespaceChars = [ ' ', '\{FORM FEED (FF)}',
        '\{LINE FEED (LF)}', '\{CHARACTER TABULATION}',
        '\{CARRIAGE RETURN (CR)}'];
 
-shared variable Integer tokenCalls = 0;
-
 "List of reserved words"
 String[] reservedWords = ["assembly", "module", "package", "import", "alias",
     "class", "interface", "object", "given", "value", "assign", "void",
@@ -188,7 +186,6 @@ shared abstract class BaseTokenizerToken<K>(shared actual Atom type, shared
         value key = [k, text, position];
         value cached = resultsCache[key];
         if (exists cached) { return cached; }
-        tokenCalls++;
 
         value results = ArrayList<Token<Object>>();
 
