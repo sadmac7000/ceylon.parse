@@ -18,11 +18,11 @@ class StateQueue<Root>(Grammar g, SOSToken start)
 
     Integer size => queue.size;
 
-    <Integer->HashSet<EPState>>? latest {
-        Integer? key = max(states.keys);
+    variable Integer? latestId = null;
 
-        if (! exists key) { return null; }
-        assert(exists key);
+    <Integer->HashSet<EPState>>? latest {
+        if (! latestId exists) { return null; }
+        assert(exists key = latestId);
         assert(exists val = states[key]);
         return key->val;
     }
@@ -50,6 +50,10 @@ class StateQueue<Root>(Grammar g, SOSToken start)
             target.add(state);
         } else {
             states.put(state.pos, HashSet<EPState>{state});
+
+            if (state.pos > (latestId else -1)) {
+                latestId = state.pos;
+            }
         }
 
         queue.offer(state);
@@ -161,10 +165,11 @@ class StateQueue<Root>(Grammar g, SOSToken start)
         value resultNodes = ArrayList<Root>();
 
         variable Integer? minLsd = null;
+        value rootAtom = Atom(`Root`);
 
         for (i in endsPair.item) {
             if (! i.complete) { continue; }
-            if (! Atom(`Root`).supertypeOf(i.rule.produces)) { continue; }
+            if (! rootAtom.supertypeOf(i.rule.produces)) { continue; }
             if (i.start != 0) { continue; }
             if (i.lastToken.next(eosAtom).empty) { continue; }
 
