@@ -110,12 +110,6 @@ class StateQueue<Root>(Grammar g, SOSToken start)
         return ret;
     }
 
-    "Accept a recovery state"
-    EPState? acceptRecoveryState() {
-        assert(exists r=recoveryQueue);
-        return r.accept();
-    }
-
     "Pump the queue until we are out of work to do"
     void pump() {
         while(exists next = accept()) {
@@ -140,7 +134,8 @@ class StateQueue<Root>(Grammar g, SOSToken start)
     "Recover an error"
     Boolean recoverError() {
         initRecovery(g.rules);
-        value state = acceptRecoveryState();
+        assert(exists r = recoveryQueue);
+        value state = r.accept();
 
         if (! exists state) {
             return false;
