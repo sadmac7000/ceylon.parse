@@ -142,7 +142,7 @@ class EPState {
 
     "Stop matching the current variadic (if the current production clause is a
      variadic) and move to the next clause."
-    shared EPState? breakVariadic() {
+    EPState? breakVariadic() {
         if (complete) { return null; }
         assert(exists currentConsumes = rule.consumes[matchPos]);
         if (! currentConsumes.variadic) { return null; }
@@ -171,7 +171,9 @@ class EPState {
 
     "Offer a symbol to this state for scanning or completion"
     shared EPState? feed(Token|EPState? other) {
-        assert(exists want = rule.consumes[matchPos]);
+        value want = rule.consumes[matchPos];
+        if (! exists want) { return null; }
+        assert(exists want);
 
         if (is Token other) {
             return other.type.subtypeOf(want.atom) then
@@ -204,13 +206,15 @@ class EPState {
     "Scan for the next desired object"
     shared {EPState *} scan =>
         if (exists c = rule.consumes[matchPos])
-        then lastToken.next(c.atom).map(feed).narrow<EPState>()
+        then
+            lastToken.next(c.atom).map(feed).chain({breakVariadic(),feed(null)}).narrow<EPState>()
         else {};
 
     "Scan for the next desired object"
     shared {EPState *} forceScan =>
         if (exists c = rule.consumes[matchPos])
-        then lastToken.forceNext(c.atom).map(feed).narrow<EPState>()
+        then
+            lastToken.forceNext(c.atom).map(feed).chain({breakVariadic(),feed(null)}).narrow<EPState>()
         else {};
 
     shared actual Boolean equals(Object other) {

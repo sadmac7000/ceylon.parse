@@ -5,164 +5,126 @@ import ceylon.collection {
     PriorityQueue
 }
 
-variable Integer stateCount = 0;
-
 "A queue of states"
 class StateQueue<Root>(Grammar g, SOSToken start)
-    given Root satisfies Object {
+        given Root satisfies Object {
     g.populateRules();
 
-    value queue = ArrayList<EPState>();
-    value states = HashMap<Integer,HashSet<EPState>>();
-    value completeStates = HashMap<Integer,HashSet<EPState>>();
+    value sets = ArrayList<EPState>{*g.startRules<Root>().collect(
+                (x) => EPState(x, start))};
+    value incomming = PriorityQueue<EPState>((x,y) => x.pos <=> y.pos);
+    value localComplete = ArrayList<EPState>();
+    value streamToSetPos = HashMap<Integer,Integer>{0->0};
 
-    Integer size => queue.size;
-
-    variable Integer? latestId = null;
-
-    <Integer->HashSet<EPState>>? latest {
-        if (! latestId exists) { return null; }
-        assert(exists key = latestId);
-        assert(exists val = states[key]);
-        return key->val;
-    }
+    variable Integer setStart = 0;
+    variable Integer scanStart = 0;
+    variable Integer predictStart = 0;
+    variable Integer setStreamPos = 0;
 
     variable PriorityQueue<EPState>? recoveryQueue = null;
 
-    "Initialize recovery queue"
-    void initRecovery(Rule[] rules) {
-        if (recoveryQueue exists) { return; }
-        recoveryQueue = PriorityQueue<EPState>((x,y) => x.compareRecovery(y));
-
-        assert(exists r = recoveryQueue);
-
-        for (set in states.items) {
-            for (item in set) {
-                if (! item.complete) { r.offer(item); }
-            }
-        }
-    }
-
-    "Offer an item to this queue"
-    void offer(EPState state) {
-        if (exists target = states[state.pos]) {
-            if (target.contains(state)) { return; }
-            target.add(state);
-        } else {
-            states.put(state.pos, HashSet<EPState>{state});
-
-            if (state.pos > (latestId else -1)) {
-                latestId = state.pos;
-            }
-        }
-
-        queue.offer(state);
-
-        if (state.complete) {
-            if (! completeStates.defines(state.start)) {
-                completeStates.put(state.start, HashSet<EPState>());
-            }
-
-            assert(exists ctarget = completeStates[state.start]);
-            ctarget.add(state);
-
-            return;
-        } else if (exists comp = completeStates[state.pos]) {
-            for (c in comp) {
-                if (exists s = state.feed(c)) {
-                    offer(s);
-                }
-            }
-        }
-
-        if (exists r=recoveryQueue) {
-            r.offer(state);
-        }
-    }
-
-    for (rule in g.startRules<Root>()) {
-        value newState = EPState(rule, start);
-        offer(newState);
-    }
-
-    "Accept an item from this queue"
-    EPState? accept() {
-        variable value state = queue.accept();
-
-        while (exists st = state, st.complete) {
-            for (s in at(st.start)) {
-                if (! s.complete,
-                    exists n = s.feed(st)) {
-                    offer(n);
-                }
-            }
-
-            state = queue.accept();
-        }
-
-        return state;
-    }
-
-    "Get states for a given position"
-    HashSet<EPState> at(Integer pos) {
-        if (! states.defines(pos)) { return HashSet<EPState>(); }
-        assert(exists ret = states[pos]);
-        return ret;
-    }
-
     "Pump the queue until we are out of work to do"
     void pump() {
-        while(exists next = accept()) {
-            if (exists s = next.feed(null)) {
-                offer(s);
-            }
+        while (setStart < sets.size || ! incomming.empty) {
+            predict();
+            scan();
+            if (incomming.empty) { break; }
+            advance();
+        }
+    }
 
-            if (exists s = next.breakVariadic()) {
-                offer(s);
-            }
+    "Move states from incomming to the sets list. Complete along the way."
+    void advance() {
+        if (exists f = incomming.front, f.pos != setStreamPos) {
+            setStreamPos = f.pos;
+            setStart = predictStart; // == scanStart == sets.size
+            streamToSetPos.put(setStreamPos, setStart);
+            localComplete.clear();
+        }
 
-            for (s in next.predicted) {
-                offer(s);
-            }
+        while (exists f = incomming.front,
+               f.pos == setStreamPos,
+               exists next = incomming.accept()) {
+            completeFromLocal(next);
+            complete(next);
+            sets.add(next);
+        }
+    }
 
-            for (s in next.scan) {
-                offer(s);
+    "Run completion for a given state"
+    void complete(EPState e) {
+        if (! e.complete) { return; }
+        value startPoint = streamToSetPos[e.start];
+        assert(exists startPoint);
+
+        for (other in sets.sublistFrom(startPoint)) {
+            if (other.pos != e.start) { return; }
+            if (exists n = other.feed(e)) { incomming.offer(n); }
+        }
+
+        if (e.start == setStreamPos) {
+            localComplete.add(e);
+        }
+    }
+
+    "Try to complete the given state with the states in localComplete"
+    void completeFromLocal(EPState e) {
+        for (l in localComplete) {
+            if (exists n = e.feed(l)) {
+                if (sets.sublistFrom(setStart).any((x) => x == n)) {
+                    continue;
+                }
+                incomming.offer(n);
             }
         }
     }
 
-    "Recover an error"
-    Boolean recoverError() {
-        initRecovery(g.rules);
-        assert(exists r = recoveryQueue);
-        value state = r.accept();
+    "Run prediction for the current set"
+    void predict() {
+       while (exists e = sets[predictStart]) {
+            for (next in e.predicted) {
+                if (sets.sublistFrom(setStart).any((x) => x == next)) {
+                    continue;
+                }
 
-        if (! exists state) {
-            return false;
+                completeFromLocal(next);
+                complete(next);
+                sets.add(next);
+            }
+
+            predictStart++;
         }
+    }
 
-        assert(exists state);
+    "Run scanning for the current set"
+    void scan() {
+        while (exists e = sets[scanStart]) {
+            for (s in e.scan) {
+                if (sets.sublistFrom(setStart).any((x) => x == s)) {
+                    continue;
+                }
 
-        for (s in state.forceScan) {
-            offer(s);
+                incomming.offer(s);
+            }
+
+            scanStart++;
         }
-
-        return true;
     }
 
     "Validate"
     Set<Root>? validate() {
-        if (! latest exists) {
+        if (sets.empty) {
             return if (recoverError()) then null else HashSet<Root>();
         }
 
-        assert(exists endsPair = latest);
+        assert(exists lastPos = sets.last?.pos);
         value resultNodes = ArrayList<Root>();
 
         variable Integer? minLsd = null;
         value rootAtom = Atom(`Root`);
 
-        for (i in endsPair.item) {
+        for (i in sets.reversed) {
+            if (i.pos != lastPos) { break; }
             if (! i.complete) { continue; }
             if (! rootAtom.supertypeOf(i.rule.produces)) { continue; }
             if (i.start != 0) { continue; }
@@ -201,4 +163,7 @@ class StateQueue<Root>(Grammar g, SOSToken start)
         assert(exists v=ret);
         return v;
     }
+
+    "Recover a stalled queue"
+    Boolean recoverError() => false;
 }
