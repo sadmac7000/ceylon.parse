@@ -25,10 +25,9 @@ class StateQueue<Root>(Grammar g, SOSToken start)
 
     "Pump the queue until we are out of work to do"
     void pump() {
-        while (setStart < sets.size || ! incomming.empty) {
+        while (predictStart < sets.size || ! incomming.empty) {
             predict();
             scan();
-            if (incomming.empty) { break; }
             advance();
         }
     }
