@@ -121,6 +121,7 @@ test
 void broadGeneric() {
     value text = "a a*a ( a ) a a*a ( a ) a a*a ( a )";
     value root = broadGenericGrammar.unambiguousParse<[S*]>(BroadGenericStartToken(text));
+    assert(exists root);
     value expect = [S(0,
             ATerm(0),
             MMulA(2,

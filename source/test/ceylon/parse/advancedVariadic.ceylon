@@ -23,6 +23,7 @@ object advancedVariadicGrammar extends Grammar() {
 test
 shared void advancedVariadic() {
     value root = advancedVariadicGrammar.unambiguousParse<S>(ABStartToken("bbb"));
+    assert(exists root);
     value expect = S (0,
                 A(0,
                     BTerm(0),

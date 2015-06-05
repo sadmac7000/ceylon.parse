@@ -12,6 +12,7 @@ object precedencedAlgebraGrammar extends AlgebraGrammar() {
 test
 void precedenceResolvedVerticalAmbiguity() {
     value root = precedencedAlgebraGrammar.unambiguousParse<Expr>(AlgebraStartToken("a+b*c"));
+    assert(exists root);
     value expect = Expr (0,
         Var("a", 0),
         Plus(1),

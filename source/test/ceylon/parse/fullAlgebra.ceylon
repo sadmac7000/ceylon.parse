@@ -19,6 +19,7 @@ test
 shared void associativityResolvedHorizontalAmbiguity()
 {
     value root = fullAlgebraGrammar.unambiguousParse<Expr>(AlgebraStartToken("a+b+c"));
+    assert(exists root);
     value expect = Expr (0,
         Expr (0,
             Var("a", 0),
@@ -36,6 +37,7 @@ test
 void multipleOperatorAssociativity()
 {
     value root = fullAlgebraGrammar.unambiguousParse<Expr>(AlgebraStartToken("a+b-c"));
+    assert(exists root);
     value expect = Expr (0,
         Expr (0,
             Var("a", 0),

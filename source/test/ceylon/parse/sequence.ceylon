@@ -13,6 +13,7 @@ object sequenceGrammar extends Grammar() {
 test
 shared void sequence() {
     value root = sequenceGrammar.unambiguousParse<S>(ABStartToken("aaabbb"));
+    assert(exists root);
     value expect = S (0,
                 ATerm(0),
                 ATerm(1),

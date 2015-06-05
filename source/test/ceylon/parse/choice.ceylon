@@ -16,6 +16,7 @@ object choiceGrammar extends Grammar() {
 test
 shared void choice1() {
     value root = choiceGrammar.unambiguousParse<S>(ABStartToken("abababab"));
+    assert(exists root);
     value expect = S (0,
         S (0,
             S(0,
@@ -40,6 +41,7 @@ shared void choice1() {
 test
 shared void choice2() {
     value root = choiceGrammar.unambiguousParse<S>(ABStartToken("abbbabbb"));
+    assert(exists root);
     value expect = S (0,
         S (0,
             S(0,

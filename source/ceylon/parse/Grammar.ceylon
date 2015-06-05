@@ -160,16 +160,15 @@ shared abstract class Grammar() {
         => StateQueue<Root>(this, start).ast;
 
     "Parse a stream. Throw an exception if the parse is ambiguous"
-    shared Root unambiguousParse<Root>(SOSToken start)
+    shared Root? unambiguousParse<Root>(SOSToken start)
         given Root satisfies Object {
         value result = parse<Root>(start);
 
-        if (result.size != 1) {
+        if (result.longerThan(1)) {
             throw AmbiguityException();
         }
 
-        assert(exists r = result.first);
-        return r;
+        return result.first;
     }
 
     "Default rule for sequential objects"

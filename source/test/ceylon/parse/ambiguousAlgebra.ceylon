@@ -27,6 +27,7 @@ test
 void resolvedVerticalAmbiguity()
 {
     value root = ambiguousAlgebraGrammar.unambiguousParse<Expr>(AlgebraStartToken("(a+b)*c"));
+    assert(exists root);
     value expect = Expr (1,
         Expr (1,
             Var("a", 1),
@@ -44,6 +45,7 @@ test
 void resolvedHorizontalAmbiguity()
 {
     value root = ambiguousAlgebraGrammar.unambiguousParse<Expr>(AlgebraStartToken("(a+b)+c"));
+    assert(exists root);
     value expect = Expr (1,
         Expr (1,
             Var("a", 1),

@@ -22,6 +22,7 @@ object optionGrammar extends Grammar() {
 test
 shared void option() {
     value root = optionGrammar.unambiguousParse<S>(ABStartToken("abababaa"));
+    assert(exists root);
     value expect = S (0,
         S (0,
             S(0,

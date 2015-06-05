@@ -20,6 +20,7 @@ object simpleGrammar extends Grammar() {
 test
 shared void simple_word1() {
     value root = simpleGrammar.unambiguousParse<S>(ABStartToken("baab"));
+    assert(exists root);
     value expect = S (0,
         BTerm(0),
         A (1,
@@ -35,6 +36,7 @@ shared void simple_word1() {
 test
 shared void simple_word2() {
     value root = simpleGrammar.unambiguousParse<S>(ABStartToken("bab"));
+    assert(exists root);
     value expect = S (0,
         BTerm(0),
         A (1,
@@ -49,6 +51,7 @@ shared void simple_word2() {
 test
 shared void simple_word3() {
     value root = simpleGrammar.unambiguousParse<S>(ABStartToken("aaa"));
+    assert(exists root);
     value expect = S (0,
         ATerm(0),
         A (1,
@@ -63,6 +66,7 @@ shared void simple_word3() {
 test
 shared void simple_word4() {
     value root = simpleGrammar.unambiguousParse<S>(ABStartToken("aaaa"));
+    assert(exists root);
     value expect = S (0,
         ATerm(0),
         A (1,
@@ -78,6 +82,7 @@ shared void simple_word4() {
 test
 shared void simple_word4_bad() {
     value root = simpleGrammar.unambiguousParse<S>(ABStartToken("aaqaa"));
+    assert(exists root);
     value expect = S (0,
         ATerm(0),
         A (1,
@@ -93,6 +98,7 @@ shared void simple_word4_bad() {
 test
 shared void simple_word2_bad() {
     value root = simpleGrammar.unambiguousParse<S>(ABStartToken("bqb"));
+    assert(exists root);
     value expect = S (0,
         BTerm(0),
         A (1,
@@ -107,6 +113,7 @@ shared void simple_word2_bad() {
 test
 shared void simple_word2_bad2() {
     value root = simpleGrammar.unambiguousParse<S>(ABStartToken("bb"));
+    assert(exists root);
     value expect = S (0,
         BTerm(0),
         A (1,
