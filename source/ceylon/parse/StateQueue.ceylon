@@ -67,13 +67,14 @@ class StateQueue<Root>(Grammar g, SOSToken start)
         }
     }
 
+    "Get a list of states in the current set"
+    value currentSet => sets.sublistFrom(setStart);
+
     "Try to complete the given state with the states in localComplete"
     void completeFromLocal(EPState e) {
         for (l in localComplete) {
-            if (exists n = e.feed(l)) {
-                if (sets.sublistFrom(setStart).any((x) => x == n)) {
-                    continue;
-                }
+            if (exists n = e.feed(l),
+                ! currentSet.any((x) => x == n)) {
                 incomming.offer(n);
             }
         }
@@ -81,9 +82,9 @@ class StateQueue<Root>(Grammar g, SOSToken start)
 
     "Run prediction for the current set"
     void predict() {
-       while (exists e = sets[predictStart]) {
+        while (exists e = sets[predictStart]) {
             for (next in e.predicted) {
-                if (sets.sublistFrom(setStart).any((x) => x == next)) {
+                if (currentSet.any((x) => x == next)) {
                     continue;
                 }
 
@@ -100,11 +101,9 @@ class StateQueue<Root>(Grammar g, SOSToken start)
     void scan() {
         while (exists e = sets[scanStart]) {
             for (s in e.scan) {
-                if (sets.sublistFrom(setStart).any((x) => x == s)) {
-                    continue;
+                if (! currentSet.any((x) => x == s)) {
+                    incomming.offer(s);
                 }
-
-                incomming.offer(s);
             }
 
             scanStart++;
