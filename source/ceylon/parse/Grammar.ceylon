@@ -43,6 +43,20 @@ shared abstract class Grammar() {
 
     variable Boolean populated = false;
 
+    "Next identifier for rules"
+    variable Integer nextRuleIdentifier = 0;
+
+    "List of rule identifiers"
+    value ruleIdentifiers = HashMap<Object,Integer>();
+
+    "Get a unique ID for a rule"
+    shared Integer getRuleIdentifier(Object key) {
+        value cached = ruleIdentifiers[key];
+        if (exists cached) { return cached; }
+        ruleIdentifiers.put(key, nextRuleIdentifier);
+        return nextRuleIdentifier++;
+    }
+
     "Set up the list of rules"
     shared void populateRules() {
         if (populated) { return; }
@@ -73,9 +87,8 @@ shared abstract class Grammar() {
 
     "Starting rules"
     shared {Rule *} startRules<Root>()
-        given Root satisfies Object {
-        return ProductionClause(this, `Root`).predicted;
-    }
+            given Root satisfies Object
+        => getRulesFor(Atom(`Root`));
 
     "Get rules for a particular atom"
     shared {Rule *} getRulesFor(Atom a) {

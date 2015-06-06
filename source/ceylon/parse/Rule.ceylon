@@ -11,9 +11,8 @@ shared class Rule {
     shared Atom produces;
     shared Integer precedence;
     shared Associativity associativity;
-    shared actual Integer hash;
     shared Grammar g;
-    shared Object identifier;
+    shared Integer identifier;
 
     shared new (Function<Object,Nothing> consume,
             ProductionClause[] consumes,
@@ -26,9 +25,8 @@ shared class Rule {
         this.produces = produces;
         this.precedence = precedence;
         this.associativity = associativity;
-        this.hash = consume.hash;
         this.g = g;
-        this.identifier = consume.string;
+        this.identifier = g.getRuleIdentifier(consume);
     }
 
     shared new TupleRule(Type<Tuple<Anything,Anything,Anything[]>> tuple,
@@ -40,17 +38,14 @@ shared class Rule {
 
         assert(is Type<Anything[]>&Generic tuple);
         this.consumes = clausesFromTupleType(tuple, g);
-        this.hash = tuple.hash;
         this.g = g;
-        this.identifier = Atom(tuple);
+        this.identifier = g.getRuleIdentifier(tuple);
     }
 
-    shared actual Boolean equals(Object other) {
-        if (! is Rule other) { return false; }
-        assert(is Rule other);
+    shared actual Integer hash = identifier;
 
-        return other.identifier == identifier;
-    }
+    shared actual Boolean equals(Object other)
+        => if (is Rule other) then other.identifier == identifier else false;
 
     shared Boolean precedenceConflict(Rule other) {
         if (precedence >= other.precedence) { return false; }
