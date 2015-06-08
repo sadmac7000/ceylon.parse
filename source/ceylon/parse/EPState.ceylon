@@ -196,12 +196,15 @@ class EPState {
     }
 
     "Generate a prediction set for this state"
-    shared {EPState *} predicted =>
-            if (exists c = rule.consumes[matchPos])
-            then [ for (r in c.predicted) if ((rule.forbidPosition(r) else -1) !=
-                    matchPos && ! rule.precedenceConflict(r)) EPState.Predicted(pos, r,
-                        tokensProcessed, lastToken) ]
-            else {};
+    shared {EPState *} predicted(RuleBitmap prev) {
+        value c = rule.consumes[matchPos];
+        if (! exists c) { return {}; }
+        assert(exists c);
+
+        value newStuff = prev.addGetNew(c.predicted);
+        return [ for (r in newStuff.rules) EPState.Predicted(pos, r,
+                tokensProcessed, lastToken) ];
+    }
 
     "Scan for the next desired object"
     shared {EPState *} scan =>

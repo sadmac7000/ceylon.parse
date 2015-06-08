@@ -16,6 +16,8 @@ shared class ProductionClause {
     shared Atom[] caseTypes;
     shared Atom atom;
 
+    variable RuleBitmap? rbcache = null;
+
     shared new (Grammar g, Type tIn,
             Boolean|FunctionOrValueDeclaration? f = null) {
         Type t;
@@ -61,10 +63,23 @@ shared class ProductionClause {
     }
 
     "Generate a prediction set for this clause"
-    shared {Rule *} predicted => g.getRulesFor(atom);
+    shared RuleBitmap predicted {
+        predict();
+        assert(exists r = rbcache);
+        return r;
+    }
 
     "Populate the cached prediction set"
-    shared void predict() => g.getRulesFor(atom);
+    shared void predict() {
+        if (rbcache exists) { return; }
+        value r = RuleBitmap(g);
+
+        for (i in g.getRulesFor(atom)) {
+            r.addRule(i);
+        }
+
+        rbcache = r;
+    }
 }
 
 "Turn a tuple type into predicates"

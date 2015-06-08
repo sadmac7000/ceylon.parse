@@ -49,6 +49,12 @@ shared abstract class Grammar() {
     "List of rule identifiers"
     value ruleIdentifiers = HashMap<Object,Integer>();
 
+    "Map of rule identifiers back to rues"
+    value ruleIdentifierMap = HashMap<Integer,Rule>();
+
+    shared void registerRule(Rule r) => ruleIdentifierMap.put(r.identifier, r);
+    shared Rule? getRuleByIdentifier(Integer i) => ruleIdentifierMap[i];
+
     "Get a unique ID for a rule"
     shared Integer getRuleIdentifier(Object key) {
         value cached = ruleIdentifiers[key];
@@ -116,7 +122,9 @@ shared abstract class Grammar() {
 
             return staticRules.chain(caseSets.fold<{Rule *}>({})((x, y) => x.chain(y)));
         } else if (is Type<Tuple<Anything,Anything,Anything[]>> t) {
-            return staticRules.withTrailing(Rule.TupleRule(t, this));
+            value tp = Rule.TupleRule(t, this);
+            registerRule(tp);
+            return staticRules.withTrailing(tp);
         } else if (is Type<Object> t){
             return
                 getOmniRulesFor(t).chain(getGenericRulesFor(t)).chain(staticRules);
@@ -138,8 +146,10 @@ shared abstract class Grammar() {
                 ProductionClause(this, p[0], p[1]) ];
             value produces = Atom(t);
             assert(exists ruleAnnotation = declaration.annotations<OmniRule>()[0]);
-            return Rule(consume, consumes, produces,
+            value r = Rule(consume, consumes, produces,
                     ruleAnnotation.precedence, ruleAnnotation.associativity, this);
+            registerRule(r);
+            return r;
         }).narrow<Rule>();
 
     "Reify generic rules for a given type"
@@ -163,6 +173,7 @@ shared abstract class Grammar() {
         assert(exists ruleAnnotation = r.declaration.annotations<GrammarRule>()[0]);
         value rule = Rule(consume, consumes, produces,
                 ruleAnnotation.precedence, ruleAnnotation.associativity, this);
+        registerRule(rule);
 
         rules = rules.withTrailing(rule);
     }
@@ -215,9 +226,10 @@ shared abstract class Grammar() {
                 ProductionClause(outer, p[0], p[1]) ];
             value produces = Atom(consume.type);
             assert(exists ruleAnnotation = declaration.annotations<GenericRule>()[0]);
-            return Rule(consume, consumes, produces,
+            value ret = Rule(consume, consumes, produces,
                     ruleAnnotation.precedence, ruleAnnotation.associativity, outer);
+            outer.registerRule(ret);
+            return ret;
         }
     }
-
 }

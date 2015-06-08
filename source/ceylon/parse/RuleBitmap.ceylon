@@ -1,7 +1,7 @@
 import ceylon.collection { ArrayList }
 
 "A bitmap for storing a set of rules"
-class RuleBitmap(Grammar g) extends ArrayList<Integer>() {
+shared class RuleBitmap(Grammar g) extends ArrayList<Integer>() {
     Integer bpi = runtime.integerAddressableSize;
 
     "Add a rule to this bitmap"
@@ -40,10 +40,24 @@ class RuleBitmap(Grammar g) extends ArrayList<Integer>() {
         return ret;
     }
 
-    shared {Rule *} rules => g.rules.select((r) => containsRule(r));
+    shared {Rule *} rules {
+        variable Integer bucket = 0;
+        value ret = ArrayList<Rule>();
 
-    Boolean containsRule(Rule r) {
-        assert(exists b = this[r.identifier / bpi]?.get(r.identifier % bpi));
-        return b;
+        for (i in this) {
+            variable Integer offset = 0;
+
+            while (offset < bpi) {
+                if (i.get(offset),
+                        exists r = g.getRuleByIdentifier(offset + bucket * bpi)) {
+                    ret.add(r);
+                }
+                offset++;
+            }
+
+            bucket++;
+        }
+
+        return ret;
     }
 }

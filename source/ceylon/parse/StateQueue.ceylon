@@ -23,6 +23,8 @@ class StateQueue<Root>(Grammar g, SOSToken start)
 
     variable PriorityQueue<EPState>? recoveryQueue = null;
 
+    value currentPrediction = RuleBitmap(g);
+
     "Pump the queue until we are out of work to do"
     void pump() {
         while (predictStart < sets.size || ! incomming.empty) {
@@ -37,6 +39,7 @@ class StateQueue<Root>(Grammar g, SOSToken start)
         if (exists f = incomming.front, f.pos != setStreamPos) {
             setStreamPos = f.pos;
             setStart = predictStart; // == scanStart == sets.size
+            currentPrediction.clear();
             streamToSetPos.put(setStreamPos, setStart);
             localComplete.clear();
         }
@@ -82,11 +85,7 @@ class StateQueue<Root>(Grammar g, SOSToken start)
     "Run prediction for the current set"
     void predict() {
         while (exists e = sets[predictStart]) {
-            for (next in e.predicted) {
-                if (currentSet.any((x) => x == next)) {
-                    continue;
-                }
-
+            for (next in e.predicted(currentPrediction)) {
                 completeFromLocal(next);
                 complete(next);
                 sets.add(next);
