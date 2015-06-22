@@ -1,7 +1,7 @@
 import ceylon.collection { ArrayList }
 
 "A bitmap for storing a set of rules"
-shared class RuleBitmap(Grammar g) extends ArrayList<Integer>() {
+shared class RuleBitmap(Grammar g) extends ArrayList<Integer>(g.rules.size / 32) {
     Integer bpi = runtime.integerAddressableSize;
 
     "Add a rule to this bitmap"
@@ -42,7 +42,7 @@ shared class RuleBitmap(Grammar g) extends ArrayList<Integer>() {
 
     shared {EPState *} states(Integer pos, Integer tp, Token t){
         variable Integer bucket = 0;
-        value ret = ArrayList<EPState>();
+        value ret = ArrayList<EPState>(10);
 
         for (i in this) {
             variable Integer offset = 0;
