@@ -1,5 +1,5 @@
 "An Earley parser state"
-class EPState {
+shared class EPState {
     "Whether we've matched once already"
     Boolean matchedOnce;
 
@@ -47,7 +47,7 @@ class EPState {
     }
 
     "Create a new EPState predicted from the given rule"
-    new Predicted(Integer pos, Rule rule, Integer tokensProcessedBefore,
+    shared new Predicted(Integer pos, Rule rule, Integer tokensProcessedBefore,
             Token lastToken) {
         this.pos = pos;
         this.rule = rule;
@@ -201,9 +201,8 @@ class EPState {
         if (! exists c) { return {}; }
         assert(exists c);
 
-        value newStuff = prev.addGetNew(c.predicted);
-        return [ for (r in newStuff.rules) EPState.Predicted(pos, r,
-                tokensProcessed, lastToken) ];
+        return prev.addGetNew(c.predicted).states(pos, tokensProcessed,
+                lastToken);
     }
 
     "Scan for the next desired object"

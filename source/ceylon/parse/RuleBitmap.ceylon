@@ -40,17 +40,17 @@ shared class RuleBitmap(Grammar g) extends ArrayList<Integer>() {
         return ret;
     }
 
-    shared {Rule *} rules {
+    shared {EPState *} states(Integer pos, Integer tp, Token t){
         variable Integer bucket = 0;
-        value ret = ArrayList<Rule>();
+        value ret = ArrayList<EPState>();
 
         for (i in this) {
             variable Integer offset = 0;
 
-            while (offset < bpi) {
+            while (offset < bpi, i != 0) {
                 if (i.get(offset),
                         exists r = g.getRuleByIdentifier(offset + bucket * bpi)) {
-                    ret.add(r);
+                    ret.add(EPState.Predicted(pos, r, tp, t));
                 }
                 offset++;
             }
