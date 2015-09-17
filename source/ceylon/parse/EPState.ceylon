@@ -47,7 +47,7 @@ shared class EPState {
     }
 
     "Create a new EPState predicted from the given rule"
-    shared new Predicted(Integer pos, Rule rule, Integer tokensProcessedBefore,
+    shared new predicted(Integer pos, Rule rule, Integer tokensProcessedBefore,
             Token lastToken) {
         this.pos = pos;
         this.rule = rule;
@@ -62,7 +62,7 @@ shared class EPState {
     }
 
     "Produce a new EPState derived from a previous state"
-    new Derived(EPState original, Integer newPos, Token|EPState? newChild) {
+    new derived(EPState original, Integer newPos, Token|EPState? newChild) {
         this.pos = newPos;
         variable value lsd_mod = 0;
 
@@ -102,7 +102,7 @@ shared class EPState {
     }
 
     "Produce a new EPState skipping the current production clause"
-    new Advanced(EPState original) {
+    new advanced(EPState original) {
         this.pos = original.pos;
         this.rule = original.rule;
         this.matchPos = original.matchPos + 1;
@@ -148,7 +148,7 @@ shared class EPState {
         if (! currentConsumes.variadic) { return null; }
         if (currentConsumes.once && ! matchedOnce) { return null; }
 
-        return EPState.Advanced(this);
+        return EPState.advanced(this);
     }
 
     "S-Expression view of this state"
@@ -177,11 +177,11 @@ shared class EPState {
 
         if (is Token other) {
             return other.type.subtypeOf(want.atom) then
-                    EPState.Derived(this, other.position, other);
+                    EPState.derived(this, other.position, other);
         } else if (! exists other){
             if (! nullAtom.subtypeOf(want.atom)) { return null; }
 
-            return EPState.Derived(this, pos, null);
+            return EPState.derived(this, pos, null);
         } else {
             if (! other.rule.produces.subtypeOf(want.atom)) {
                 return null;
@@ -191,12 +191,12 @@ shared class EPState {
             if (exists p = rule.forbidPosition(other.rule),
                 p == matchPos) { return null; }
 
-            return EPState.Derived(this, other.pos, other);
+            return EPState.derived(this, other.pos, other);
         }
     }
 
     "Generate a prediction set for this state"
-    shared {EPState *} predicted(RuleBitmap prev) {
+    shared {EPState *} predicts(RuleBitmap prev) {
         value c = rule.consumes[matchPos];
         if (! exists c) { return {}; }
         assert(exists c);

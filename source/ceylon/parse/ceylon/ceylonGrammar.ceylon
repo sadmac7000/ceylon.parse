@@ -233,8 +233,8 @@ shared object ceylonGrammar extends Grammar() {
     "Section 3.2.3 of the specification"
     rule(0, lassoc)
     shared UnionType unionType(MainType a, Pipe p, MainType b) {
-        [IntersectionType|PrimaryType+] left_children;
-        [IntersectionType|PrimaryType+] right_children;
+        [IntersectionType|PrimaryType*] left_children;
+        [IntersectionType|PrimaryType*] right_children;
 
         if (is UnionType a) {
             left_children = a.children;
@@ -248,7 +248,9 @@ shared object ceylonGrammar extends Grammar() {
             right_children = [b];
         }
 
-        return astNode(UnionType, [left_children.append(right_children)], a, p, b);
+        assert(nonempty children = left_children.append(right_children));
+
+        return astNode(UnionType, [children], a, p, b);
     }
 
     "Section 3.2.4 of the specification"

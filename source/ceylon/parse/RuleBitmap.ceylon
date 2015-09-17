@@ -50,7 +50,7 @@ shared class RuleBitmap(Grammar g) extends ArrayList<Integer>(g.rules.size / 32)
             while (offset < bpi, i != 0) {
                 if (i.get(offset),
                         exists r = g.getRuleByIdentifier(offset + bucket * bpi)) {
-                    ret.add(EPState.Predicted(pos, r, tp, t));
+                    ret.add(EPState.predicted(pos, r, tp, t));
                 }
                 offset++;
             }

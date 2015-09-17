@@ -122,7 +122,7 @@ shared abstract class Grammar() {
 
             return staticRules.chain(caseSets.fold<{Rule *}>({})((x, y) => x.chain(y)));
         } else if (is Type<Tuple<Anything,Anything,Anything[]>> t) {
-            value tp = Rule.TupleRule(t, this);
+            value tp = Rule.tupleRule(t, this);
             registerRule(tp);
             return staticRules.withTrailing(tp);
         } else if (is Type<Object> t){

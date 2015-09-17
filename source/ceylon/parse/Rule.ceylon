@@ -29,7 +29,7 @@ shared class Rule {
         this.identifier = g.getRuleIdentifier(consume);
     }
 
-    shared new TupleRule(Type<Tuple<Anything,Anything,Anything[]>> tuple,
+    shared new tupleRule(Type<Tuple<Anything,Anything,Anything[]>> tuple,
             Grammar g) {
         this.produces = Atom(tuple);
         this.consume = (Anything * a) => a;

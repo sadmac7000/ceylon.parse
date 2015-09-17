@@ -9,7 +9,7 @@ shared class Atom {
         this.val = typeAtomCache.getAlias(t);
     }
 
-    shared new ByHash(Integer hash) {
+    shared new byHash(Integer hash) {
         this.val = hash;
     }
 
@@ -59,20 +59,20 @@ object typeAtomCache {
 
         for (k->v in from) {
             if (k.subtypeOf(t)) {
-                mySubtypes.add(Atom.ByHash(v));
-                supertypes[v]?.add(Atom.ByHash(next));
+                mySubtypes.add(Atom.byHash(v));
+                supertypes[v]?.add(Atom.byHash(next));
             }
 
             if (k.supertypeOf(t)) {
-                mySupertypes.add(Atom.ByHash(v));
-                subtypes[v]?.add(Atom.ByHash(next));
+                mySupertypes.add(Atom.byHash(v));
+                subtypes[v]?.add(Atom.byHash(next));
             }
         }
 
         from.put(t, next);
         to.put(next, t);
-        mySubtypes.add(Atom.ByHash(next));
-        mySupertypes.add(Atom.ByHash(next));
+        mySubtypes.add(Atom.byHash(next));
+        mySupertypes.add(Atom.byHash(next));
         subtypes.put(next, mySubtypes);
         supertypes.put(next, mySupertypes);
         return next++;

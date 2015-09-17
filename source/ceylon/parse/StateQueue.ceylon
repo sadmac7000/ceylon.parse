@@ -85,7 +85,7 @@ class StateQueue<Root>(Grammar g, SOSToken start)
     "Run prediction for the current set"
     void predict() {
         while (exists e = sets[predictStart]) {
-            for (next in e.predicted(currentPrediction)) {
+            for (next in e.predicts(currentPrediction)) {
                 completeFromLocal(next);
                 complete(next);
                 sets.add(next);
