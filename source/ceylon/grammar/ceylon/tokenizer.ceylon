@@ -193,7 +193,6 @@ shared abstract class BaseTokenizerToken<K>(shared actual Atom type, shared
             value info = tokens[t];
 
             if (! exists info) { continue; }
-            assert(exists info);
             value [s, make] = info;
 
             if (is String s, text.includesAt(position, s)) {

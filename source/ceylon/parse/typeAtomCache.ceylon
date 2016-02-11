@@ -5,7 +5,7 @@ import ceylon.collection { HashMap, HashSet }
 shared class Atom {
     shared Integer val;
 
-    shared new (Type t) {
+    shared new (Type<> t) {
         this.val = typeAtomCache.getAlias(t);
     }
 
@@ -27,7 +27,7 @@ shared class Atom {
 
     shared Boolean supertypeOf(Atom other) => other.subtypeOf(this);
 
-    shared Type type => typeAtomCache.resolve(val);
+    shared Type<> type => typeAtomCache.resolve(val);
 
     shared actual String string => filterTypes(type.string);
 }
@@ -40,14 +40,14 @@ String filterTypes(String typeName)
 "We have to convert type objects to integers to pass them around, otherwise we
  encounter weird performance issues."
 object typeAtomCache {
-    value from = HashMap<Type, Integer>();
-    value to = HashMap<Integer, Type>();
+    value from = HashMap<Type<>, Integer>();
+    value to = HashMap<Integer, Type<>>();
     value subtypes = HashMap<Integer, HashSet<Atom>>();
     value supertypes = HashMap<Integer, HashSet<Atom>>();
     variable value next = 0;
 
     "Get an alias for a type"
-    shared Integer getAlias(Type t) {
+    shared Integer getAlias(Type<> t) {
         if (from.defines(t)) {
             value ret = from[t];
             assert(exists ret);
@@ -89,7 +89,7 @@ object typeAtomCache {
     }
 
     "Resolve a type"
-    shared Type resolve(Integer i) {
+    shared Type<> resolve(Integer i) {
         value ret = to[i];
         assert(exists ret);
         return ret;
