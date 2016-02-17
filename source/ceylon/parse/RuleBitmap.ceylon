@@ -40,7 +40,7 @@ shared class RuleBitmap(Grammar g) extends ArrayList<Integer>(g.rules.size / 32)
         return ret;
     }
 
-    shared {EPState *} states(Integer pos, Integer tp, Token t){
+    shared {EPState *} states(Integer pos, Integer tp, Token<> t){
         variable Integer bucket = 0;
         value ret = ArrayList<EPState>(10);
 

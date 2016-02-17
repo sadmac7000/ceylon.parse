@@ -4,7 +4,7 @@ shared class EPState {
     Boolean matchedOnce;
 
     "Token we processed before parsing this rule"
-    shared Token lastToken;
+    shared Token<> lastToken;
 
     "Tokens processed before we began to parse this state"
     Integer tokensProcessedBefore;
@@ -13,7 +13,7 @@ shared class EPState {
     shared Integer start;
 
     "Tokens"
-    shared [Token|EPState?*] children;
+    shared [Token<>|EPState?*] children;
 
     "Position this state belongs to"
     shared Integer pos;
@@ -48,7 +48,7 @@ shared class EPState {
 
     "Create a new EPState predicted from the given rule"
     shared new predicted(Integer pos, Rule rule, Integer tokensProcessedBefore,
-            Token lastToken) {
+            Token<> lastToken) {
         this.pos = pos;
         this.rule = rule;
         this.matchPos = 0;
@@ -62,11 +62,11 @@ shared class EPState {
     }
 
     "Produce a new EPState derived from a previous state"
-    new derived(EPState original, Integer newPos, Token|EPState? newChild) {
+    new derived(EPState original, Integer newPos, Token<>|EPState? newChild) {
         this.pos = newPos;
         variable value lsd_mod = 0;
 
-        if (is Token newChild) {
+        if (is Token<> newChild) {
             this.lastToken = newChild;
             lsd_mod = newChild.lsd;
         } else if (is EPState newChild) {
@@ -96,7 +96,7 @@ shared class EPState {
         this.rule = original.rule;
         this.start = original.start;
         this.tokensProcessedBefore = original.tokensProcessedBefore;
-        this.tokensProcessed = original.tokensProcessed + (if (is Token
+        this.tokensProcessed = original.tokensProcessed + (if (is Token<>
                 newChild) then 1 else if (is EPState newChild) then
             newChild.tokensProcessed else 0);
     }
@@ -128,7 +128,7 @@ shared class EPState {
         variable Object?[] sym = [];
 
         for (c in children) {
-            if (is Token c) {
+            if (is Token<> c) {
                 sym = sym.withTrailing(c.node);
             } else if (is EPState c) {
                 sym = sym.withTrailing(c.astNode);
@@ -159,7 +159,7 @@ shared class EPState {
             ret += " ";
             if (is EPState c) {
                 ret += c.sexp;
-            } else if (is Token c) {
+            } else if (is Token<> c) {
                 ret += c.string;
             } else {
                 ret += "_";
@@ -170,12 +170,11 @@ shared class EPState {
     }
 
     "Offer a symbol to this state for scanning or completion"
-    shared EPState? feed(Token|EPState? other) {
+    shared EPState? feed(Token<>|EPState? other) {
         value want = rule.consumes[matchPos];
         if (! exists want) { return null; }
-        assert(exists want);
 
-        if (is Token other) {
+        if (is Token<> other) {
             return other.type.subtypeOf(want.atom) then
                     EPState.derived(this, other.position, other);
         } else if (! exists other){
@@ -199,7 +198,6 @@ shared class EPState {
     shared {EPState *} predicts(RuleBitmap prev) {
         value c = rule.consumes[matchPos];
         if (! exists c) { return {}; }
-        assert(exists c);
 
         return prev.addGetNew(c.predicted).states(pos, tokensProcessed,
                 lastToken);

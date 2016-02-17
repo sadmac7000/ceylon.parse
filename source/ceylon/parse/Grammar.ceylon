@@ -1,22 +1,21 @@
+import ceylon.collection {
+    HashMap,
+    HashSet
+}
 import ceylon.language.meta {
-    _type = type
+    _type=type
+}
+import ceylon.language.meta.declaration {
+    FunctionDeclaration,
+    ClassOrInterfaceDeclaration
 }
 import ceylon.language.meta.model {
-    Generic,
     Type,
     UnionType,
     ClassOrInterface,
     Method,
     Function,
     TypeApplicationException
-}
-import ceylon.language.meta.declaration {
-    FunctionDeclaration,
-    ClassOrInterfaceDeclaration
-}
-import ceylon.collection {
-    HashMap,
-    HashSet
 }
 
 "Exception thrown when a parse is ambiguous and we request an unambiguous
@@ -115,7 +114,7 @@ shared abstract class Grammar() {
         {Rule *} ret;
 
         value t = a.type;
-        if (is UnionType t) {
+        if (is UnionType<> t) {
             value caseSets = {
                 for (tsub in t.caseTypes) getRulesFor(Atom(tsub))
             };

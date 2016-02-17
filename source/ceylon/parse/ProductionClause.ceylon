@@ -18,9 +18,9 @@ shared class ProductionClause {
 
     variable RuleBitmap? rbcache = null;
 
-    shared new (Grammar g, Type tIn,
+    shared new (Grammar g, Type<> tIn,
             Boolean|FunctionOrValueDeclaration? f = null) {
-        Type t;
+        Type<> t;
 
         this.g = g;
 
@@ -29,7 +29,7 @@ shared class ProductionClause {
             this.once = f;
             t = tIn;
         } else if (exists f, f.variadic) {
-            assert(is ClassOrInterface tIn);
+            assert(is ClassOrInterface<> tIn);
             assert(exists k = tIn.typeArguments.items.first);
             t = k;
 
@@ -43,7 +43,7 @@ shared class ProductionClause {
 
         this.atom = Atom(t);
 
-        if (is UnionType t) {
+        if (is UnionType<> t) {
             this.caseTypes = [for (tsub in t.caseTypes) Atom(tsub) ];
         } else {
             this.caseTypes = [this.atom];
@@ -54,7 +54,6 @@ shared class ProductionClause {
 
     shared actual Boolean equals(Object that) {
         if (! is ProductionClause that) { return false; }
-        assert(is ProductionClause that);
 
         if (that.variadic != variadic) { return false; }
         if (that.once != once) { return false; }

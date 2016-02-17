@@ -1,5 +1,3 @@
-import ceylon.language.meta.model { Type }
-import ceylon.language.meta { _type = type }
 
 "A single token result returned by a tokenizer"
 shared interface Token<out NodeType = Object> satisfies Identifiable given NodeType satisfies Object {
